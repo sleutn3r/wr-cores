@@ -6,7 +6,7 @@
 -- Author     : Grzegorz Daniluk
 -- Company    : Elproma
 -- Created    : 2011-02-02
--- Last update: 2011-05-11
+-- Last update: 2011-06-09
 -- Platform   : FPGA-generics
 -- Standard   : VHDL
 -------------------------------------------------------------------------------
@@ -38,18 +38,12 @@ entity wr_core is
   generic(
     --if set to 1, then blocks in PCS use smaller calibration counter to speed 
     --up simulation
-    g_gtp_channel            : integer := 1;
     g_simulation             : integer := 0;
     g_virtual_uart           : natural := 0;
-    g_ep_phy_mode            : string  := "GTP";
     g_ep_rxbuf_size_log2     : integer := 12;
-    g_mnic_memsize_log2      : integer := 14;     --log2(g_dpram_size)
-    g_mnic_buf_little_endian : boolean := true;
     g_dpram_initf            : string  := "";
     g_dpram_size             : integer := 16384;  --in 32-bit words
-    g_dpram_byte_ena         : boolean := false;  --enable byte access to dpram
-    g_num_gpio               : integer := 8;
-    g_wbicon_rf_addr         : integer := 15
+    g_num_gpio               : integer := 8
     );
   port(
     clk_sys_i : in std_logic;
@@ -77,35 +71,24 @@ entity wr_core is
     dac_dpll_load_p1_o : out std_logic;
     dac_dpll_data_o    : out std_logic_vector(15 downto 0);
 
-    -----------------------------------------
-    --Endpoint
-    -----------------------------------------
-    --TBI
-    -- data output, 8b10b-encoded
-    tbi_td_o        : out std_logic_vector(9 downto 0);
-    -- PHY enable, active HI
-    tbi_enable_o    : out std_logic;
-    -- PHY comma sync enable, active HI
-    tbi_syncen_o    : out std_logic;
-    -- PHY loopback mode enable, active HI
-    tbi_loopen_o    : out std_logic;
-    -- PHY PRBS pattern test enable, active HI  
-    tbi_prbsen_o    : out std_logic;
-    -- RX clock (125.x MHz)
-    tbi_rbclk_i     : in  std_logic;
-    -- data input, 8b10b-encoded
-    tbi_rd_i        : in  std_logic_vector(9 downto 0);
-    -- PHY sync detect pulse (active HI when PHY detects valid comma pattern)
-    tbi_sync_pass_i : in  std_logic;
+    -- PHY I/f
+    phy_ref_clk_i : in std_logic;
 
-    -----------------------------------------
-    --GTP
-    -----------------------------------------
-    pad_txn0_o : out std_logic;
-    pad_txp0_o : out std_logic;
-    pad_rxn0_i : in  std_logic;
-    pad_rxp0_i : in  std_logic;
+    phy_tx_data_i      : out  std_logic_vector(7 downto 0);
+    phy_tx_k_i         : out  std_logic;
+    phy_tx_disparity_i : in std_logic;
+    phy_tx_enc_err_i   : in std_logic;
 
+    phy_rx_data_i     : in std_logic_vector(7 downto 0);
+    phy_rx_rbclk_i    : in std_logic;
+    phy_rx_k_i        : in std_logic;
+    phy_rx_enc_err_i  : in std_logic;
+    phy_rx_bitslide_i : in std_logic_vector(3 downto 0);
+
+    phy_rst_o    : out std_logic;
+    phy_loopen_o : out std_logic;
+
+    
     -----------------------------------------
     --GPIO
     -----------------------------------------
@@ -130,6 +113,7 @@ entity wr_core is
     wb_cyc_i  : in  std_logic;
     wb_stb_i  : in  std_logic;
     wb_ack_o  : out std_logic;
+
     --DEBUG
     genrest_n : out std_logic;
 
@@ -275,12 +259,6 @@ architecture struct of wr_core is
   --===========================--
   --         For SPEC          --
   --===========================--
-  signal s_wrcila_ctrl : std_logic_vector(35 downto 0);
-  signal s_ilatrig3    : std_logic_vector(20 downto 0);
---  signal gpio_b        : std_logic_vector(g_num_gpio-1 downto 0);
-  signal licznik       : integer range 0 to 16383;
-  type t_State is (IDLE, SETA, SET1, WACK, INC);
-  signal State         : t_State;
 
   signal rst_wb_addr_o : std_logic_vector(17 downto 0);
   signal rst_wb_data_i : std_logic_vector(31 downto 0);
@@ -307,9 +285,6 @@ architecture struct of wr_core is
   signal softpll_rx_clk : std_logic;
 
   signal lm32_irq_slv : std_logic_vector(0 downto 0);
-
-
-  constant c_USE_LM32 : boolean := true;
   
   
 begin
@@ -370,16 +345,13 @@ begin
       wb_irq_o  => softpll_irq,
       debug_o   => dio_o);
 
-
-
-
   -----------------------------------------------------------------------------
   -- Endpoint
   -----------------------------------------------------------------------------
   WR_ENDPOINT : wrsw_endpoint
     generic map(
       g_simulation          => g_simulation,
-      g_phy_mode            => g_ep_phy_mode,
+      g_phy_mode            => "GTP",
       g_rx_buffer_size_log2 => g_ep_rxbuf_size_log2
       )
     port map(
@@ -399,30 +371,30 @@ begin
       -------------------------------------------------------------------------
       -- Ten-Bit PHY interface (TLK1221)
       -------------------------------------------------------------------------
-      tbi_td_o        => tbi_td_o,
-      tbi_enable_o    => tbi_enable_o,
-      tbi_syncen_o    => tbi_syncen_o,
-      tbi_loopen_o    => tbi_loopen_o,
-      tbi_prbsen_o    => tbi_prbsen_o,
-      tbi_rbclk_i     => tbi_rbclk_i,
-      tbi_rd_i        => tbi_rd_i,
-      tbi_sync_pass_i => tbi_sync_pass_i,
+      tbi_td_o        => open,
+      tbi_enable_o    => open,
+      tbi_syncen_o    => open,
+      tbi_loopen_o    => open,
+      tbi_prbsen_o    => open,
+      tbi_rbclk_i     => '0',
+      tbi_rd_i        => "0000000000",
+      tbi_sync_pass_i => '0',
 
       -------------------------------------------------------------------------
       -- Xilinx GTP PHY Interace
       -------------------------------------------------------------------------    
-      gtp_tx_clk_i       => clk_ref_i,
-      gtp_tx_data_o      => s_gtp_tx_data_i,
-      gtp_tx_k_o         => s_gtp_tx_k_i,
-      gtp_tx_disparity_i => s_gtp_tx_disparity_o,
-      gtp_tx_enc_err_i   => s_gtp_tx_enc_err_o,
-      gtp_rx_data_i      => s_gtp_rx_data_o,
-      gtp_rx_clk_i       => s_gtp_rx_rbclk_o,
-      gtp_rx_k_i         => s_gtp_rx_k_o,
-      gtp_rx_enc_err_i   => s_gtp_rx_enc_err_o,
-      gtp_rx_bitslide_i  => s_gtp_rx_bitslide_o,
-      gtp_rst_o          => s_gtp_rst_i,
-      gtp_loopen_o       => s_gtp_loopen_i,
+      gtp_tx_clk_i       => phy_ref_clk_i,
+      gtp_tx_data_o      => phy_tx_data_o,
+      gtp_tx_k_o         => phy_tx_k_o,
+      gtp_tx_disparity_i => phy_tx_disparity_i,
+      gtp_tx_enc_err_i   => phy_tx_enc_err_i,
+      gtp_rx_data_i      => phy_rx_data_i,
+      gtp_rx_clk_i       => phy_rx_rbclk_i,
+      gtp_rx_k_i         => phy_rx_k_i,
+      gtp_rx_enc_err_i   => phy_rx_enc_err_i,
+      gtp_rx_bitslide_i  => phy_rx_bitslide_i,
+      gtp_rst_o          => phy_rst_o,
+      gtp_loopen_o       => phy_loopen_o,
 
       -------------------------------------------------------------------------
       -- WRF source (output of RXed packets)
@@ -488,112 +460,6 @@ begin
       );
 
 
-  gen_gtp : if(g_ep_phy_mode = "GTP") generate
-    -----------------------------------------------------------------------------
-    -- Xilinx GTP PHY
-    -----------------------------------------------------------------------------
-
-    softpll_rx_clk <= s_gtp_rx_rbclk_o;
-
-gen_use_channel0: if(g_gtp_channel = 0) generate
-    
-    GTP_PHY : wr_gtp_phy_spartan6
-      generic map(
-        g_simulation => g_simulation
---        g_loopback0_mode => 1
-        )
-      port map(
-        clk_ref_i          => clk_ref_i,
-        ch0_tx_data_i      => s_gtp_tx_data_i,
-        ch0_tx_k_i         => s_gtp_tx_k_i,
-        ch0_tx_disparity_o => s_gtp_tx_disparity_o,
-        ch0_tx_enc_err_o   => s_gtp_tx_enc_err_o,
-        ch0_rx_data_o      => s_gtp_rx_data_o,
-        ch0_rx_rbclk_o     => s_gtp_rx_rbclk_o,
-        ch0_rx_k_o         => s_gtp_rx_k_o,
-        ch0_rx_enc_err_o   => s_gtp_rx_enc_err_o,
-        ch0_rx_bitslide_o  => s_gtp_rx_bitslide_o,
-        ch0_rst_i          => s_gtp_rst_i,
-        ch0_loopen_i       => s_gtp_loopen_i,
-
-        ch1_tx_data_i      => (others => '0'),
-        ch1_tx_k_i         => '0',
-        ch1_tx_disparity_o => open,
-        ch1_tx_enc_err_o   => open,
-        ch1_rx_data_o      => open,
-        ch1_rx_rbclk_o     => open,
-        ch1_rx_k_o         => open,
-        ch1_rx_enc_err_o   => open,
-        ch1_rx_bitslide_o  => open,
-        ch1_rst_i          => '0',
-        ch1_loopen_i       => '0',
-
-                                        --   Serial I/O
-        pad_txn0_o => pad_txn0_o,
-        pad_txp0_o => pad_txp0_o,
-        pad_rxn0_i => pad_rxn0_i,
-        pad_rxp0_i => pad_rxp0_i,
-        pad_txn1_o => open,
-        pad_txp1_o => open,
-        pad_rxn1_i => '0',
-        pad_rxp1_i => '0'
-);
-
-end generate gen_use_channel0;
-
-    gen_use_channel1: if(g_gtp_channel = 1) generate
-    
-      GTP_PHY : wr_gtp_phy_spartan6
-      generic map(
-        g_simulation => g_simulation
-        )
-      port map(
-        clk_ref_i          => clk_ref_i,
-        ch1_tx_data_i      => s_gtp_tx_data_i,
-        ch1_tx_k_i         => s_gtp_tx_k_i,
-        ch1_tx_disparity_o => s_gtp_tx_disparity_o,
-        ch1_tx_enc_err_o   => s_gtp_tx_enc_err_o,
-        ch1_rx_data_o      => s_gtp_rx_data_o,
-        ch1_rx_rbclk_o     => s_gtp_rx_rbclk_o,
-        ch1_rx_k_o         => s_gtp_rx_k_o,
-        ch1_rx_enc_err_o   => s_gtp_rx_enc_err_o,
-        ch1_rx_bitslide_o  => s_gtp_rx_bitslide_o,
-        ch1_rst_i          => s_gtp_rst_i,
-        ch1_loopen_i       => s_gtp_loopen_i,
-
-        ch0_tx_data_i      => (others => '0'),
-        ch0_tx_k_i         => '0',
-        ch0_tx_disparity_o => open,
-        ch0_tx_enc_err_o   => open,
-        ch0_rx_data_o      => open,
-        ch0_rx_rbclk_o     => open,
-        ch0_rx_k_o         => open,
-        ch0_rx_enc_err_o   => open,
-        ch0_rx_bitslide_o  => open,
-        ch0_rst_i          => '0',
-        ch0_loopen_i       => '0',
-
-                                        --   Serial I/O
-        pad_txn1_o => pad_txn0_o,
-        pad_txp1_o => pad_txp0_o,
-        pad_rxn1_i => pad_rxn0_i,
-        pad_rxp1_i => pad_rxp0_i,
-        pad_txn0_o => open,
-        pad_txp0_o => open,
-        pad_rxn0_i => '0',
-        pad_rxp0_i => '0'
-);
-
-end generate gen_use_channel1;
-
-    
-end generate gen_gtp;
-
-  gen_TBI : if(g_ep_phy_mode = "TBI") generate
-    softpll_rx_clk <= tbi_rbclk_i;
-    
-  end generate gen_TBI;
-
   -----------------------------------------------------------------------------
   -- Mini-NIC
   -----------------------------------------------------------------------------
@@ -658,70 +524,36 @@ end generate gen_gtp;
       );
 
   mnic_wb_irq_o <= '0';
+lm32_irq_slv(0) <= softpll_irq;
 
-  -----------------------------------------------------------------------------
-  -- ZPU
-  -----------------------------------------------------------------------------
+  LM32_CORE : wrc_lm32
+    generic map (
+      g_addr_width => c_aw,
+      g_num_irqs   => 1)
+    port map (
+      clk_i     => clk_sys_i,
+      rst_n_i   => s_rst_n,
+      irq_i     => lm32_irq_slv,
+      iwb_adr_o => lm32_iwb_o.addr,
+      iwb_dat_o => open,
+      iwb_dat_i => lm32_iwb_i.data,
+      iwb_cyc_o => lm32_iwb_o.cyc,
+      iwb_stb_o => lm32_iwb_o.stb,
+      iwb_ack_i => lm32_iwb_i.ack,
 
-  gen_with_zpu : if(c_USE_LM32 = false) generate
+      dwb_adr_o => lm32_dwb_o.addr,
+      dwb_dat_o => lm32_dwb_o.data,
+      dwb_dat_i => lm32_dwb_i.data,
+      dwb_cyc_o => lm32_dwb_o.cyc,
+      dwb_stb_o => lm32_dwb_o.stb,
+      dwb_sel_o => lm32_dwb_o.sel,
+      dwb_we_o  => lm32_dwb_o.we,
+      dwb_ack_i => lm32_dwb_i.ack);
+
+  lm32_iwb_o.data <= (others => '0');
+  lm32_iwb_o.sel  <= (others => '1');
+  lm32_iwb_o.we   <= '0';
     
-    ZPU_CORE : wrc_zpu
-
-      generic map (
-        g_spStart       => x"0fff8",
-        g_DontCareValue => '0')
-      port map(
-        clk_i => clk_sys_i,
-        rst_i => s_rst,
-
-        --Wishbone Master
-        wb_addr_o => zpu_wb_o.addr(17 downto 0),
-        wb_data_o => zpu_wb_o.data,
-        wb_data_i => zpu_wb_i.data,
-        wb_sel_o  => zpu_wb_o.sel,
-        wb_we_o   => zpu_wb_o.we,
-        wb_cyc_o  => zpu_wb_o.cyc,
-        wb_stb_o  => zpu_wb_o.stb,
-        wb_int_i  => mnic_wb_irq_o,
-        wb_ack_i  => zpu_wb_i.ack
-        );
-
-  end generate gen_with_zpu;
-
-  gen_with_LM32 : if(c_USE_LM32 = true) generate
-
-    lm32_irq_slv(0) <= softpll_irq;
-
-    LM32_CORE : wrc_lm32
-      generic map (
-        g_addr_width => c_aw,
-        g_num_irqs   => 1)
-      port map (
-        clk_i     => clk_sys_i,
-        rst_n_i   => s_rst_n,
-        irq_i     => lm32_irq_slv,
-        iwb_adr_o => lm32_iwb_o.addr,
-        iwb_dat_o => open,
-        iwb_dat_i => lm32_iwb_i.data,
-        iwb_cyc_o => lm32_iwb_o.cyc,
-        iwb_stb_o => lm32_iwb_o.stb,
-        iwb_ack_i => lm32_iwb_i.ack,
-
-        dwb_adr_o => lm32_dwb_o.addr,
-        dwb_dat_o => lm32_dwb_o.data,
-        dwb_dat_i => lm32_dwb_i.data,
-        dwb_cyc_o => lm32_dwb_o.cyc,
-        dwb_stb_o => lm32_dwb_o.stb,
-        dwb_sel_o => lm32_dwb_o.sel,
-        dwb_we_o  => lm32_dwb_o.we,
-        dwb_ack_i => lm32_dwb_i.ack);
-
-    lm32_iwb_o.data <= (others => '0');
-    lm32_iwb_o.sel  <= (others => '1');
-    lm32_iwb_o.we   <= '0';
-    
-  end generate gen_with_LM32;
-
   -----------------------------------------------------------------------------
   -- Dual-port RAM
   -----------------------------------------------------------------------------  
@@ -831,30 +663,18 @@ end generate gen_gtp;
       wb_slaves_o  => cnx_slave_o
       );
 
-  gen_with_lm32_2 : if(c_USE_LM32 = true) generate
     cnx_master_i(0) <= lm32_iwb_o;
     cnx_master_i(2) <= lm32_dwb_o;
     lm32_iwb_i      <= cnx_master_o(0);
     lm32_dwb_i      <= cnx_master_o(2);
-  end generate gen_with_lm32_2;
 
-  gen_with_zpu_2 : if(c_USE_LM32 = false) generate
-    cnx_master_i(0) <= zpu_wb_o;
-    cnx_master_i(2) <= wbm_unused_i;
-    zpu_wb_i        <= cnx_master_o(0);
-  end generate gen_with_zpu_2;
-
-
---  cnx_master_i(0) <= zpu_wb_o;
   cnx_master_i(1) <= ext_wb_o;
---  cnx_master_i(2) <= wbm_unused_i;
   cnx_master_i(3) <= wbm_unused_i;
   cnx_master_i(4) <= wbm_unused_i;
   cnx_master_i(5) <= wbm_unused_i;
   cnx_master_i(6) <= wbm_unused_i;
   cnx_master_i(7) <= wbm_unused_i;
 
---  zpu_wb_i <= cnx_master_o(0);
   ext_wb_i <= cnx_master_o(1);
 
   cnx_slave_i(0)  <= dpram_wb_o;
