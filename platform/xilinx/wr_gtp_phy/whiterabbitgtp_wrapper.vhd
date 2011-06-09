@@ -101,6 +101,9 @@ entity WHITERABBITGTP_WRAPPER is
       TILE0_PLLLKDET0_OUT         : out std_logic;
       TILE0_RESETDONE0_OUT        : out std_logic;
       TILE0_RESETDONE1_OUT        : out std_logic;
+      TILE0_REFCLKOUT0_OUT           : out std_logic;
+      TILE0_REFCLKOUT1_OUT           : out std_logic;
+
                                         ----------------------- Receive Ports - 8b10b Decoder ----------------------
       TILE0_RXCHARISK0_OUT        : out std_logic;
       TILE0_RXCHARISK1_OUT        : out std_logic;
@@ -200,7 +203,9 @@ architecture RTL of WHITERABBITGTP_WRAPPER is
                                                    ------------------------ Loopback and Powerdown Ports ----------------------
         LOOPBACK0_IN          : in  std_logic_vector(2 downto 0);
         LOOPBACK1_IN          : in  std_logic_vector(2 downto 0);
-                                                   --------------------------------- PLL Ports --------------------------------
+        REFCLKOUT0_OUT           : out std_logic;
+        REFCLKOUT1_OUT           : out std_logic;
+                                   --------------------------------- PLL Ports --------------------------------
         CLK00_IN              : in  std_logic;
         CLK01_IN              : in  std_logic;
         GTPRESET0_IN          : in  std_logic;
@@ -328,6 +333,8 @@ begin
       LOOPBACK0_IN          => TILE0_LOOPBACK0_IN,
       LOOPBACK1_IN          => TILE0_LOOPBACK1_IN,
                                         --------------------------------- PLL Ports --------------------------------
+      REFCLKOUT1_OUT => REFCLKOUT1_OUT,
+      REFCLKOUT0_OUT => REFCLKOUT0_OUT,
       CLK00_IN              => TILE0_CLK00_IN,
       CLK01_IN              => TILE0_CLK01_IN,
       GTPRESET0_IN          => TILE0_GTPRESET0_IN,

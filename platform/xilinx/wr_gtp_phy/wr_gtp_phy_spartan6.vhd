@@ -6,7 +6,7 @@
 -- Author     : Tomasz Wlostowski
 -- Company    : CERN BE-CO-HT
 -- Created    : 2010-11-18
--- Last update: 2011-04-13
+-- Last update: 2011-06-09
 -- Platform   : FPGA-generic
 -- Standard   : VHDL'93
 -------------------------------------------------------------------------------
@@ -38,6 +38,7 @@
 -- Date        Version  Author    Description
 -- 2010-11-18  0.4      twlostow  Initial release
 -- 2011-02-07  0.5      twlostow  Verified on Spartan6 GTP (single channel only)
+-- 2011-05-15  0.6      twlostow  Added reference clock output
 -------------------------------------------------------------------------------
 
 library ieee;
@@ -54,17 +55,17 @@ entity wr_gtp_phy_spartan6 is
 
   generic (
     -- set to non-zero value to speed up the simulation by reducing some delays
-    g_simulation : integer := 1
+    g_simulation         : integer := 1;
+    g_ch0_use_refclk_out : boolean := false;
+    g_ch1_use_refclk_out : boolean := false
     );
 
   port (
+    -- Port 0
 
-    -- Reference 125 MHz clock input for the transceiver.
-    clk_ref_i : in std_logic;
-
--- Port 0
-
-    -- TX path, clk_ref_i - synchronous:
+    -- TX path, synchronous to ch0_ref_clk_i
+    ch0_ref_clk_i : in  std_logic;
+    ch0_ref_clk_o : out std_logic;
 
     -- data input (8 bits, not 8b10b-encoded)
     ch0_tx_data_i : in std_logic_vector(7 downto 0);
@@ -107,6 +108,9 @@ entity wr_gtp_phy_spartan6 is
     ch0_loopen_i : in std_logic;
 
 -- Port 1
+    ch1_ref_clk_i : in std_logic;
+
+    ch1_ref_clk_o      : out std_logic;
     ch1_tx_data_i      : in  std_logic_vector(7 downto 0) := "00000000";
     ch1_tx_k_i         : in  std_logic                    := '0';
     ch1_tx_disparity_o : out std_logic;
@@ -155,6 +159,8 @@ architecture rtl of wr_gtp_phy_spartan6 is
     port (
       LOOPBACK0_IN          : in  std_logic_vector(2 downto 0);
       LOOPBACK1_IN          : in  std_logic_vector(2 downto 0);
+      REFCLKOUT0_OUT        : out std_logic;
+      REFCLKOUT1_OUT        : out std_logic;
       CLK00_IN              : in  std_logic;
       CLK01_IN              : in  std_logic;
       GTPRESET0_IN          : in  std_logic;
@@ -316,22 +322,27 @@ architecture rtl of wr_gtp_phy_spartan6 is
   signal ch1_gtp_clkout_int                                : std_logic_vector(1 downto 0);
   signal ch1_rx_enable_output, ch1_rx_enable_output_synced : std_logic;
 
-  signal ch0_rst_synced : std_logic;
-  signal ch0_rst_d0 : std_logic;
-  signal ch0_reset_counter  : unsigned(9 downto 0);
+  signal ch0_rst_synced    : std_logic;
+  signal ch0_rst_d0        : std_logic;
+  signal ch0_reset_counter : unsigned(9 downto 0);
 
-  signal ch1_rst_synced : std_logic;
-  signal ch1_rst_d0 : std_logic;
-  signal ch1_reset_counter  : unsigned(9 downto 0);
+  signal ch1_rst_synced    : std_logic;
+  signal ch1_rst_d0        : std_logic;
+  signal ch1_reset_counter : unsigned(9 downto 0);
+
+  signal ch0_ref_clk         : std_logic;
+  signal ch1_ref_clk         : std_logic;
+  signal ch0_ref_clk_out_buf : std_logic;
+  signal ch1_ref_clk_out_buf : std_logic;
   
 begin  -- rtl
 
 
-  p_gen_reset_ch0 : process(clk_ref_i)
+  p_gen_reset_ch0 : process(ch0_ref_clk)
   begin
-    if rising_edge(clk_ref_i) then
+    if rising_edge(ch0_ref_clk) then
 
-      ch0_rst_d0 <= ch0_rst_i;
+      ch0_rst_d0     <= ch0_rst_i;
       ch0_rst_synced <= ch0_rst_d0;
 
       if(ch0_rst_synced = '1') then
@@ -345,11 +356,11 @@ begin  -- rtl
   end process;
 
 
-  p_gen_reset_ch1 : process(clk_ref_i)
+  p_gen_reset_ch1 : process(ch1_ref_clk)
   begin
-    if rising_edge(clk_ref_i) then
+    if rising_edge(ch1_ref_clk) then
 
-      ch1_rst_d0 <= ch1_rst_i;
+      ch1_rst_d0     <= ch1_rst_i;
       ch1_rst_synced <= ch1_rst_d0;
 
       if(ch1_rst_synced = '1') then
@@ -362,16 +373,32 @@ begin  -- rtl
     end if;
   end process;
 
-  
+
   ch0_gtp_reset <= ch0_rst_synced or std_logic(not ch0_reset_counter(ch0_reset_counter'left));
   ch1_gtp_reset <= ch1_rst_synced or std_logic(not ch1_reset_counter(ch1_reset_counter'left));
 
   ch0_rx_rec_clk_pad <= ch0_gtp_clkout_int(1);
   ch1_rx_rec_clk_pad <= ch1_gtp_clkout_int(1);
 
+  gen1 : if(g_ch0_use_refclk_out) generate
+    U_bufg_ch0_ref_clk : BUFG port map (
+      I => ch0_ref_clk_out_buf,
+      O => ch0_ref_clk);
+  end generate gen1;
 
+  gen2 : if(g_ch1_use_refclk_out) generate
+    U_bufg_ch1_ref_clk : BUFG port map (
+      I => ch1_ref_clk_out_buf,
+      O => ch1_ref_clk);
+  end generate gen2;
 
-  
+  gen3: if(not g_ch0_use_refclk_out) generate
+    ch0_ref_clk <= ch0_ref_clk_i;
+  end generate gen3;
+
+  gen4: if(not g_ch1_use_refclk_out) generate
+    ch1_ref_clk <= ch1_ref_clk_i;
+  end generate gen4;
 
   U_GTP_TILE_INST : WHITERABBITGTP_WRAPPER_TILE
     generic map
@@ -391,45 +418,53 @@ begin  -- rtl
     port map
     (
       ------------------------ Loopback and Powerdown Ports ----------------------
-      LOOPBACK0_IN          => ch0_gtp_loopback,
-      LOOPBACK1_IN          => ch1_gtp_loopback,
+      LOOPBACK0_IN => ch0_gtp_loopback,
+      LOOPBACK1_IN => ch1_gtp_loopback,
       --------------------------------- PLL Ports --------------------------------
-      CLK00_IN              => clk_ref_i,
-      CLK01_IN              => clk_ref_i,
-      GTPRESET0_IN          => ch0_gtp_reset,
-      GTPRESET1_IN          => ch1_gtp_reset,
-      PLLLKDET0_OUT         => ch0_gtp_pll_lockdet,
-      PLLLKDET1_OUT         => ch1_gtp_pll_lockdet,
-      RESETDONE0_OUT        => ch0_gtp_reset_done,
-      RESETDONE1_OUT        => ch1_gtp_reset_done,
+
+      REFCLKOUT0_OUT => ch0_ref_clk_out_buf,
+      REFCLKOUT1_OUT => ch1_ref_clk_out_buf,
+      CLK00_IN       => ch0_ref_clk_i,
+      CLK01_IN       => ch1_ref_clk_i,
+      GTPRESET0_IN   => ch0_gtp_reset,
+      GTPRESET1_IN   => ch1_gtp_reset,
+      PLLLKDET0_OUT  => ch0_gtp_pll_lockdet,
+      PLLLKDET1_OUT  => ch1_gtp_pll_lockdet,
+      RESETDONE0_OUT => ch0_gtp_reset_done,
+      RESETDONE1_OUT => ch1_gtp_reset_done,
+
       ----------------------- Receive Ports - 8b10b Decoder ----------------------
-      RXCHARISK0_OUT        => ch0_rx_k_int,
-      RXCHARISK1_OUT        => ch1_rx_k_int,
-      RXDISPERR0_OUT        => ch0_rx_disperr,
-      RXDISPERR1_OUT        => ch1_rx_disperr,
-      RXNOTINTABLE0_OUT     => ch0_rx_invcode,
-      RXNOTINTABLE1_OUT     => ch1_rx_invcode,
+      RXCHARISK0_OUT    => ch0_rx_k_int,
+      RXCHARISK1_OUT    => ch1_rx_k_int,
+      RXDISPERR0_OUT    => ch0_rx_disperr,
+      RXDISPERR1_OUT    => ch1_rx_disperr,
+      RXNOTINTABLE0_OUT => ch0_rx_invcode,
+      RXNOTINTABLE1_OUT => ch1_rx_invcode,
+
       --------------- Receive Ports - Comma Detection and Alignment --------------
-      RXBYTEISALIGNED0_OUT  => ch0_rx_byte_is_aligned,
-      RXBYTEISALIGNED1_OUT  => ch1_rx_byte_is_aligned,
-      RXCOMMADET0_OUT       => ch0_rx_comma_det,
-      RXCOMMADET1_OUT       => ch1_rx_comma_det,
-      RXSLIDE0_IN           => ch0_rx_slide,
-      RXSLIDE1_IN           => ch1_rx_slide,
+      RXBYTEISALIGNED0_OUT => ch0_rx_byte_is_aligned,
+      RXBYTEISALIGNED1_OUT => ch1_rx_byte_is_aligned,
+      RXCOMMADET0_OUT      => ch0_rx_comma_det,
+      RXCOMMADET1_OUT      => ch1_rx_comma_det,
+      RXSLIDE0_IN          => ch0_rx_slide,
+      RXSLIDE1_IN          => ch1_rx_slide,
+
       ------------------- Receive Ports - RX Data Path interface -----------------
-      RXDATA0_OUT           => ch0_rx_data_int,
-      RXDATA1_OUT           => ch1_rx_data_int,
-      RXUSRCLK0_IN          => ch0_rx_rec_clk,
-      RXUSRCLK1_IN          => ch1_rx_rec_clk,
-      RXUSRCLK20_IN         => ch0_rx_rec_clk,
-      RXUSRCLK21_IN         => ch1_rx_rec_clk,
+      RXDATA0_OUT   => ch0_rx_data_int,
+      RXDATA1_OUT   => ch1_rx_data_int,
+      RXUSRCLK0_IN  => ch0_rx_rec_clk,
+      RXUSRCLK1_IN  => ch1_rx_rec_clk,
+      RXUSRCLK20_IN => ch0_rx_rec_clk,
+      RXUSRCLK21_IN => ch1_rx_rec_clk,
+
       ------- Receive Ports - RX Driver,OOB signalling,Coupling and Eq.,CDR ------
-      RXCDRRESET0_IN        => ch0_rx_cdr_rst,
-      RXCDRRESET1_IN        => ch1_rx_cdr_rst,
-      RXN0_IN               => pad_rxn0_i,
-      RXN1_IN               => pad_rxn1_i,
-      RXP0_IN               => pad_rxp0_i,
-      RXP1_IN               => pad_rxp1_i,
+      RXCDRRESET0_IN => ch0_rx_cdr_rst,
+      RXCDRRESET1_IN => ch1_rx_cdr_rst,
+      RXN0_IN        => pad_rxn0_i,
+      RXN1_IN        => pad_rxn1_i,
+      RXP0_IN        => pad_rxp0_i,
+      RXP1_IN        => pad_rxp1_i,
+
       ---------------------------- TX/RX Datapath Ports --------------------------
       GTPCLKFBEAST_OUT      => open,
       GTPCLKFBWEST_OUT      => open,
@@ -448,10 +483,10 @@ begin  -- rtl
       ------------------ Transmit Ports - TX Data Path interface -----------------
       TXDATA0_IN            => ch0_tx_data_i,
       TXDATA1_IN            => ch1_tx_data_i,
-      TXUSRCLK0_IN          => clk_ref_i,
-      TXUSRCLK1_IN          => clk_ref_i,
-      TXUSRCLK20_IN         => clk_ref_i,
-      TXUSRCLK21_IN         => clk_ref_i,
+      TXUSRCLK0_IN          => ch0_ref_clk,
+      TXUSRCLK1_IN          => ch1_ref_clk,
+      TXUSRCLK20_IN         => ch0_ref_clk,
+      TXUSRCLK21_IN         => ch1_ref_clk,
       --------------- Transmit Ports - TX Driver and OOB signalling --------------
       TXN0_OUT              => pad_txn0_o,
       TXN1_OUT              => pad_txn1_o,
@@ -498,7 +533,7 @@ begin  -- rtl
       g_simulation => g_simulation) 
     port map (
       gtp_rst_i                   => ch0_gtp_reset,
-      gtp_tx_clk_i                => clk_ref_i,
+      gtp_tx_clk_i                => ch0_ref_clk,
       gtp_tx_en_pma_phase_align_o => ch0_tx_en_pma_phase_align,
       gtp_tx_pma_set_phase_o      => ch0_tx_pma_set_phase,
       align_en_i                  => ch0_gtp_locked,
@@ -509,7 +544,7 @@ begin  -- rtl
       g_simulation => g_simulation) 
     port map (
       gtp_rst_i                   => ch1_gtp_reset,
-      gtp_tx_clk_i                => clk_ref_i,
+      gtp_tx_clk_i                => ch1_ref_clk,
       gtp_tx_en_pma_phase_align_o => ch1_tx_en_pma_phase_align,
       gtp_tx_pma_set_phase_o      => ch1_tx_pma_set_phase,
       align_en_i                  => ch1_gtp_locked,
@@ -620,4 +655,8 @@ begin  -- rtl
 
   ch1_rx_rbclk_o     <= ch1_rx_rec_clk;
   ch1_tx_disparity_o <= ch1_tx_rundisp_vec(0);
+
+  ch0_ref_clk_o <= ch0_ref_clk;
+  ch1_ref_clk_o <= ch1_ref_clk;
+  
 end rtl;

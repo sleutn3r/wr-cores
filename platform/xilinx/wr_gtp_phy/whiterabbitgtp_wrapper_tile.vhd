@@ -2,28 +2,30 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 library UNISIM;
-use UNISIM.VCOMPONENTS.ALL;
+use UNISIM.VCOMPONENTS.all;
 
 --***************************** Entity Declaration ****************************
 
 entity WHITERABBITGTP_WRAPPER_TILE is
-generic
-(
-    TILE_SIM_GTPRESET_SPEEDUP    : integer   := 0; -- Set to 1 to speed up sim reset
-    TILE_CLK25_DIVIDER_0         : integer   := 4;
-    TILE_CLK25_DIVIDER_1         : integer   := 4;
-    TILE_PLL_DIVSEL_FB_0         : integer   := 5;
-    TILE_PLL_DIVSEL_FB_1         : integer   := 5;
-    TILE_PLL_DIVSEL_REF_0        : integer   := 2;
-    TILE_PLL_DIVSEL_REF_1        : integer   := 2;
-    TILE_PLL_SOURCE_0            : string    := "PLL0";
-    TILE_PLL_SOURCE_1 : string := "PLL1"
+  generic
+    (
+      TILE_SIM_GTPRESET_SPEEDUP : integer := 0;  -- Set to 1 to speed up sim reset
+      TILE_CLK25_DIVIDER_0      : integer := 4;
+      TILE_CLK25_DIVIDER_1      : integer := 4;
+      TILE_PLL_DIVSEL_FB_0      : integer := 5;
+      TILE_PLL_DIVSEL_FB_1      : integer := 5;
+      TILE_PLL_DIVSEL_REF_0     : integer := 2;
+      TILE_PLL_DIVSEL_REF_1     : integer := 2;
+      TILE_PLL_SOURCE_0         : string  := "PLL0";
+      TILE_PLL_SOURCE_1         : string  := "PLL1"
       );
   port
     (
       ------------------------ Loopback and Powerdown Ports ----------------------
       LOOPBACK0_IN         : in  std_logic_vector(2 downto 0);
       LOOPBACK1_IN         : in  std_logic_vector(2 downto 0);
+      REFCLKOUT0_OUT           : out std_logic;
+      REFCLKOUT1_OUT           : out std_logic;
       --------------------------------- PLL Ports --------------------------------
       CLK00_IN             : in  std_logic;
       CLK01_IN             : in  std_logic;
@@ -464,8 +466,8 @@ begin
       PLLLKDETEN1               => tied_to_vcc_i,
       PLLPOWERDOWN0             => tied_to_ground_i,
       PLLPOWERDOWN1             => tied_to_ground_i,
-      REFCLKOUT0                => open,
-      REFCLKOUT1                => open,
+      REFCLKOUT0                => REFCLKOUT0_OUT,
+      REFCLKOUT1                => REFCLKOUT1_OUT,
       REFCLKPLL0                => open,
       REFCLKPLL1                => open,
       REFCLKPWRDNB0             => tied_to_vcc_i,
