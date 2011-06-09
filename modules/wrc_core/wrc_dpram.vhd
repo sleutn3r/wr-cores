@@ -6,7 +6,7 @@
 -- Author     : Grzegorz Daniluk
 -- Company    : Elproma
 -- Created    : 2011-02-15
--- Last update: 2011-06-07
+-- Last update: 2011-06-09
 -- Platform   : FPGA-generics
 -- Standard   : VHDL
 -------------------------------------------------------------------------------
@@ -19,6 +19,7 @@
 -- Revisions  :
 -- Date        Version  Author          Description
 -- 2011-02-15  1.0      greg.d          Created
+-- 2011-06-09  1.01     twlostow        Removed unnecessary generics
 -------------------------------------------------------------------------------
 
 library ieee;
@@ -29,12 +30,8 @@ use work.genram_pkg.all;
 
 entity wrc_dpram is
   generic(
-    g_data_width               : natural := 32;
     g_size                     : natural := 16384;  -- 16 * 32bit = 64kB
-    g_with_byte_enable         : boolean := true;
-    g_addr_conflict_resolution : string  := "read_first";
-    g_init_file                : string  := "";
-    g_dual_clock               : boolean := false
+    g_init_file                : string  := ""
     );
   port(
     clk_i   : in std_logic;
@@ -42,9 +39,9 @@ entity wrc_dpram is
 
     --PORT A (Wishbone)
     wb_addr_i  : in    std_logic_vector(f_log2_size(g_size)-1 downto 0);
-    wb_data_i  : in    std_logic_vector(g_data_width-1 downto 0);
-    wb_data_o  : out   std_logic_vector(g_data_width-1 downto 0);
-    wb_sel_i   : in    std_logic_vector(g_data_width/8-1 downto 0);
+    wb_data_i  : in    std_logic_vector(31 downto 0);
+    wb_data_o  : out   std_logic_vector(31 downto 0);
+    wb_sel_i   : in    std_logic_vector(3 downto 0);
     wb_cyc_i   : in    std_logic;
     wb_stb_i   : in    std_logic;
     wb_we_i    : in    std_logic;
@@ -69,12 +66,12 @@ begin
   DPRAM : generic_dpram
     generic map(
       -- standard parameters
-      g_data_width               => g_data_width,
+      g_data_width               => 32,
       g_size                     => g_size,
-      g_with_byte_enable         => g_with_byte_enable,
-      g_addr_conflict_resolution => g_addr_conflict_resolution,
+      g_with_byte_enable         => true,
+      g_addr_conflict_resolution => "read_first",
     --  g_init_file                => g_init_file,
-      g_dual_clock               => g_dual_clock
+      g_dual_clock               => false
       )
     port map(
       rst_n_i => rst_n_i,

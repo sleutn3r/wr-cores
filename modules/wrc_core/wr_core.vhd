@@ -33,6 +33,8 @@ use ieee.std_logic_1164.all;
 library work;
 use work.wrcore_pkg.all;
 use work.wbconmax_pkg.all;
+use work.genram_pkg.all;
+
 
 entity wr_core is
   generic(
@@ -55,6 +57,7 @@ entity wr_core is
     clk_ref_i : in std_logic;
 
     rst_n_i : in std_logic;
+    
 
     -----------------------------------------
     --PPS gen
@@ -74,8 +77,8 @@ entity wr_core is
     -- PHY I/f
     phy_ref_clk_i : in std_logic;
 
-    phy_tx_data_i      : out  std_logic_vector(7 downto 0);
-    phy_tx_k_i         : out  std_logic;
+    phy_tx_data_o      : out  std_logic_vector(7 downto 0);
+    phy_tx_k_o         : out  std_logic;
     phy_tx_disparity_i : in std_logic;
     phy_tx_enc_err_i   : in std_logic;
 
@@ -87,7 +90,6 @@ entity wr_core is
 
     phy_rst_o    : out std_logic;
     phy_loopen_o : out std_logic;
-
     
     -----------------------------------------
     --GPIO
@@ -188,11 +190,13 @@ architecture struct of wr_core is
   signal s_gtp_rst_i          : std_logic;
   signal s_gtp_loopen_i       : std_logic;
 
+  constant c_mnic_memsize_log2 : integer := f_log2_size(g_dpram_size);
+  
   -----------------------------------------------------------------------------
   --Mini-NIC
   -----------------------------------------------------------------------------
   signal s_mnic_mem_data_o : std_logic_vector(31 downto 0);
-  signal s_mnic_mem_addr_o : std_logic_vector(g_mnic_memsize_log2-1 downto 0);
+  signal s_mnic_mem_addr_o : std_logic_vector(c_mnic_memsize_log2-1 downto 0);
   signal s_mnic_mem_data_i : std_logic_vector(31 downto 0);
   signal s_mnic_mem_wr_o   : std_logic;
 
@@ -465,8 +469,8 @@ begin
   -----------------------------------------------------------------------------
   MINIC : wr_mini_nic
     generic map(
-      g_memsize_log2         => g_mnic_memsize_log2,
-      g_buffer_little_endian => g_mnic_buf_little_endian
+      g_memsize_log2         => c_mnic_memsize_log2,
+      g_buffer_little_endian => false
       )
     port map(
       clk_sys_i        => clk_sys_i,
@@ -559,11 +563,8 @@ lm32_irq_slv(0) <= softpll_irq;
   -----------------------------------------------------------------------------  
   DPRAM : wrc_dpram
     generic map(
-      g_data_width       => 32,
       g_size             => g_dpram_size,
-      g_with_byte_enable => true,
-      g_init_file        => g_dpram_initf,
-      g_dual_clock       => false
+      g_init_file        => g_dpram_initf
       )
     port map(
       clk_i   => clk_sys_i,
@@ -651,7 +652,7 @@ lm32_irq_slv(0) <= softpll_irq;
 
   WB_CON : wb_conmax_top
     generic map(
-      g_rf_addr => g_wbicon_rf_addr
+      g_rf_addr => 15
       )
     port map(
       clk_i => clk_sys_i,

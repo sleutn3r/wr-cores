@@ -125,50 +125,6 @@ package wrcore_pkg is
   );
   end component;
   
-  -----------------------------------------------------------------------------
-  --GTP PHY
-  -----------------------------------------------------------------------------
-  component wr_gtp_phy_spartan6 is
-  generic (
-    g_simulation : integer := 1
-  );
-  port (
-    clk_ref_i : in std_logic;
-    ch0_tx_data_i      : in  std_logic_vector(7 downto 0);
-    ch0_tx_k_i         : in  std_logic;
-    ch0_tx_disparity_o : out std_logic;
-    ch0_tx_enc_err_o   : out std_logic;
-    ch0_rx_data_o      : out std_logic_vector(7 downto 0);
-    ch0_rx_rbclk_o     : out std_logic;
-    ch0_rx_k_o         : out std_logic;
-    ch0_rx_enc_err_o   : out std_logic;
-    ch0_rx_bitslide_o  : out std_logic_vector(3 downto 0);
-    ch0_rst_i          : in std_logic;
-    ch0_loopen_i       : in std_logic;
-
-    ch1_tx_data_i      : in  std_logic_vector(7 downto 0);
-    ch1_tx_k_i         : in  std_logic;
-    ch1_tx_disparity_o : out std_logic;
-    ch1_tx_enc_err_o   : out std_logic;
-    ch1_rx_data_o      : out std_logic_vector(7 downto 0);
-    ch1_rx_rbclk_o     : out std_logic;
-    ch1_rx_k_o         : out std_logic;
-    ch1_rx_enc_err_o   : out std_logic;
-    ch1_rx_bitslide_o  : out std_logic_vector(3 downto 0);
-    ch1_rst_i          : in std_logic;
-    ch1_loopen_i       : in std_logic;
-    
-    -- Serial I/O
-    pad_txn0_o : out std_logic;
-    pad_txp0_o : out std_logic;
-    pad_rxn0_i : in std_logic;
-    pad_rxp0_i : in std_logic;
-    pad_txn1_o : out std_logic;
-    pad_txp1_o : out std_logic;
-    pad_rxn1_i : in std_logic;
-    pad_rxp1_i : in std_logic
-  );
-  end component;
   
   -----------------------------------------------------------------------------
   --Mini NIC
@@ -225,38 +181,13 @@ package wrcore_pkg is
   );
   end component;
 
-  constant maxAddrBitIncIO : integer := 10;
-
-  component wrc_zpu
-    generic (
-      g_gen_trace     : boolean := false;
-      g_DontCareValue : std_logic := 'X';
-      g_spStart       : std_logic_vector(maxAddrBitIncIO downto 0));
-    port (
-      clk_i     : in  std_logic;
-      rst_i     : in  std_logic;
-      wb_addr_o : out std_logic_vector(c_aw-1 downto 0);
-      wb_data_o : out std_logic_vector(c_dw-1 downto 0);
-      wb_data_i : in  std_logic_vector(c_dw-1 downto 0);
-      wb_sel_o  : out std_logic_vector(c_sw-1 downto 0);
-      wb_we_o   : out std_logic;
-      wb_cyc_o  : out std_logic;
-      wb_stb_o  : out std_logic;
-      wb_int_i  : in  std_logic;
-      wb_ack_i  : in  std_logic);
-  end component;
-  
   -----------------------------------------------------------------------------
   --Dual-port RAM
   -----------------------------------------------------------------------------
   component wrc_dpram is
   generic(
-    g_data_width  : natural := 32;
     g_size        : natural := 16;  -- 16 * 32bit = 64kB
-    g_with_byte_enable  : boolean := true;
-    g_addr_conflict_resolution : string := "read_first";
-    g_init_file   : string  := "";
-    g_dual_clock  : boolean := false
+    g_init_file   : string  := ""
   );
   port(
     clk_i      : in std_logic;
@@ -264,9 +195,9 @@ package wrcore_pkg is
 
     --PORT A (Wishbone)
     wb_addr_i  : in  std_logic_vector(f_log2_size(g_size)-1 downto 0); 
-    wb_data_i  : in  std_logic_vector(g_data_width-1 downto 0); 
-    wb_data_o  : out std_logic_vector(g_data_width-1 downto 0); 
-    wb_sel_i   : in  std_logic_vector(g_data_width/8-1 downto 0); 
+    wb_data_i  : in  std_logic_vector(31 downto 0); 
+    wb_data_o  : out std_logic_vector(31 downto 0); 
+    wb_sel_i   : in  std_logic_vector(3 downto 0); 
     wb_cyc_i   : in  std_logic;
     wb_stb_i   : in  std_logic;
     wb_we_i    : in  std_logic;
