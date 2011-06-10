@@ -6,7 +6,7 @@
 -- Author     : Tomasz Wlostowski
 -- Company    : CERN BE-CO-HT
 -- Created    : 2010-11-18
--- Last update: 2011-06-09
+-- Last update: 2011-06-10
 -- Platform   : FPGA-generic
 -- Standard   : VHDL'93
 -------------------------------------------------------------------------------
@@ -381,22 +381,42 @@ begin  -- rtl
   ch1_rx_rec_clk_pad <= ch1_gtp_clkout_int(1);
 
   gen1 : if(g_ch0_use_refclk_out) generate
-    U_bufg_ch0_ref_clk : BUFG port map (
-      I => ch0_ref_clk_out_buf,
-      O => ch0_ref_clk);
+
+    refbuf_ch0 : BUFIO2
+      port map (
+        DIVCLK       => ch0_ref_clk_out_buf,
+        IOCLK        => open,
+        SERDESSTROBE => open,
+        I            => ch0_gtp_clkout_int(0));
+
+    refbufg_ch0: BUFG
+      port map (
+        I => ch0_ref_clk_out_buf,
+        O => ch0_ref_clk);
   end generate gen1;
 
   gen2 : if(g_ch1_use_refclk_out) generate
-    U_bufg_ch1_ref_clk : BUFG port map (
-      I => ch1_ref_clk_out_buf,
-      O => ch1_ref_clk);
+
+    refbuf_ch1 : BUFIO2
+      port map (
+        DIVCLK       => ch1_ref_clk_out_buf,
+        IOCLK        => open,
+        SERDESSTROBE => open,
+        I            => ch1_gtp_clkout_int(0));
+
+    refbufg_ch1: BUFG
+      port map (
+        I => ch1_ref_clk_out_buf,
+        O => ch1_ref_clk);
   end generate gen2;
 
-  gen3: if(not g_ch0_use_refclk_out) generate
+    
+
+  gen3 : if(not g_ch0_use_refclk_out) generate
     ch0_ref_clk <= ch0_ref_clk_i;
   end generate gen3;
 
-  gen4: if(not g_ch1_use_refclk_out) generate
+  gen4 : if(not g_ch1_use_refclk_out) generate
     ch1_ref_clk <= ch1_ref_clk_i;
   end generate gen4;
 
@@ -422,8 +442,8 @@ begin  -- rtl
       LOOPBACK1_IN => ch1_gtp_loopback,
       --------------------------------- PLL Ports --------------------------------
 
-      REFCLKOUT0_OUT => ch0_ref_clk_out_buf,
-      REFCLKOUT1_OUT => ch1_ref_clk_out_buf,
+      REFCLKOUT0_OUT => open,
+      REFCLKOUT1_OUT => open,
       CLK00_IN       => ch0_ref_clk_i,
       CLK01_IN       => ch1_ref_clk_i,
       GTPRESET0_IN   => ch0_gtp_reset,
