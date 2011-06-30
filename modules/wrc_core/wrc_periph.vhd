@@ -6,7 +6,7 @@
 -- Author     : Grzegorz Daniluk
 -- Company    : Elproma
 -- Created    : 2011-04-04
--- Last update: 2011-06-07
+-- Last update: 2011-06-20
 -- Platform   : FPGA-generics
 -- Standard   : VHDL
 -------------------------------------------------------------------------------
@@ -144,7 +144,7 @@ architecture struct of wrc_periph is
       wb_cyc_i   : in    std_logic;
       wb_stb_i   : in    std_logic;
       wb_we_i    : in    std_logic;
-      wb_adr_i   : in    std_logic_vector(2 downto 0);
+      wb_adr_i   : in    std_logic_vector(5 downto 0);
       wb_dat_i   : in    std_logic_vector(31 downto 0);
       wb_dat_o   : out   std_logic_vector(31 downto 0);
       wb_ack_o   : out   std_logic;
@@ -159,16 +159,66 @@ architecture struct of wrc_periph is
   signal wb_stbs_i  : std_logic_vector(3 downto 0);
   signal wb_acks_o  : std_logic_vector(3 downto 0);
   signal wb_dats_o  : t_wbdata;
+  component chipscope_ila
+    port (
+      CONTROL : inout std_logic_vector(35 downto 0);
+      CLK     : in    std_logic;
+      TRIG0   : in    std_logic_vector(31 downto 0);
+      TRIG1   : in    std_logic_vector(31 downto 0);
+      TRIG2   : in    std_logic_vector(31 downto 0);
+      TRIG3   : in    std_logic_vector(31 downto 0));
+  end component;
 
+  component chipscope_icon
+    port (
+      CONTROL0 : inout std_logic_vector (35 downto 0));
+  end component;
+
+  signal CONTROL : std_logic_vector(35 downto 0);
+  signal CLK     : std_logic;
+  signal TRIG0   : std_logic_vector(31 downto 0);
+  signal TRIG1   : std_logic_vector(31 downto 0);
+  signal TRIG2   : std_logic_vector(31 downto 0);
+  signal TRIG3   : std_logic_vector(31 downto 0);
+
+  signal wb_ack_int : std_logic;
+  
 begin
 
+  chipscope_ila_1 : chipscope_ila
+    port map (
+      CONTROL => CONTROL,
+      CLK     => clk_sys_i,
+      TRIG0   => TRIG0,
+      TRIG1   => TRIG1,
+      TRIG2   => TRIG2,
+      TRIG3   => TRIG3);
+
+  chipscope_icon_1 : chipscope_icon
+    port map (
+      CONTROL0 => CONTROL);
+
+
+ TRIG3(11 downto 0)  <= wb_addr_i(11 downto 0);
+  TRIG3(21 downto 12) <= (others => '0');
+  TRIG3(31 downto 28) <= wb_sel_i;
+  TRIG3(22)           <= wb_cyc_i;
+  TRIG3(23)           <= wb_stb_i;
+  TRIG3(24)           <= wb_we_i;
+  TRIG3(25)           <= wb_ack_int;
+  TRIG0               <= wb_data_i;
+  TRIG2(3 downto 0) <= wb_cycs_i;
+  TRIG2(7 downto 4) <= wb_acks_o;
+  
+  wb_ack_o <= wb_ack_int;
+  
   GENWB: 
   for I in 0 to 3 generate
     wb_cycs_i(I) <= wb_cyc_i and wb_addr_i(8+I);
     wb_stbs_i(I) <= wb_stb_i and wb_addr_i(8+I);
   end generate;
 
-  wb_ack_o  <= wb_acks_o(0) when (wb_addr_i(11 downto 8)="0001") else
+  wb_ack_int  <= wb_acks_o(0) when (wb_addr_i(11 downto 8)="0001") else
                wb_acks_o(1) when (wb_addr_i(11 downto 8)="0010") else
                wb_acks_o(2) when (wb_addr_i(11 downto 8)="0100") else
                wb_acks_o(3) when (wb_addr_i(11 downto 8)="1000") else
@@ -190,9 +240,9 @@ begin
       
       wb_sel_i    => wb_sel_i(0),
       wb_cyc_i    => wb_cycs_i(0),
-      wb_stb_i    => wb_stbs_i(0),
+      wb_stb_i    => wb_stb_i,
       wb_we_i     => wb_we_i,
-      wb_adr_i   => wb_addr_i(2 downto 0), 
+      wb_adr_i   => wb_addr_i(5 downto 0), 
       wb_dat_i   => wb_data_i,
       wb_dat_o   => wb_dats_o(0), 
       wb_ack_o    => wb_acks_o(0),
@@ -213,7 +263,7 @@ begin
         wb_data_o  => wb_dats_o(1),
         wb_cyc_i   => wb_cycs_i(1),
         wb_sel_i   => wb_sel_i,
-        wb_stb_i   => wb_stbs_i(1),
+        wb_stb_i   => wb_stb_i,
         wb_we_i    => wb_we_i,
         wb_ack_o   => wb_acks_o(1),
 
@@ -232,7 +282,7 @@ begin
         wb_data_o  => wb_dats_o(1),
         wb_cyc_i   => wb_cycs_i(1),
         wb_sel_i   => wb_sel_i,
-        wb_stb_i   => wb_stbs_i(1),  
+        wb_stb_i   => wb_stb_i,  
         wb_we_i    => wb_we_i,       
         wb_ack_o   => wb_acks_o(1)  
       );
@@ -251,7 +301,7 @@ begin
       wb_data_o  => wb_dats_o(2),
       wb_cyc_i   => wb_cycs_i(2),
       wb_sel_i   => wb_sel_i,
-      wb_stb_i   => wb_stbs_i(2),
+      wb_stb_i   => wb_stb_i,
       wb_we_i    => wb_we_i,
       wb_ack_o   => wb_acks_o(2)
     );

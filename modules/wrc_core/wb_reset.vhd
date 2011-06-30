@@ -6,7 +6,7 @@
 -- Author     : Grzegorz Daniluk
 -- Company    : Elproma
 -- Created    : 2011-04-04
--- Last update: 2011-04-04
+-- Last update: 2011-06-16
 -- Platform   : FPGA-generics
 -- Standard   : VHDL
 -------------------------------------------------------------------------------
@@ -39,50 +39,58 @@ entity wb_reset is
     wb_cyc_i  : in  std_logic;
     wb_we_i   : in  std_logic;
     wb_ack_o  : out std_logic
-  );
+    );
 end wb_reset;
 
 architecture behaviour of wb_reset is
 
-  constant c_RST_REG  : std_logic_vector(1 downto 0) := "00";
+  constant c_RST_REG : std_logic_vector(1 downto 0) := "00";
 
   signal rst_reg : std_logic_vector(7 downto 0);
-  signal grst_n  : std_logic;
+  signal grst_n  : std_logic_vector(20 downto 0);
+  signal ack_int : std_logic;
+  
 begin
 
   process(clk_i, rst_n_i)
   begin
-    if( rst_n_i = '0') then
-      wb_ack_o <= '0';
-      rst_reg <= (others=>'0');
-    elsif( rising_edge(clk_i) ) then
-      if(wb_stb_i='1' and wb_cyc_i='1' and wb_we_i='1') then
-        case wb_addr_i is
-          when c_RST_REG =>
-            rst_reg <= wb_data_i(7 downto 0);
-          when others =>
-        end case;
-        wb_ack_o <= '1';
+    if(rst_n_i = '0') then
+      ack_int <= '0';
+      rst_reg <= (others => '0');
+    elsif(rising_edge(clk_i)) then
+      if(wb_stb_i = '1' and wb_cyc_i = '1' and ack_int = '0') then
+        if(wb_we_i = '1') then
+          case wb_addr_i is
+            when c_RST_REG =>
+              rst_reg <= wb_data_i(7 downto 0);
+            when others =>
+          end case;
+        end if;
+        ack_int <= '1';
       else
-        wb_ack_o <= '0';
+        ack_int <= '0';
       end if;
     end if;
   end process;
 
+  wb_ack_o <= ack_int;
+
   process(clk_i, rst_n_i)
-    variable cnt  : integer range 1 to 5;
   begin
     if(rst_n_i = '0') then
-      grst_n <= '1';
-    elsif( rising_edge(clk_i) ) then
-      if(rst_reg(0) = '1') then
-        grst_n <= '0';
-      else
-        grst_n <= '1';
-      end if;
-    end if; 
-  end process;
+      grst_n <= (others => '1');
+    elsif(rising_edge(clk_i)) then
 
-  genrst_n_o <= grst_n;
-  
+      if(rst_reg(0) = '1') then
+        grst_n(0) <= '0';
+      else
+        grst_n(0) <= '1';
+      end if;
+
+      grst_n(grst_n'left downto 1) <= grst_n(grst_n'left-1 downto 0);
+      
+    end if;
+  end process;
+  genrst_n_o <= grst_n(grst_n'left);
+
 end behaviour;
