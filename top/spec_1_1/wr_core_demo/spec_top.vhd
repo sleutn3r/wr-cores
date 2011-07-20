@@ -4,6 +4,7 @@ use IEEE.STD_LOGIC_1164.all;
 use IEEE.NUMERIC_STD.all;
 
 use work.gn4124_core_pkg.all;
+use work.gencores_pkg.all;
 use work.wrcore_pkg.all;
 use work.wbconmax_pkg.all;
 
@@ -73,17 +74,21 @@ entity spec_top is
       dac_cs2_n_o : out std_logic;
 
 
-      sfp_txp_o : out std_logic;
-      sfp_txn_o : out std_logic;
-
-      sfp_rxp_i : in std_logic;
-      sfp_rxn_i : in std_logic;
-
       fpga_scl_b : inout std_logic;
       fpga_sda_b : inout std_logic;
 
       button1_i : inout std_logic;
       button2_i : inout std_logic;
+
+      -------------------------------------------------------------------------
+      -- SFP pins
+      -------------------------------------------------------------------------
+
+      sfp_txp_o : out std_logic;
+      sfp_txn_o : out std_logic;
+
+      sfp_rxp_i : in std_logic;
+      sfp_rxn_i : in std_logic;
 
       sfp_mod_def0_b    : inout std_logic;  -- rate_select
       sfp_mod_def1_b    : inout std_logic;  -- scl
@@ -93,11 +98,35 @@ entity spec_top is
       sfp_tx_disable_o  : out   std_logic;
       sfp_los_i         : in    std_logic;
 
-      dio_o      : out std_logic_vector(3 downto 0);
-      dio_en_n_o : out std_logic;
-      dio_dir_o  : out std_logic
 
+      -------------------------------------------------------------------------
+      -- Digital I/O FMC Pins
+      -------------------------------------------------------------------------
 
+      dio_clk_p_i : in std_logic;
+      dio_clk_n_i : in std_logic;
+
+      dio_n_i : in std_logic_vector(4 downto 0);
+      dio_p_i : in std_logic_vector(4 downto 0);
+
+      dio_n_o : out std_logic_vector(4 downto 0);
+      dio_p_o : out std_logic_vector(4 downto 0);
+
+      dio_oe_n_o    : out std_logic_vector(4 downto 0);
+      dio_term_en_o : out std_logic_vector(4 downto 0);
+
+      dio_onewire_b  : inout std_logic;
+      dio_sdn_n_o    : out   std_logic;
+      dio_sdn_ck_n_o : out   std_logic;
+
+      dio_led_top_o : out std_logic;
+      dio_led_bot_o : out std_logic;
+
+      -----------------------------------------
+      --UART
+      -----------------------------------------
+      uart_rxd_i : in  std_logic;
+      uart_txd_o : out std_logic
       );
 
 end spec_top;
@@ -243,9 +272,9 @@ architecture rtl of spec_top is
 
   component wr_gtp_phy_spartan6
     generic (
-      g_simulation : integer;
+      g_simulation         : integer;
       g_ch0_use_refclk_out : boolean := false;
-    g_ch1_use_refclk_out : boolean := false);
+      g_ch1_use_refclk_out : boolean := false);
     port (
       ch0_ref_clk_i      : in  std_logic;
       ch0_ref_clk_o      : out std_logic;
@@ -298,6 +327,28 @@ architecture rtl of spec_top is
       dac_clr_n_o : out std_logic;
       dac_sclk_o  : out std_logic;
       dac_din_o   : out std_logic);
+  end component;
+
+  component chipscope_ila
+    port (
+      CONTROL : inout std_logic_vector(35 downto 0);
+      CLK     : in    std_logic;
+      TRIG0   : in    std_logic_vector(31 downto 0);
+      TRIG1   : in    std_logic_vector(31 downto 0);
+      TRIG2   : in    std_logic_vector(31 downto 0);
+      TRIG3   : in    std_logic_vector(31 downto 0));
+  end component;
+
+  signal CONTROL : std_logic_vector(35 downto 0);
+  signal CLK     : std_logic;
+  signal TRIG0   : std_logic_vector(31 downto 0);
+  signal TRIG1   : std_logic_vector(31 downto 0);
+  signal TRIG2   : std_logic_vector(31 downto 0);
+  signal TRIG3   : std_logic_vector(31 downto 0);
+
+  component chipscope_icon
+    port (
+      CONTROL0 : inout std_logic_vector (35 downto 0));
   end component;
 
   ------------------------------------------------------------------------------
@@ -388,7 +439,16 @@ architecture rtl of spec_top is
   signal phy_rx_bitslide  : std_logic_vector(3 downto 0);
   signal phy_rst          : std_logic;
   signal phy_loopen       : std_logic;
+
+  signal dio_in  : std_logic_vector(4 downto 0);
+  signal dio_out : std_logic_vector(4 downto 0);
+  signal dio_clk : std_logic;
+
+  signal local_reset_n  : std_logic;
+  signal button1_synced : std_logic_vector(2 downto 0);
   
+  
+
 begin
 
   
@@ -459,7 +519,26 @@ begin
       CLKIN    => clk_20m_vcxo_buf);
 
 
+  --p_gen_reset : process(clk_sys)
+  --begin
+  --  if rising_edge(clk_sys) then
+  --    button1_synced(0) <= button1_i;
+  --    button1_synced(1) <= button1_synced(0);
+  --    button1_synced(2) <= button1_synced(1);
 
+  --    if(L_RST_N = '0') then
+  --      local_reset_n <= '0';
+  --    elsif (button1_synced(2) = '0') then
+  --      local_reset_n <= '0';
+  --    else
+  --      local_reset_n <= '1';
+  --    end if;
+  --  end if;
+  --end process;
+
+
+ local_reset_n <= L_RST_N;
+  
   cmp_clk_sys_buf : BUFG
     port map (
       O => clk_sys,
@@ -604,23 +683,23 @@ begin
     end if;
   end process;
 
-  LED_RED <= std_logic(led_divider(led_divider'high));
+--  LED_RED <= std_logic(led_divider(led_divider'high));
 
   wb_adr_wrc <= '0' & wb_adr (16 downto 0);
 
   U_WR_CORE : wr_core
     generic map (
-      g_simulation             => 0,
-      g_virtual_uart           => 1,
-      g_ep_rxbuf_size_log2     => 12,
-      g_dpram_initf            => "",
-      g_dpram_size             => 16384,
-      g_num_gpio               => 8)
+      g_simulation         => 0,
+      g_virtual_uart       => 0,
+      g_ep_rxbuf_size_log2 => 12,
+      g_dpram_initf        => "wrc.ram",
+      g_dpram_size         => 16384,
+      g_num_gpio           => 8)
     port map (
       clk_sys_i  => clk_sys,
       clk_dmtd_i => clk_dmtd,
       clk_ref_i  => clk_125m_pllref,
-      rst_n_i    => L_RST_N,
+      rst_n_i    => local_reset_n,
 
       pps_p_o => pps,
 
@@ -634,8 +713,8 @@ begin
       gpio_i     => wrc_gpio_in,
       gpio_dir_o => wrc_gpio_dir,
 
-      uart_rxd_i => '0',
-      uart_txd_o => open,
+      uart_rxd_i => uart_rxd_i,
+      uart_txd_o => uart_txd_o,
       wb_addr_i  => wb_adr_wrc,
       wb_data_i  => wb_dat_o,
       wb_data_o  => wb_dat_i(31 downto 0),
@@ -645,7 +724,7 @@ begin
       wb_stb_i   => wb_stb,
       wb_ack_o   => wb_ack(0),
       genrest_n  => open,
-      dio_o      => dio,
+      dio_o      => dio_out(4 downto 1),
 
       phy_ref_clk_i      => clk_125m_pllref,
       phy_tx_data_o      => phy_tx_data,
@@ -662,7 +741,7 @@ begin
       );
 
 
-  U_GTP: wr_gtp_phy_spartan6
+  U_GTP : wr_gtp_phy_spartan6
     generic map (
       g_simulation => 0)
     port map (
@@ -703,6 +782,8 @@ begin
       pad_rxp1_i         => sfp_rxp_i);
 
   
+
+  
   U_DAC_ARB : spec_serial_dac_arb
     generic map (
       g_invert_sclk    => false,
@@ -710,7 +791,7 @@ begin
 
     port map (
       clk_i   => clk_sys,
-      rst_n_i => L_RST_N,
+      rst_n_i => local_reset_n,
 
       val1_i  => dac_dpll_data,
       load1_i => dac_dpll_load_p1,
@@ -724,28 +805,63 @@ begin
       dac_sclk_o    => dac_sclk_o,
       dac_din_o     => dac_din_o);
 
-  --dac_cs1_n_o <= wrc_gpio(1);
-  --dac_cs2_n_o <= wrc_gpio(2);
-  --dac_clr_n_o <= wrc_gpio(3);
-  --dac_sclk_o <= wrc_gpio(4);
-  --dac_din_o <= wrc_gpio(5);
-  
 
-  dio_o(3 downto 1) <= dio(3 downto 1);
-  dio_o(0)          <= pps;
+  U_Extend_PPS : gc_extend_pulse
+    generic map (
+      g_width => 10000000)
+    port map (
+      clk_i      => clk_125m_pllref,
+      rst_n_i    => local_reset_n,
+      pulse_i    => pps,
+      extended_o => dio_led_top_o);
 
 
+  gen_dio_iobufs : for i in 0 to 4 generate
+    U_ibuf : IBUFDS
+      generic map (
+        DIFF_TERM => true)
+      port map (
+        O  => dio_in(i),
+        I  => dio_p_i(i),
+        IB => dio_n_i(i)
+        );
 
-  --LED_GREEN <= clk_125m_pllref;
+    U_obuf : OBUFDS
+      port map (
+        I  => dio_out(i),
+        O  => dio_p_o(i),
+        OB => dio_n_o(i)
+        );
+  end generate gen_dio_iobufs;
+  U_input_buffer : IBUFDS
+    generic map (
+      DIFF_TERM => true)
+    port map (
+      O  => dio_clk,
+      I  => dio_clk_p_i,
+      IB => dio_clk_n_i
+      );
+
+  dio_led_bot_o <= '0';
+
+  dio_out(0)             <= pps;
+--  dio_out(4 downto 1)    <= (others => '0');
+  dio_oe_n_o(0)          <= '0';
+  dio_oe_n_o(4 downto 1) <= (others => '0');
+  dio_term_en_o          <= (others => '0');
+
+  dio_sdn_ck_n_o <= '0';
+  dio_sdn_n_o    <= '0';
+
   LED_GREEN <= wrc_gpio_out(0);
+  LED_RED   <= wrc_gpio_out(1);
 
-  fpga_scl_b <= '0' when wrc_gpio_out(1) = '0' else 'Z';
-  fpga_sda_b <= '0' when wrc_gpio_out(2) = '0' else 'Z';
+  fpga_scl_b <= '0' when wrc_gpio_out(2) = '0' else 'Z';
+  fpga_sda_b <= '0' when wrc_gpio_out(3) = '0' else 'Z';
 
-  wrc_gpio_in(3) <= fpga_sda_b;
-  wrc_gpio_in(4) <= button1_i;
-  wrc_gpio_in(5) <= button2_i;
-
+  wrc_gpio_in(4) <= fpga_sda_b;
+  wrc_gpio_in(5) <= '0';
+  wrc_gpio_in(6) <= button2_i;
 
   sfp_mod_def0_b <= '0';
   sfp_mod_def1_b <= '0';
@@ -753,10 +869,24 @@ begin
 
   sfp_tx_disable_o <= '0';
 
-  dio_en_n_o <= '0';
-  dio_dir_o  <= '0';
-  
+  --chipscope_ila_1 : chipscope_ila
+  --  port map (
+  --    CONTROL => CONTROL,
+  --    CLK     => clk_125m_pllref,
+  --    TRIG0   => TRIG0,
+  --    TRIG1   => TRIG1,
+  --    TRIG2   => TRIG2,
+  --    TRIG3   => TRIG3);
 
+  --chipscope_icon_1 : chipscope_icon
+  --  port map (
+  --    CONTROL0 => CONTROL
+  --    );
+
+  --TRIG0(7 downto 0)<=phy_tx_data;
+  --TRIG0(8) <= phy_tx_k;
+  --TRIG0(9) <= phy_tx_disparity;
+  --TRIG0(10) <= phy_tx_enc_err;
   
 end rtl;
 

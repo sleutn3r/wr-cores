@@ -9,4 +9,4 @@ syn_package = "fgg484"
 syn_top = "spec_top"
 syn_project = "spec_top_wrc.xise"
 
-modules = { "local" : [ "../../../top/spec_1_1/wr_core_demo" ] }
+modules = { "local" : [ "../../../top/spec_1_1/wr_core_demo", "../../../platform/xilinx/chipscope" ] }
