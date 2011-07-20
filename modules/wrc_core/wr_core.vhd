@@ -6,7 +6,7 @@
 -- Author     : Grzegorz Daniluk
 -- Company    : Elproma
 -- Created    : 2011-02-02
--- Last update: 2011-06-09
+-- Last update: 2011-07-18
 -- Platform   : FPGA-generics
 -- Standard   : VHDL
 -------------------------------------------------------------------------------
@@ -286,7 +286,6 @@ architecture struct of wr_core is
   signal rst_n_inv    : std_logic;
 
   signal softpll_irq    : std_logic;
-  signal softpll_rx_clk : std_logic;
 
   signal lm32_irq_slv : std_logic_vector(0 downto 0);
   
@@ -331,7 +330,7 @@ begin
       rst_n_i    => s_rst_n,
       clk_ref_i  => clk_ref_i,
       clk_dmtd_i => clk_dmtd_i,
-      clk_rx_i   => softpll_rx_clk,
+      clk_rx_i   => phy_rx_rbclk_i,
 
       dac_hpll_data_o  => dac_hpll_data_o,
       dac_hpll_load_o  => dac_hpll_load_p1_o,
