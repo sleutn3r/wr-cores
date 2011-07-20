@@ -692,7 +692,7 @@ begin
       g_simulation         => 0,
       g_virtual_uart       => 0,
       g_ep_rxbuf_size_log2 => 12,
-      g_dpram_initf        => "wrc.ram",
+      g_dpram_initf        => "",
       g_dpram_size         => 16384,
       g_num_gpio           => 8)
     port map (
