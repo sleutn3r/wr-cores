@@ -4,6 +4,7 @@ modules =  {"local" :
 												"modules/wr_mini_nic",
 												"modules/wr_softpll",
 												"modules/wrc_lm32",
+												"modules/wr_tbi_phy",
 												"modules/wrsw_endpoint",
 												"modules/wrsw_pps_gen",
 												"modules/wrc_core" ],
