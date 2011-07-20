@@ -6,7 +6,7 @@
 -- Author     : Tomasz Wlostowski
 -- Company    : CERN BE-CO-HT
 -- Created    : 2010-11-18
--- Last update: 2011-06-10
+-- Last update: 2011-07-15
 -- Platform   : FPGA-generic
 -- Standard   : VHDL'93
 -------------------------------------------------------------------------------
@@ -334,10 +334,47 @@ architecture rtl of wr_gtp_phy_spartan6 is
   signal ch1_ref_clk         : std_logic;
   signal ch0_ref_clk_out_buf : std_logic;
   signal ch1_ref_clk_out_buf : std_logic;
+
+  component enc_8b10b
+    port (
+      clk_i     : in  std_logic;
+      rst_n_i   : in  std_logic;
+      ctrl_i    : in  std_logic;
+      in_8b_i   : in  std_logic_vector(7 downto 0);
+      err_o     : out std_logic;
+      dispar_o  : out std_logic;
+      out_10b_o : out std_logic_vector(9 downto 0));
+  end component;
+
+signal ch0_rst_n : std_logic;
+signal ch1_rst_n : std_logic;
+  
   
 begin  -- rtl
 
+  ch0_rst_n <= not ch0_gtp_reset;
+  ch1_rst_n <= not ch1_gtp_reset;
 
+  U_disp_gen: enc_8b10b
+    port map (
+      clk_i     => ch0_ref_clk,
+      rst_n_i   => ch0_rst_n,
+      ctrl_i    => ch0_tx_k_i,
+      in_8b_i   => ch0_tx_data_i,
+      err_o     => open,
+      dispar_o  => ch0_tx_disparity_o,
+      out_10b_o => open);
+
+  U_disp_gen2: enc_8b10b
+    port map (
+      clk_i     => ch1_ref_clk,
+      rst_n_i   => ch1_rst_n,
+      ctrl_i    => ch1_tx_k_i,
+      in_8b_i   => ch1_tx_data_i,
+      err_o     => open,
+      dispar_o  => ch1_tx_disparity_o,
+      out_10b_o => open);
+  
   p_gen_reset_ch0 : process(ch0_ref_clk)
   begin
     if rising_edge(ch0_ref_clk) then
@@ -671,10 +708,10 @@ begin  -- rtl
 
 -- drive the recovered clock output
   ch0_rx_rbclk_o     <= ch0_rx_rec_clk;
-  ch0_tx_disparity_o <= ch0_tx_rundisp_vec(0);
+--  ch0_tx_disparity_o <= ch0_tx_rundisp_vec(0);
 
   ch1_rx_rbclk_o     <= ch1_rx_rec_clk;
-  ch1_tx_disparity_o <= ch1_tx_rundisp_vec(0);
+--  ch1_tx_disparity_o <= ch1_tx_rundisp_vec(0);
 
   ch0_ref_clk_o <= ch0_ref_clk;
   ch1_ref_clk_o <= ch1_ref_clk;
