@@ -1,0 +1,77 @@
+This is some info for dummies (like me after holidays) how to use this testbench
+explaining why there are so many files and etc
+
+(the paths which are absolute, are that of my PC, sorry, but they can be useful)
+
+this testbenches are used to test the White Rabbit FEC module which is here:
+../../../modules/wr_fec/
+it is also explained in more details there
+
+
+we have three different top-simulations:
+1. work.main (in the file: wr_generate_and_fec_with_wrf.sv) [tested]
+  - this tests FEC encoder (wr_fec_en.vhd) with inputs (WBp slave) connected to 
+    dummy frame generator (wr_fec_dummy_pck_gen.vhd) and outputs (WBp master)
+    connected to a WBp->WRF converter (wr_fec_wb_to_wrf.vhd)
+  - it tests the top entity: wr_fec_and_gen_with_wrf.vhd which is used to
+    generate FEC-encoded frames on the SPEC board. this frames are received
+    by standard PC and encoded in the software.
+  - this is the currently used version which makes up (using generator and converter)
+    for the lacking/note ready/not proper parts of the system
+  - this tests the system which is actually used at the moment
+
+2. work.generate_and_fec (in the file: wr_generate_and_fec.sv) [recently not used]
+  - this tests FEC encoder (wr_fec_en.vhd) with inputs (WBp slave) connected to 
+    dummy frame generator (wr_fec_dummy_pck_gen.vhd)
+  - it tests the top entity: wr_fec_and_gen.vhd which is used to
+    generate FEC-encoded frames on the SPEC board. this frames are received
+    by standard PC and encoded in the software.
+  - it will be used once the endpoint is changed to WBp interface
+
+3. work.wr_fec_only (in the file: wr_fec.sv) [recently not used]
+  - this tests FEC encoder only (wr_fec_en.vhd) 
+  - it tests the top entity: wr_fec_en.vhd which is used to
+    generate FEC-encoded frames on the SPEC board. this frames are received
+    by standard PC and encoded in the software.
+  - it will be used once the endpoint is changed to WBp interface and the etherbone 
+    is up and running
+
+TREE
+
+|-- if_wishbone.sv                            - used to access standard Wishbone IF
+|-- Manifest.py                               - manifest used to generate Makefile
+|-- README
+|-- run.do                                    - [obsolete] old way of running simulation
+|-- tbi_utils.sv                              - some functions useful in the simulation [by Tom]
+|-- wbp                                       - folder with simulations of interfaces and other 
+                                                magic staff by Tom
+|   |-- endpoint_mdio.v                       - to talk with endpoint
+|   |-- endpoint_regs.v                       - to talk with endpoint
+|   |-- fabric_emu_defs.sv                    - Farbric Interface WRF (this is obsolate and will be 
+ |                                                replaced with Wishbone pipelined)
+|   |-- fabric_emu_funcs.sv
+|   |-- fabric_emu.sv
+|   |-- if_wb_classic_master.sv               - Wishbone and pipelined Wishbone 
+|   |-- if_wb_link.sv                         - Wishbone and pipelined Wishbone 
+|   |-- if_wb_master.sv                       - Wishbone and pipelined Wishbone 
+|   |-- if_wb_slave.sv                        - Wishbone and pipelined Wishbone 
+|   |-- if_wishbone_defs.sv                   - Wishbone and pipelined Wishbone 
+|   `-- simdrv_defs.sv                        - Wishbone and pipelined Wishbone 
+|-- wr_fec_defs.sv                            - some definitions and data structures for the main testbenches
+|-- wr_fec_engine.sv                          - [obsolete] simulation of the fec_engine only
+|-- wr_fec.sv                                 - simulation of the FEC encoder (WBp inputs and WBp outputs)
+|-- wr_generate_and_fec.sv                    - simulation of the FEC encoder with inputs connected to a dummy 
+|                                               frame generator
+|-- wr_generate_and_fec_with_wrf.sv           - [currenty used ]simulation of the FEC encoder with inputs connected
+                                                to a dummy frame generator and ouputs connected to wbp_to_wrf converter
+
+
+Running simulation
+1. generate makefile with hdlmake (God bless Pawel and his make :)
+   ~/Development/repos/hdl-make/hdlmake 
+2. make
+3. Voila :)
+4. vsim work.main -voptargs="+acc" 
+5. do wave.do
+6. run 100us
+7. enjoy

@@ -1,0 +1,142 @@
+-- -*- Mode: LUA; tab-width: 2 -*-
+
+-- Port Configuration Register
+
+peripheral {
+         name   ="WB Intreface to dummy pck generator.";
+	 prefix ="wr_fec_dummy_pck_gen";
+	 hdl_entity="wr_fec_dummy_pck_gen_if";
+	 reg {
+			name = "Dummy paylaod size (bytes)";
+			description = "This is the size of the payload generated. If we define incrementation step, this is \
+			the size of the first frame's payload.";
+			prefix = "payload_size";
+
+			field {
+				 name = "Payload Value";
+ 				 type = SLV;
+			 	 align = 8;
+				 size = 16;
+				 access_dev = READ_ONLY;
+				 access_bus = READ_WRITE;
+			};
+
+
+			 clock = "clk_i";
+	 };
+
+	 reg {
+			name = "Paylaod increment step size (bytes)";
+			description = "Defines the incremental step of the subsequently generated frames.";
+			prefix = "increment_size";
+
+			field {
+				 name = "Increment Value";
+ 				 type = SLV;
+				 size =  8;
+				 access_dev = READ_ONLY;
+				 access_bus = READ_WRITE;
+			};
+
+
+			 clock = "clk_i";
+	 };
+
+	 reg {
+			name = "Number of frames to be generated";
+			description = "It defines how many frames shall be generated in one cycle.";
+			prefix = "gen_frame_number";
+
+			field {
+				 name = "Generate Number Value";
+ 				 type = SLV;
+			 	 align = 8;
+				 size = 16;
+				 access_dev = READ_ONLY;
+				 access_bus = READ_WRITE;
+			};
+
+
+			 clock = "clk_i";
+	 };
+
+
+	 reg {
+			name = "Control register";
+			description = "This register is used to control the dummy frame generateor";
+			prefix = "ctrl";
+
+			field {
+				 name = "Start generation";
+				 description = "Writing one to this bit will start generation of frames";
+				 type = BIT;			 
+				 prefix = "start";
+				 access_dev = READ_ONLY;
+				 access_bus = READ_WRITE;
+			};
+
+			field {
+				 name = "Stop generation";
+				 description = "Once the generation is complete or indicates error, it needs to be stopped \
+				 by writing 1 to this field. The generatio needs to be stopped \
+                                 also when we want to start it again. In continuous mode, this is the only way to stop \
+                                 the generation";
+				 type = BIT;			 
+				 prefix = "stop";
+				 access_dev = READ_ONLY;
+				 access_bus = READ_WRITE;
+			};
+
+			field {
+				 name = "Enable FEC";
+				 description = "This fileds indicate whether the frames shall be destined to be encoded by FEC. \
+                                 This is done by writing the first word (16 bits) to the special FEC address.\
+                                 0: Do not send frames for FECing,\
+                                 1: Do send frames for FECing.";
+				 type = BIT;			 
+				 prefix = "fec";
+				 access_dev = READ_ONLY;
+				 access_bus = READ_WRITE;
+			};
+			field {
+				 name = "Continuous mode";
+				 description = "Enables/disables continous generation mode:.\
+                                 0: Only one cycle is performed (given number of frames defined in settings or increment up to max size),\
+                                 1: Continuous mode: if the max number of frames is generated, or max size reached, we start from the beginning.";
+				 type = BIT;			 
+				 prefix = "continuous";
+				 access_dev = READ_ONLY;
+				 access_bus = READ_WRITE;
+			};
+
+			field {
+				 name = "VLAN-tagging enable";
+				 description = "Enables generation of VLAN-tagged frames.\
+                                 0: Standard Ethernet header,\
+                                 1: Ethernet Header with VLAN-tagging (priority, VLAN ID) as defined in IEEE 802.1Q.";
+				 type = BIT;			 
+				 prefix = "vlan";
+				 access_dev = READ_ONLY;
+				 access_bus = READ_WRITE;
+			};
+			
+			clock = "clk_i";
+	};
+
+	reg {
+			name = "Status register";
+			description = "Status register";
+			prefix = "status";
+
+			field {
+				 name = "Status Register Value";
+ 				 type = SLV;
+			 	 align = 8;
+				 size = 16;
+				 access_dev = WRITE_ONLY;
+				 access_bus = READ_ONLY;
+			};
+
+			 clock = "clk_i";
+	 };
+}

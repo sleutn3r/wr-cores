@@ -1,0 +1,109 @@
+This is some info for dummies (like me after holidays) how to use this testbench
+explaining why there are so many files and etc
+
+(the paths which are absolute, are that of my PC, sorry, but they can be useful)
+
+
+WR FEC is a forward error correction in White Rabbit IP core to encode and decode data.
+STATUS:
+- we have FEC encoder working in HW [not fully debugged]: wr_fec_en.vhd
+- we haven't got decoder in HW. however, we have one in SW, it's used for tests
+TODO:
+- debug FEC encoder
+- write FEC decoder
+
+>>>>>>>>>>>> General WR FEC design <<<<<<<<<<<<<<<
+
+               wr_fec.vhd           <---             wr_fec_pck.vhd
+         [top entity, not existing]    [ready, all the components and constants]
+              /           \
+             /             \
+            /               \
+      wr_fec_de.vhd         wr_fec_en.vhd   
+[decoder, note ready]         [ready]
+                            /           \
+                           /             \
+                          /               \
+            wr_fec_en_interface.vhd   wr_fec_engine.vhd
+                                     /     |      \
+                                    /      |       \
+                                   /       |        \
+    parameters.vhd --> RS_erasure.vhd     RAMs    wr_hamming_pkg.vhd <-- hamm_packge_64bit.vhd
+                                      [embedded memory ]
+                                      /     |      |  \
+                                     /      |      |   \
+                                    /       |      |    \
+                                   /   PAYLOAD_1   |  RS_PAYLOAD
+                                HEADER          PAYLOAD_1 
+
+
+>>>>>>>>>>>> WR FEC encoder testing design <<<<<<<<<<<<<<<
+   input:                                             output:
+  Wishbone                                       Fabrick Interface [wrf]
+[control gen]                                     [frames, data stream]
+   |                                                   / \
+   |               wr_fec_and_gen_with_wrf.vhd          |
+   |           /               |               \        |
+   |          /                |                \       |
+  \ /        /      [wbp]      |         [wbp]   \      |
+wr_fec_dummy_gen.vhd ---> wr_fec_en.vhd  ----> wr_fec_wb_to_wrf.vhd 
+            |           [Unite under test]         
+            |
+            |
+    wr_fec_dummy_gen_if.vhd
+[      Wishbone interface generated     ]
+[ with wbgen2:                          ]
+[ - src : wr_fec_dummy_pck_gen_if.wb    ]
+[ - info: wr_fec_dummy_pck_gen_if.html  ]
+
+
+
+
+TREE
+                           [top entities]
+|-- wr_fec_and_gen.vhd               - fec encoder with dummy frames generator (WBp output)
+|-- wr_fec_and_gen_with_wrf.vhd      - fec encoder with dummy frames generator and converter to 
+|                                      Fabric interface for output
+
+                        [dummy frame generator]
+|-- wr_fec_dummy_pck_gen.vhd         - dummy frame generator
+|-- wr_fec_dummy_pck_gen_if.html     - layout of the registers controlling frames generator
+|-- wr_fec_dummy_pck_gen_if.vhd      - Wishbone interace to control frames generator
+|-- wr_fec_dummy_pck_gen_if.wb       - lua script to generate frames genertor's WB interface 
+|                                      using wbgen2 (http://www.ohwr.org/projects/wishbone-gen)
+
+                           [FEC encoder]
+|-- wr_fec_en_engine.vhd             - FEC encoder engine
+|-- wr_fec_en_interface.vhd          - FEC encoder interface
+|-- wr_fec_en.vhd                    - Fevn encoder top entity
+
+                          [hamming decoder/encoder]
+|-- hamm_package_64bit.vhd           - used by hamming encoder/decodeer
+|-- wr_hamming_pkg.vhd               - Hamming package
+
+                         [RS encoder/decocer]
+|-- gf256-pkg.vhd                    - used by RS encoder/decodre
+|-- parameters.vhd                   - settings of RS encodr/decoder
+|-- RS_erasure.vhd                   - Reed-Solomon encoder/decoder
+
+                        [FEC decoder]
+|-- wr_fec_de.vhd                    - [unfinished] FEC decoder top entity
+|-- wr_fec_de_engine.vhd             - [unfinished] FEC decoder engine
+|-- wr_fec_de_interface.vhd          - [unfinished] FEC decoder interface
+
+                        [ohter staff]
+|-- wr_fec_pkg.vhd                   - FEC package
+|-- FECencoding.jpg
+|-- Manifest.py                     
+|-- README
+|-- wr_fec_wb_to_wrf.vhd             - converter from Wishbone pipelined to Fabric Interface (WBP->WRF)
+
+
+
+Testing generator (in HW)
+1. it is tested in the SPEC board, I put (temporarily) this into wr_core design: 
+   http://www.ohwr.org/projects/wr-cores/
+2. detailed desciption is there
+
+
+
