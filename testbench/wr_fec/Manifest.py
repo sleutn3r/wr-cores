@@ -1,7 +1,7 @@
 #target = "xilinx"
 target = "altera"
 action = "simulation"
-modules = {"local": "../../../modules/wr_fec"}
+modules = {"local": "../../modules/wr_fec"}
 
 
 #files = "wr_fec_engine.sv"
