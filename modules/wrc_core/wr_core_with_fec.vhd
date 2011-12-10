@@ -612,7 +612,7 @@ lm32_irq_slv(0) <= softpll_irq;
   DPRAM : wrc_dpram
     generic map(
       g_size             => g_dpram_size
-     -- g_init_file        => g_dpram_initf
+      --g_init_file        => g_dpram_initf
       )
     port map(
       clk_i   => clk_sys_i,

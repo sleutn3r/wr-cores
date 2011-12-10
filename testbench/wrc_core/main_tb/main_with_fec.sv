@@ -225,8 +225,8 @@ module main_with_fec;
 
   repeat(100) @(posedge clk_sys);
 
-      WB.write32('h70000, 400); // set pck len
-      WB.write32('h70008, 1); // set pck number
+      WB.write32('h70000, 500); // set pck len
+      WB.write32('h70008, 10); // set pck number
       //WB.write32('h7000C, 1); // start genration
     WB.write32('h7000C, 'h5); // start genration
 

@@ -14,7 +14,7 @@ END hamm_package_64bit;
 PACKAGE BODY hamm_package_64bit IS
 
 ---------------------
--- HAMMING ENCODER --
+-- HAMMING ENCODER --  not used in FEC
 ---------------------
 FUNCTION hamming_encoder_64bit(data_in:data_ham_64bit) RETURN parity_ham_64bit  IS
 	VARIABLE parity: parity_ham_64bit;

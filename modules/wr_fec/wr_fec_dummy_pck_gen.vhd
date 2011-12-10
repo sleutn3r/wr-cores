@@ -374,6 +374,29 @@ port map(
                end if;
              else -- sending payload
                
+--               if(msg_size_cnt(3 downto 0) = x"0") then
+--                 case msg_size_cnt(7 downto 4) is
+--                   when x"0" =>  wbm_dat  <= x"0001";
+--                   when x"1" =>  wbm_dat  <= x"0003";
+--                   when x"2" =>  wbm_dat  <= x"0007";
+--                   when x"3" =>  wbm_dat  <= x"000F";
+--                   when x"4" =>  wbm_dat  <= x"001F";
+--                   when x"5" =>  wbm_dat  <= x"003F";
+--                   when x"6" =>  wbm_dat  <= x"007F";
+--                   when x"7" =>  wbm_dat  <= x"00FF";
+--                   when x"8" =>  wbm_dat  <= x"01FF";
+--                   when x"9" =>  wbm_dat  <= x"03FF";
+--                   when x"A" =>  wbm_dat  <= x"07FF";
+--                   when x"B" =>  wbm_dat  <= x"0FFF";
+--                   when x"C" =>  wbm_dat  <= x"1FFF";
+--                   when x"D" =>  wbm_dat  <= x"3FFF";
+--                   when x"E" =>  wbm_dat  <= x"7FFF";
+--                   when x"F" =>  wbm_dat  <= x"FFFF";
+--                   when others => wbm_dat  <= x"0000";
+--                 end case;
+--               else
+--                 wbm_dat       <= x"0000";
+--               end if;
                wbm_dat       <= '0' & msg_size_cnt(15 downto 1);
                wbm_stb       <= '1';
              

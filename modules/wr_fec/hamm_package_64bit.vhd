@@ -13,6 +13,7 @@ END hamm_package_64bit;
 
 PACKAGE BODY hamm_package_64bit IS
 
+-- !!!!!!! this one is used
 ---------------------
 -- HAMMING ENCODER --
 ---------------------
@@ -75,7 +76,7 @@ BEGIN
    
 					
 	parity(0)	:=	data_in(0) XOR data_in(1) XOR data_in(2) XOR data_in(3) XOR data_in(4) XOR 
-					data_in(5) XOR data_in(6) XOR data_in(7) XOR data_in(8) XOR data_in(9) XOR 
+					data_in(5)  XOR data_in(6)  XOR data_in(7)  XOR data_in(8)  XOR data_in(9)  XOR 
 					data_in(10) XOR data_in(11) XOR data_in(12) XOR data_in(13) XOR data_in(14) XOR 
 					data_in(15) XOR data_in(16) XOR data_in(17) XOR data_in(18) XOR data_in(19) XOR 
 					data_in(20) XOR data_in(21) XOR data_in(22) XOR data_in(23) XOR data_in(24) XOR 
@@ -86,9 +87,11 @@ BEGIN
 					data_in(45) XOR data_in(46) XOR data_in(47) XOR data_in(48) XOR data_in(49) XOR 
 					data_in(50) XOR data_in(51) XOR data_in(52) XOR data_in(53) XOR data_in(54) XOR 
 					data_in(55) XOR data_in(56) XOR data_in(57) XOR data_in(58) XOR data_in(59) XOR 
-					data_in(60) XOR data_in(61) XOR data_in(62) XOR data_in(63) XOR parity(1) XOR 
-					parity(2) XOR parity(3) XOR parity(4) XOR parity(5) XOR parity(6) XOR 
-					parity(7) ;
+					data_in(60) XOR data_in(61) XOR data_in(62) XOR data_in(63);
+					
+					-- XOR parity(1) XOR 
+					--parity(2) XOR parity(3) XOR parity(4) XOR parity(5) XOR parity(6) XOR 
+					--parity(7) ;
 
 
 	RETURN parity;

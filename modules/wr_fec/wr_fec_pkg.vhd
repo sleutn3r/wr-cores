@@ -175,6 +175,8 @@ package wr_fec_pkg is
   constant c_fec_FEC_original_len_bits           : integer := 13;
   constant c_fec_FEC_fragment_len_bits           : integer := 11;
   
+  -- value to init auto-incrementing FEC_ID
+  constant c_fec_FEC_ID_init : std_logic_vector(c_fec_FEC_header_FEC_ID_bits -1  downto 0) :=  x"AB00"; 
 -------------------------------------------------------------------------------
 --             PARAMETERS CALCULATED FROM THE ABOVE PARAMETERS
 -------------------------------------------------------------------------------

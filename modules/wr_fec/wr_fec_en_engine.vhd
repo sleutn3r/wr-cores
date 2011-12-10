@@ -233,6 +233,10 @@ architecture rtl of wr_fec_en_engine is
 
   
   signal eth_header_size :  std_logic_vector(c_fec_Ethernet_header_size_MAX_bits_width - 1 downto 0);
+
+  -- indicates when framgent counter should be incremented and stored in the FEC header buffer
+  -- driven by the sending_fsm, used by the settings process
+  signal inc_fragmentID  :  std_logic;
   -----------------------------------------------------------------------
   -- Message numbers (not configurable, for the time being)
   -----------------------------------------------------------------------  
@@ -1048,8 +1052,10 @@ begin
   variable tmp_break_msg_at_size :  std_logic_vector(c_fec_msg_size_MAX_Bytes_width - 1 downto 0);
   variable tmp_RSin_msg_size     :  std_logic_vector(c_fec_msg_size_MAX_Bytes_width - 1 downto 0);
   variable FEC_ID                :  std_logic_vector(c_fec_FEC_header_FEC_ID_bits   - 1 downto 0);
+  variable FEC_ID_tmp            :  std_logic_vector(c_fec_FEC_header_FEC_ID_bits   - 1 downto 0);
   variable tmp_HAMed_msg_size    :  std_logic_vector(c_fec_msg_size_MAX_Bytes_width - 1 downto 0);
-  variable tmp_end_of_outmsg     :  std_logic_vector(c_fec_msg_size_MAX_Bytes_width - 1 downto 0); 
+  variable tmp_end_of_outmsg     :  std_logic_vector(c_fec_msg_size_MAX_Bytes_width - 1 downto 0);
+  variable fragmentID            :  std_logic_vector(c_fec_FEC_header_FRAME_ID_bits - 1 downto 0);
   --------------------------------------------------------------------------------------------------
   begin
     if rising_edge(clk_i) then
@@ -1065,13 +1071,15 @@ begin
       tmp_break_msg_at_size := (others=>'0');
       tmp_RSin_msg_size     := (others=>'0');
       tmp_HAMed_msg_size    := (others=>'0');
-      FEC_ID                := (others=>'0');
+      FEC_ID                := c_fec_FEC_ID_init;
+      FEC_ID_tmp            := (others=>'0');
       tmp_end_of_outmsg     := (others=>'0');
       fec_header_buffer     <= (others=>'0');
       ram_addr_divMsg_size  <= (others=>'0');
       ram_addr_origMsg_size <= (others=>'0');
       break_msg_at_size     <= (others=>'0');
       end_of_outmsg         <= (others=>'0');
+      fragmentID            := (others=>'0');
       --========================================
       else
 
@@ -1158,10 +1166,21 @@ begin
           if(tmp_divFECin_msg_size(0) = '1') then 
             tmp_break_msg_at_size      := std_logic_vector(unsigned(tmp_break_msg_at_size) + 1);
           end if;   
-           
           
-          tmp_end_of_outmsg    := '0' & tmp_RSin_msg_size(c_fec_msg_size_MAX_Bytes_width - 1 downto 1);
-          tmp_end_of_outmsg    := std_logic_vector(unsigned(tmp_end_of_outmsg) + 2); --??? TODO(12) verify
+          -- calculate the output size with hamming parity bits 
+          tmp_end_of_outmsg    := "000" & tmp_RSin_msg_size(c_fec_msg_size_MAX_Bytes_width - 1 downto 3);
+          tmp_end_of_outmsg    := std_logic_vector(unsigned(tmp_RSin_msg_size) + unsigned(tmp_end_of_outmsg));
+                    
+          if(tmp_end_of_outmsg(0) = '0') then
+            tmp_end_of_outmsg    := '0' & tmp_end_of_outmsg(c_fec_msg_size_MAX_Bytes_width - 1 downto 1);
+            tmp_end_of_outmsg    := std_logic_vector(unsigned(tmp_end_of_outmsg) - 1); 
+          else
+            tmp_end_of_outmsg    := '0' & tmp_end_of_outmsg(c_fec_msg_size_MAX_Bytes_width - 1 downto 1);
+            tmp_end_of_outmsg    := std_logic_vector(unsigned(tmp_end_of_outmsg) - 1);
+          end if;
+            
+          --tmp_end_of_outmsg    := '0' & tmp_RSin_msg_size(c_fec_msg_size_MAX_Bytes_width - 1 downto 1);
+          --tmp_end_of_outmsg    := std_logic_vector(unsigned(tmp_end_of_outmsg) + 2); --??? TODO(12) verify
           ---------------------------------------------
           -- write outside-process-available regs
           ---------------------------------------------            
@@ -1183,25 +1202,24 @@ begin
           ------------                        create FEC header                       --------    
           -------------------------------------------------------------------------------------
           if(if_FEC_ID_ena_i = '1') then
-            FEC_ID := if_FEC_ID_i;
+            FEC_ID_tmp := if_FEC_ID_i;
           else
-            FEC_ID := std_logic_vector(unsigned(FEC_ID)+1);
+            FEC_ID_tmp := FEC_ID;
+	    FEC_ID     := std_logic_vector(unsigned(FEC_ID)+1);
           end if;
+	  
+	 
 
           -- schema ID  (4 bits)
           fec_header_buffer(c_fec_FEC_header_Scheme_bits   -1 downto 0) <= x"0";
           
-          -- FRAGMENT ID (4 bits)
-          fec_header_buffer(c_fec_FEC_header_Scheme_bits   +
-                            c_fec_FEC_header_FRAME_ID_bits -1 downto 
-                            c_fec_FEC_header_Scheme_bits)               <= (others=>'0');
           
           -- FEC ID  (32 bits)     
           fec_header_buffer(c_fec_FEC_header_Scheme_bits   +
                             c_fec_FEC_header_FRAME_ID_bits +
                             c_fec_FEC_header_FEC_ID_bits   -1 downto 
                             c_fec_FEC_header_Scheme_bits   +
-                            c_fec_FEC_header_FRAME_ID_bits  )           <= x"DEAD"; --FEC_ID;   
+                            c_fec_FEC_header_FRAME_ID_bits  )           <= FEC_ID_tmp ;--x"DEAD"; --FEC_ID;   
 
           if(fec_header_etherType_valid = '1') then
         
@@ -1264,6 +1282,24 @@ begin
           FECsettingsReady <= '0';
 
         end if;--if(if_in_settngs_ena_i = '1') then
+
+        if(if_in_settngs_ena_i = '1' and FECsettingsUsed = '0' and inc_fragmentID = '0') then
+
+          fragmentID := (others =>'0');
+          -- FRAGMENT ID (4 bits)
+          fec_header_buffer(c_fec_FEC_header_Scheme_bits   +
+                            c_fec_FEC_header_FRAME_ID_bits -1 downto 
+                            c_fec_FEC_header_Scheme_bits)               <= fragmentID ;--<= (others=>'0');
+      
+        elsif(inc_fragmentID = '1' ) then
+
+          fragmentID := std_logic_vector(unsigned(fragmentID)+1);
+          -- FRAGMENT ID (4 bits)
+          fec_header_buffer(c_fec_FEC_header_Scheme_bits   +
+                            c_fec_FEC_header_FRAME_ID_bits -1 downto 
+                            c_fec_FEC_header_Scheme_bits)              <= fragmentID ;--<= (others=>'0');
+        end if;--if(if_in_settngs_ena_i = '1' and FECsettingsUsed = '0') then
+
       end if;--if(rst_n_i = '0') then
     end if;--if rising_edge(clk_i) then
   end process;
@@ -1501,7 +1537,7 @@ begin
                 end if;
               end if;
               
-              symbols_loaded := 0;
+              --symbols_loaded := 0;--fixed bug
               result_symbol  <= '1';
 
             end if;
@@ -1555,7 +1591,9 @@ begin
           rs_ram_we <='0';
           
           rs_ram_wr_address        <= p_rs_ram_wr_first_msg_add;
-          p_rs_ram_wr_next_msg_add <= std_logic_vector(unsigned(p_addr_rd_first_divMsg)+ unsigned(ram_addr_divMsg_size));          
+          
+          --p_rs_ram_wr_next_msg_add <= std_logic_vector(unsigned(p_addr_rd_first_divMsg)+ unsigned(ram_addr_divMsg_size));          
+          p_rs_ram_wr_next_msg_add <= std_logic_vector(unsigned(p_rs_ram_wr_first_msg_add)+ unsigned(ram_addr_divMsg_size));          
           
           --rs_ram_wr_address  <= std_logic_vector(unsigned(rs_ram_wr_address) + 1);
         end if;
@@ -1638,12 +1676,23 @@ begin
                 hamming_state                   <= S_HAMMING_ORIGINAL_MSG_B1;
                 hamming_in_data                 <= op_1_ram_output;
               
-                out_buffer(3)                   <= op_1_ram_output(0);
-                out_buffer(7  downto 5)         <= op_1_ram_output(3 downto 1);
-                out_buffer(15 downto 9)         <= op_1_ram_output(10 downto 4);
-                out_buffer(31 downto 17)        <= op_1_ram_output(25 downto 11);
-                out_buffer(63 downto 33)        <= op_1_ram_output(56 downto 26);
-                out_buffer(71 downto 65)        <= op_1_ram_output(63 downto 57);
+                -------------------------------------------------------
+                -- ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^              
+                -- this is how it should be....
+                -- but software implementation is different...
+                -- and maybe it's a better way
+                --out_buffer(3)                   <= op_1_ram_output(0);
+                --out_buffer(7  downto 5)         <= op_1_ram_output(3 downto 1);
+                --out_buffer(15 downto 9)         <= op_1_ram_output(10 downto 4);
+                --out_buffer(31 downto 17)        <= op_1_ram_output(25 downto 11);
+                --out_buffer(63 downto 33)        <= op_1_ram_output(56 downto 26);
+                --out_buffer(71 downto 65)        <= op_1_ram_output(63 downto 57);
+
+                out_buffer(63 downto 0)         <= op_1_ram_output;
+                -- ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^              
+                -------------------------------------------------------
+
+
                
                 op_1_ram_rd_address             <= std_logic_vector(unsigned(op_1_ram_rd_address) + 1);
                 
@@ -1660,12 +1709,23 @@ begin
                 hamming_state                   <= S_HAMMING_ORIGINAL_MSG_B2;
                 hamming_in_data                 <= op_1_ram_output;
   
-                out_buffer(75)                  <= op_1_ram_output(0);
-                out_buffer(79  downto 77)       <= op_1_ram_output(3 downto 1);
-                out_buffer(87  downto 81)       <= op_1_ram_output(10 downto 4);
-                out_buffer(103 downto 89)       <= op_1_ram_output(25 downto 11);
-                out_buffer(135 downto 105)      <= op_1_ram_output(56 downto 26);
-                out_buffer(143 downto 137)      <= op_1_ram_output(63 downto 57);
+                -------------------------------------------------------
+                -- ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^              
+                -- this is how it should be....
+                -- but software implementation is different...
+                -- and maybe it's a better way
+                --out_buffer(75)                  <= op_1_ram_output(0);
+                --out_buffer(79  downto 77)       <= op_1_ram_output(3 downto 1);
+                --out_buffer(87  downto 81)       <= op_1_ram_output(10 downto 4);
+                --out_buffer(103 downto 89)       <= op_1_ram_output(25 downto 11);
+                --out_buffer(135 downto 105)      <= op_1_ram_output(56 downto 26);
+                --out_buffer(143 downto 137)      <= op_1_ram_output(63 downto 57);
+                 
+                out_buffer(135 downto 72)       <= op_1_ram_output; 
+                             
+                -- ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^                            
+                -------------------------------------------------------
+              
               
                 op_1_ram_rd_address             <= std_logic_vector(unsigned(op_1_ram_rd_address) + 1);
             
@@ -1683,13 +1743,23 @@ begin
              
                 hamming_state                   <= S_HAMMING_RS_PARITY_MSG_B1;
                 hamming_in_data                 <= rs_ram_output;
+
+                -------------------------------------------------------
+                -- ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^              
+                -- this is how it should be....
+                -- but software implementation is different...
+                -- and maybe it's a better way
+                --out_buffer(3)                   <= rs_ram_output(0);
+                --out_buffer(7 downto  5)         <= rs_ram_output(3 downto 1);
+                --out_buffer(15 downto 9)         <= rs_ram_output(10 downto 4);
+                --out_buffer(31 downto 17)        <= rs_ram_output(25 downto 11);
+                --out_buffer(63 downto 33)        <= rs_ram_output(56 downto 26);
+                --out_buffer(71 downto 65)        <= rs_ram_output(63 downto 57);
               
-                out_buffer(3)                   <= rs_ram_output(0);
-                out_buffer(7 downto  5)         <= rs_ram_output(3 downto 1);
-                out_buffer(15 downto 9)         <= rs_ram_output(10 downto 4);
-                out_buffer(31 downto 17)        <= rs_ram_output(25 downto 11);
-                out_buffer(63 downto 33)        <= rs_ram_output(56 downto 26);
-                out_buffer(71 downto 65)        <= rs_ram_output(63 downto 57);
+                out_buffer(63 downto 0)        <= rs_ram_output;
+              
+                -- ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^                            
+                -------------------------------------------------------              
               
                 rs_ram_rd_address               <= std_logic_vector(unsigned(rs_ram_rd_address) + 1);
                 
@@ -1707,13 +1777,23 @@ begin
                 hamming_state                   <= S_HAMMING_RS_PARITY_MSG_B2;
                 hamming_in_data                 <= rs_ram_output;
                
-                out_buffer(75)                  <= rs_ram_output(0);
-                out_buffer(79  downto 77)       <= rs_ram_output(3 downto 1);
-                out_buffer(87  downto 81)       <= rs_ram_output(10 downto 4);
-                out_buffer(103 downto 89)       <= rs_ram_output(25 downto 11);
-                out_buffer(135 downto 105)      <= rs_ram_output(56 downto 26);
-                out_buffer(143 downto 137)      <= rs_ram_output(63 downto 57);
-               
+                -------------------------------------------------------
+                -- ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^              
+                -- this is how it should be....
+                -- but software implementation is different...
+                -- and maybe it's a better way               
+                --out_buffer(75)                  <= rs_ram_output(0);
+                --out_buffer(79  downto 77)       <= rs_ram_output(3 downto 1);
+                --out_buffer(87  downto 81)       <= rs_ram_output(10 downto 4);
+                --out_buffer(103 downto 89)       <= rs_ram_output(25 downto 11);
+                --out_buffer(135 downto 105)      <= rs_ram_output(56 downto 26);
+                --out_buffer(143 downto 137)      <= rs_ram_output(63 downto 57);
+
+                out_buffer(135 downto 72)      <= rs_ram_output;
+                         
+                -- ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^                            
+                -------------------------------------------------------
+                                               
                 rs_ram_rd_address               <= std_logic_vector(unsigned(rs_ram_rd_address) + 1);
                 
               end if;
@@ -1724,14 +1804,25 @@ begin
             
               --hamming_parity_B1 <= hamming_parity_tmp;
               
-              out_buffer(0)  <=  hamming_parity_tmp(0); 
-              out_buffer(1)  <=  hamming_parity_tmp(1);
-              out_buffer(2)  <=  hamming_parity_tmp(2);                                      
-              out_buffer(4)  <=  hamming_parity_tmp(3);
-              out_buffer(8)  <=  hamming_parity_tmp(4);
-              out_buffer(16) <=  hamming_parity_tmp(5);
-              out_buffer(32) <=  hamming_parity_tmp(6);
-              out_buffer(64) <=  hamming_parity_tmp(7); 
+              
+              -------------------------------------------------------
+              -- ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^              
+              -- this is how it should be....
+              -- but software implementation is different...
+              -- and maybe it's a better way                
+              --out_buffer(0)  <=  hamming_parity_tmp(0); 
+              --out_buffer(1)  <=  hamming_parity_tmp(1);
+              --out_buffer(2)  <=  hamming_parity_tmp(2);                                      
+              --out_buffer(4)  <=  hamming_parity_tmp(3);
+              --out_buffer(8)  <=  hamming_parity_tmp(4);
+              --out_buffer(16) <=  hamming_parity_tmp(5);
+              --out_buffer(32) <=  hamming_parity_tmp(6);
+              --out_buffer(64) <=  hamming_parity_tmp(7); 
+              
+              out_buffer(71 downto 64) <=  hamming_parity_tmp; 
+                            
+              -- ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^                            
+              -------------------------------------------------------              
               
               HAM_parity_bits_ready_B1 <= '1';
               -- left 10 bits          <-> right 11 bits
@@ -1755,12 +1846,22 @@ begin
                   hamming_state                   <= S_HAMMING_ORIGINAL_MSG_B2;
                   hamming_in_data                 <= op_1_ram_output;
                   
-                  out_buffer(75)                  <= op_1_ram_output(0);
-                  out_buffer(79  downto 77)       <= op_1_ram_output(3 downto 1);
-                  out_buffer(87  downto 81)       <= op_1_ram_output(10 downto 4);
-                  out_buffer(103 downto 89)       <= op_1_ram_output(25 downto 11);
-                  out_buffer(135 downto 105)      <= op_1_ram_output(56 downto 26);
-                  out_buffer(143 downto 137)      <= op_1_ram_output(63 downto 57);
+                  -------------------------------------------------------
+                  -- ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^              
+                  -- this is how it should be....
+                  -- but software implementation is different...
+                  -- and maybe it's a better way 
+                  --out_buffer(75)                  <= op_1_ram_output(0);
+                  --out_buffer(79  downto 77)       <= op_1_ram_output(3 downto 1);
+                  --out_buffer(87  downto 81)       <= op_1_ram_output(10 downto 4);
+                  --out_buffer(103 downto 89)       <= op_1_ram_output(25 downto 11);
+                  --out_buffer(135 downto 105)      <= op_1_ram_output(56 downto 26);
+                  --out_buffer(143 downto 137)      <= op_1_ram_output(63 downto 57);
+                  
+                  out_buffer(135 downto 72)      <= op_1_ram_output;
+                  
+                  -- ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^                            
+                  -------------------------------------------------------                    
                   
                   op_1_ram_rd_address             <= std_logic_vector(unsigned(op_1_ram_rd_address) + 1);
                 else
@@ -1778,14 +1879,25 @@ begin
             when S_HAMMING_ORIGINAL_MSG_B2 =>  
             --=======================================================================================
               
-                out_buffer(72)  <=  hamming_parity_tmp(0); 
-                out_buffer(73)  <=  hamming_parity_tmp(1);
-                out_buffer(74)  <=  hamming_parity_tmp(2);                                      
-                out_buffer(76)  <=  hamming_parity_tmp(3);
-                out_buffer(80)  <=  hamming_parity_tmp(4);
-                out_buffer(88)  <=  hamming_parity_tmp(5);
-                out_buffer(104) <=  hamming_parity_tmp(6);
-                out_buffer(136) <=  hamming_parity_tmp(7); 
+              
+                -------------------------------------------------------
+                -- ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^              
+                -- this is how it should be....
+                -- but software implementation is different...
+                -- and maybe it's a better way 
+                --out_buffer(72)  <=  hamming_parity_tmp(0); 
+                --out_buffer(73)  <=  hamming_parity_tmp(1);
+                --out_buffer(74)  <=  hamming_parity_tmp(2);                                      
+                --out_buffer(76)  <=  hamming_parity_tmp(3);
+                --out_buffer(80)  <=  hamming_parity_tmp(4);
+                --out_buffer(88)  <=  hamming_parity_tmp(5);
+                --out_buffer(104) <=  hamming_parity_tmp(6);
+                --out_buffer(136) <=  hamming_parity_tmp(7); 
+                
+                out_buffer(143 downto 136) <=  hamming_parity_tmp; 
+                
+                -- ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^                            
+                -------------------------------------------------------
                 
                 HAM_parity_bits_ready_B2 <= '1';
                 
@@ -1798,12 +1910,23 @@ begin
                                    
                      hamming_state                   <= S_HAMMING_ORIGINAL_MSG_B1;
                      hamming_in_data                 <= op_1_ram_output;
-                     out_buffer(3)                   <= op_1_ram_output(0);
-                     out_buffer(7  downto 5)         <= op_1_ram_output(3 downto 1);
-                     out_buffer(15 downto 9)         <= op_1_ram_output(10 downto 4);
-                     out_buffer(31 downto 17)        <= op_1_ram_output(25 downto 11);
-                     out_buffer(63 downto 33)        <= op_1_ram_output(56 downto 26);
-                     out_buffer(71 downto 65)        <= op_1_ram_output(63 downto 57);
+                     
+                     -------------------------------------------------------
+                     -- ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^              
+                     -- this is how it should be....
+                     -- but software implementation is different...
+                     -- and maybe it's a better way 
+                     --out_buffer(3)                   <= op_1_ram_output(0);
+                     --out_buffer(7  downto 5)         <= op_1_ram_output(3 downto 1);
+                     --out_buffer(15 downto 9)         <= op_1_ram_output(10 downto 4);
+                     --out_buffer(31 downto 17)        <= op_1_ram_output(25 downto 11);
+                     --out_buffer(63 downto 33)        <= op_1_ram_output(56 downto 26);
+                     --out_buffer(71 downto 65)        <= op_1_ram_output(63 downto 57);
+                     
+                     out_buffer(63 downto 0)        <= op_1_ram_output;
+                     
+                     -- ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^                            
+                     -------------------------------------------------------
                      
                      op_1_ram_rd_address             <= std_logic_vector(unsigned(op_1_ram_rd_address) + 1);
                    else
@@ -1823,12 +1946,22 @@ begin
                     hamming_state                   <= S_HAMMING_ORIGINAL_MSG_B1;
                     hamming_in_data                 <= op_1_ram_output;
                     
-                    out_buffer(3)                   <= op_1_ram_output(0);
-                    out_buffer(7  downto 5)         <= op_1_ram_output(3 downto 1);
-                    out_buffer(15 downto 9)         <= op_1_ram_output(10 downto 4);
-                    out_buffer(31 downto 17)        <= op_1_ram_output(25 downto 11);
-                    out_buffer(63 downto 33)        <= op_1_ram_output(56 downto 26);
-                    out_buffer(71 downto 65)        <= op_1_ram_output(63 downto 57);
+                    -------------------------------------------------------
+                    -- ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^              
+                    -- this is how it should be....
+                    -- but software implementation is different...
+                    -- and maybe it's a better way 
+                    --out_buffer(3)                   <= op_1_ram_output(0);
+                    --out_buffer(7  downto 5)         <= op_1_ram_output(3 downto 1);
+                    --out_buffer(15 downto 9)         <= op_1_ram_output(10 downto 4);
+                    --out_buffer(31 downto 17)        <= op_1_ram_output(25 downto 11);
+                    --out_buffer(63 downto 33)        <= op_1_ram_output(56 downto 26);
+                    --out_buffer(71 downto 65)        <= op_1_ram_output(63 downto 57);
+                    
+                    out_buffer(63 downto 0)        <= op_1_ram_output;
+                    
+                    -- ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^                            
+                    -------------------------------------------------------                    
                     
                     op_1_ram_rd_address             <= std_logic_vector(unsigned(op_1_ram_rd_address) + 1);
                     
@@ -1850,14 +1983,24 @@ begin
             
               HAM_parity_bits_ready_B1 <= '1';
               
-              out_buffer(0)  <=  hamming_parity_tmp(0); 
-              out_buffer(1)  <=  hamming_parity_tmp(1);
-              out_buffer(2)  <=  hamming_parity_tmp(2);                                      
-              out_buffer(4)  <=  hamming_parity_tmp(3);
-              out_buffer(8)  <=  hamming_parity_tmp(4);
-              out_buffer(16) <=  hamming_parity_tmp(5);
-              out_buffer(32) <=  hamming_parity_tmp(6);
-              out_buffer(64) <=  hamming_parity_tmp(7); 
+              -------------------------------------------------------
+              -- ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^              
+              -- this is how it should be....
+              -- but software implementation is different...
+              -- and maybe it's a better way
+              -- out_buffer(0)  <=  hamming_parity_tmp(0); 
+              -- out_buffer(1)  <=  hamming_parity_tmp(1);
+              -- out_buffer(2)  <=  hamming_parity_tmp(2);                                      
+              -- out_buffer(4)  <=  hamming_parity_tmp(3);
+              -- out_buffer(8)  <=  hamming_parity_tmp(4);
+              -- out_buffer(16) <=  hamming_parity_tmp(5);
+              -- out_buffer(32) <=  hamming_parity_tmp(6);
+              -- out_buffer(64) <=  hamming_parity_tmp(7); 
+              
+              out_buffer(71 downto 64) <= hamming_parity_tmp;
+              
+              -- ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+              -------------------------------------------------------
               
               --if(rs_ram_rd_address(c_fec_ram_addr_width-3 downto 0) = RSin_msg_size(c_fec_msg_size_MAX_Bytes_width  - 1 downto 3)) then  
               --if(rs_ram_rd_address(c_fec_ram_addr_width-1 downto 0) = RSin_msg_size(c_fec_ram_addr_width- 1 downto 3)) then 
@@ -1879,13 +2022,23 @@ begin
                
                  hamming_state                   <= S_HAMMING_RS_PARITY_MSG_B2;
                  hamming_in_data                 <= rs_ram_output;
-                                
-                 out_buffer(75)                  <= rs_ram_output(0);
-                 out_buffer(79  downto 77)       <= rs_ram_output(3 downto 1);
-                 out_buffer(87  downto 81)       <= rs_ram_output(10 downto 4);
-                 out_buffer(103 downto 89)       <= rs_ram_output(25 downto 11);
-                 out_buffer(135 downto 105)      <= rs_ram_output(56 downto 26);
-                 out_buffer(143 downto 137)      <= rs_ram_output(63 downto 57);
+                               
+                 -------------------------------------------------------
+                 -- ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^              
+                 -- this is how it should be....
+                 -- but software implementation is different...
+                 -- and maybe it's a better way                                
+                 --out_buffer(75)                  <= rs_ram_output(0);
+                 --out_buffer(79  downto 77)       <= rs_ram_output(3 downto 1);
+                 --out_buffer(87  downto 81)       <= rs_ram_output(10 downto 4);
+                 --out_buffer(103 downto 89)       <= rs_ram_output(25 downto 11);
+                 --out_buffer(135 downto 105)      <= rs_ram_output(56 downto 26);
+                 --out_buffer(143 downto 137)      <= rs_ram_output(63 downto 57);
+                 
+                 out_buffer(135 downto 72)       <= rs_ram_output;
+                 
+                 -- ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+                 -------------------------------------------------------
                
                  rs_ram_rd_address <= std_logic_vector(unsigned(rs_ram_rd_address) + 1);
                  
@@ -1906,14 +2059,23 @@ begin
             
               HAM_parity_bits_ready_B2 <= '1';
               
-              out_buffer(72)  <=  hamming_parity_tmp(0); 
-              out_buffer(73)  <=  hamming_parity_tmp(1);
-              out_buffer(74)  <=  hamming_parity_tmp(2);                                      
-              out_buffer(76)  <=  hamming_parity_tmp(3);
-              out_buffer(80)  <=  hamming_parity_tmp(4);
-              out_buffer(88)  <=  hamming_parity_tmp(5);
-              out_buffer(104) <=  hamming_parity_tmp(6);
-              out_buffer(136) <=  hamming_parity_tmp(7); 
+              -------------------------------------------------------
+              -- ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^              
+              -- this is how it should be....
+              -- but software implementation is different...
+              -- and maybe it's a better way  
+              --out_buffer(72)  <=  hamming_parity_tmp(0); 
+              --out_buffer(73)  <=  hamming_parity_tmp(1);
+              --out_buffer(74)  <=  hamming_parity_tmp(2);                                      
+              --out_buffer(76)  <=  hamming_parity_tmp(3);
+              --out_buffer(80)  <=  hamming_parity_tmp(4);
+              --out_buffer(88)  <=  hamming_parity_tmp(5);
+              --out_buffer(104) <=  hamming_parity_tmp(6);
+              --out_buffer(136) <=  hamming_parity_tmp(7); 
+             
+              out_buffer(143 downto 136) <=  hamming_parity_tmp;
+              -- ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+              -------------------------------------------------------
              
               --if(rs_ram_rd_address(c_fec_ram_addr_width-3 downto 0) = RSin_msg_size(c_fec_msg_size_MAX_Bytes_width  - 1 downto 3)) then  
               --if(rs_ram_rd_address(c_fec_ram_addr_width-1 downto 0) = RSin_msg_size(c_fec_ram_addr_width- 1 downto 3)) then 
@@ -1926,12 +2088,22 @@ begin
                    hamming_state                   <= S_HAMMING_RS_PARITY_MSG_B1;
                    hamming_in_data                 <= rs_ram_output;
                    
-                   out_buffer(3)                   <= rs_ram_output(0);
-                   out_buffer(7  downto 5)         <= rs_ram_output(3 downto 1);
-                   out_buffer(15 downto 9)         <= rs_ram_output(10 downto 4);
-                   out_buffer(31 downto 17)        <= rs_ram_output(25 downto 11);
-                   out_buffer(63 downto 33)        <= rs_ram_output(56 downto 26);
-                   out_buffer(71 downto 65)        <= rs_ram_output(63 downto 57);
+                   -------------------------------------------------------
+                   -- ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^              
+                   -- this is how it should be....
+                   -- but software implementation is different...
+                   -- and maybe it's a better way 
+                   --out_buffer(3)                   <= rs_ram_output(0);
+                   --out_buffer(7  downto 5)         <= rs_ram_output(3 downto 1);
+                   --out_buffer(15 downto 9)         <= rs_ram_output(10 downto 4);
+                   --out_buffer(31 downto 17)        <= rs_ram_output(25 downto 11);
+                   --out_buffer(63 downto 33)        <= rs_ram_output(56 downto 26);
+                   --out_buffer(71 downto 65)        <= rs_ram_output(63 downto 57);
+                   
+                   out_buffer(63 downto 0)        <= rs_ram_output;                   
+                   
+                   -- ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+                   -------------------------------------------------------
                    
                    rs_ram_rd_address               <= std_logic_vector(unsigned(rs_ram_rd_address) + 1);
                  else
@@ -1953,12 +2125,22 @@ begin
                   hamming_state                   <= S_HAMMING_RS_PARITY_MSG_B1;
                   hamming_in_data                 <= rs_ram_output;
                 
-                  out_buffer(3)                   <= rs_ram_output(0);
-                  out_buffer(7  downto 5)         <= rs_ram_output(3 downto 1);
-                  out_buffer(15 downto 9)         <= rs_ram_output(10 downto 4);
-                  out_buffer(31 downto 17)        <= rs_ram_output(25 downto 11);
-                  out_buffer(63 downto 33)        <= rs_ram_output(56 downto 26);
-                  out_buffer(71 downto 65)        <= rs_ram_output(63 downto 57);
+                  -------------------------------------------------------
+                  -- ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^              
+                  -- this is how it should be....
+                  -- but software implementation is different...
+                  -- and maybe it's a better way                 
+                  --out_buffer(3)                   <= rs_ram_output(0);
+                  --out_buffer(7  downto 5)         <= rs_ram_output(3 downto 1);
+                  --out_buffer(15 downto 9)         <= rs_ram_output(10 downto 4);
+                  --out_buffer(31 downto 17)        <= rs_ram_output(25 downto 11);
+                  --out_buffer(63 downto 33)        <= rs_ram_output(56 downto 26);
+                  --out_buffer(71 downto 65)        <= rs_ram_output(63 downto 57);
+
+                  out_buffer(63 downto 0)        <= rs_ram_output;
+                  
+                  -- ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+                  -------------------------------------------------------
             
                   rs_ram_rd_address               <= std_logic_vector(unsigned(rs_ram_rd_address) + 1);
                 else
@@ -2037,6 +2219,7 @@ begin
      sending_state                <= S_IDLE;
      out_helper_ctrl_d            <='0';
      out_helper_buffer            <=(others =>'0');
+     inc_fragmentID               <= '0';
      --========================================
      else
        
@@ -2187,6 +2370,7 @@ begin
              sent_FECheader_bit_cnt   := 0;
              sent_singleMsg_bit_cnt   := 0;
              
+             inc_fragmentID               <= '1';
              output_words_cnt             <= (others => '0');
              output_words_cnt_mod9        <= (others => '0');
              
@@ -2196,6 +2380,7 @@ begin
          --=======================================================================================
          when S_SEND_PAYLOAD =>   
          --=======================================================================================
+           inc_fragmentID               <='0';
            all_HAM_parity_bits_sent_B1  <='0';
            all_HAM_parity_bits_sent_B1  <='0';
            if_byte_sel_o                <= "11";
@@ -2241,8 +2426,10 @@ begin
                 if(cnt_sent_frames = 3) then 
                   if_out_end_of_fec_o    <='1';
                 end if;
-                all_HAM_parity_bits_sent_B1 <= '1';
-                all_HAM_parity_bits_sent_B2 <= '1';
+                
+-- bug(?)[26/09] with eating words between messages                
+--                all_HAM_parity_bits_sent_B1 <= '1';
+--                all_HAM_parity_bits_sent_B2 <= '1';
                 
                 
                 
@@ -2289,14 +2476,17 @@ begin
            elsif(if_out_ctrl_i = '0') then
              sending_state   <= S_SEND_ETHERNET_HEADER;
              cnt_sent_frames := cnt_sent_frames + 1;
-             if(cnt_sent_frames = 2) then
-               if(all_HAM_parity_bits_sent_B1 = '0') then
-                 all_HAM_parity_bits_sent_B1 <='1';
-               end if;
-               if(all_HAM_parity_bits_sent_B2 = '0') then
-                 all_HAM_parity_bits_sent_B2 <='1';
-               end if;
-             end if;
+             
+-- bug(?)[26/09] it cause one buffer (64bits) to be skipped
+-- why did I put the condition here?             
+--             if(cnt_sent_frames = 2) then
+--               if(all_HAM_parity_bits_sent_B1 = '0') then
+--                 all_HAM_parity_bits_sent_B1 <='1';
+--               end if;
+--               if(all_HAM_parity_bits_sent_B2 = '0') then
+--                 all_HAM_parity_bits_sent_B2 <='1';
+--               end if;
+--             end if;
            end if;
          --=======================================================================================        
          when S_PAUSE =>  
