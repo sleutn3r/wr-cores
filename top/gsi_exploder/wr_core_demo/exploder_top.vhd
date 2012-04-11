@@ -12,6 +12,7 @@ use work.wishbone_pkg.all;
 use work.wb_cores_pkg_gsi.all;
 --use work.wrc_bin_pkg.all;
 use work.xwr_eca_pkg.all;
+use work.xwr_fec_pkg.all;
 
 entity exploder_top is
   port
@@ -182,6 +183,30 @@ architecture rtl of exploder_top is
       );
   end component;
   
+  component wr_fec is
+
+    port (
+      clk_sys_i    : in  std_logic;
+      rst_n_i      : in  std_logic;
+      -----------------------------------
+      -- To WRPTP core
+      snk_deco_o   : out  t_wrf_sink_out;
+      snk_deco_i   : in   t_wrf_sink_in;
+      src_encod_o  : out  t_wrf_source_out;
+      src_encod_i  : in   t_wrf_source_in;
+      -----------------------------------
+      -- To Etherbone
+      snk_encod_o  : out t_wrf_sink_out;
+      snk_encod_in : in  t_wrf_sink_in;
+      src_deco_o   : out t_wrf_source_out;
+      src_deco_i   : in  t_wrf_source_in;
+      -----------------------------------
+      -- to crossbar
+      wb_slave_i : in  t_wishbone_slave_in;
+      wb_slave_o : out t_wishbone_slave_out);
+
+  end component wr_fec;
+    
   component xetherbone_core
    
     port (
@@ -237,13 +262,16 @@ architecture rtl of exploder_top is
   constant c_wrcore_bridge_sdwb : t_sdwb_device := f_xwb_bridge_manual_sdwb(x"0003ffff", x"00030000");
   
   -- Ref clock crossbar
-  constant c_ref_slaves  : natural := 3;
+  --constant c_ref_slaves  : natural := 3;
+  constant c_ref_slaves  : natural := 4;
   constant c_ref_masters : natural := 1;
   constant c_ref_layout : t_sdwb_device_array(c_ref_slaves-1 downto 0) :=
    (0 => f_sdwb_set_address(c_xwr_gpio_32_sdwb,            x"00000000"),
     1 => f_sdwb_set_address(c_xwr_eca_sdwb,                x"00040000"),
-    2 => f_sdwb_set_address(c_xwr_wb_timestamp_latch_sdwb, x"00080000"));
-  constant c_ref_sdwb_address : t_wishbone_address := x"000C0000";
+    2 => f_sdwb_set_address(c_xwr_wb_timestamp_latch_sdwb, x"00080000"),
+    3 => f_sdwb_set_address(c_xwr_wr_fec_sdwb            , x"000C0000"));
+  constant c_ref_sdwb_address : t_wishbone_address := x"000E0000";  --ask
+                                                                    --wesley?
   constant c_ref_bridge : t_sdwb_device := 
     f_xwb_bridge_layout_sdwb(true, c_ref_layout, c_ref_sdwb_address);
   
@@ -251,16 +279,21 @@ architecture rtl of exploder_top is
   signal cbar_ref_slave_o  : t_wishbone_slave_out_array(c_ref_masters-1 downto 0);
   signal cbar_ref_master_i : t_wishbone_master_in_array(c_ref_slaves-1 downto 0);
   signal cbar_ref_master_o : t_wishbone_master_out_array(c_ref_slaves-1 downto 0);
+
+
+  --in which one should I hook it?????
   
   -- Top crossbar layout
-  constant c_slaves : natural := 3;
+  --constant c_slaves : natural := 3;
+  constant c_slaves : natural := 4;
   constant c_masters : natural := 1;
   constant c_test_dpram_size : natural := 2048;
   constant c_layout : t_sdwb_device_array(c_slaves-1 downto 0) :=
    (0 => f_sdwb_set_address(f_xwb_dpram(c_test_dpram_size), x"00000000"),
     1 => f_sdwb_set_address(c_ref_bridge,                   x"00100000"),
-    2 => f_sdwb_set_address(c_wrcore_bridge_sdwb,           x"00200000"));
-  constant c_sdwb_address : t_wishbone_address := x"00300000";
+    2 => f_sdwb_set_address(c_wrcore_bridge_sdwb,           x"00200000")
+    3=>  f_sdwb_set_address(c_wr_fec_sdbw,                  x"00300000"));
+  constant c_sdwb_address : t_wishbone_address := x"00400000";  --ask wesley? x"00300000"
 
   signal cbar_slave_i  : t_wishbone_slave_in_array (c_masters-1 downto 0);
   signal cbar_slave_o  : t_wishbone_slave_out_array(c_masters-1 downto 0);
@@ -333,11 +366,24 @@ architecture rtl of exploder_top is
   signal led_red			: std_logic;
 
   signal clk_reconf : std_logic;
-  
+
+ ------------------------------------------ 
   signal mb_src_out    : t_wrf_source_out;
   signal mb_src_in     : t_wrf_source_in;
   signal mb_snk_out    : t_wrf_sink_out;
   signal mb_snk_in     : t_wrf_sink_in;
+
+  signal pf_src_out : t_wrf_source_out;  -- from WRPTP core to FEC 
+  signal pf_src_in  : t_wrf_source_in;
+  signal pf_snk_out : t_wrf_sink_out;
+  signal pf_snk_in  : t_wrf_sink_in;
+
+  signal fe_src_out : t_wrf_source_out;  -- from FEC to Etherbone
+  signal fe_src_in : t_wrf_source_in;
+  signal fe_snk_out : t_wrf_sink_out;
+  signal fe_snk_in : t_wrf_sink_in;
+  -------------------------------------------
+ 
   signal mb_master_out : t_wishbone_master_out;
   signal mb_master_in  : t_wishbone_master_in;
   
@@ -426,12 +472,27 @@ begin
 
       slave_i => cbar_master_o(2),
       slave_o => cbar_master_i(2),
+----------------------------------------------------
+      --wrf_src_i => mb_snk_out,
+      --wrf_src_o => mb_snk_in,
 
-      wrf_src_i => mb_snk_out,
-      wrf_src_o => mb_snk_in,
+      --wrf_snk_i => mb_src_out,
+      --wrf_snk_o => mb_src_in,
+      
+      -- From WRPTP core to FEC
+      wrf_src_i => pf_snk_out,
+      wrf_src_o => pf_snk_in,
+      wrf_snk_i => pf_src_out,
+      wrf_snk_o => pf_src_in,
 
-      wrf_snk_i => mb_src_out,
-      wrf_snk_o => mb_src_in,
+      -- From FEC to Etherbone
+
+      fe_src_in  => mb_snk_out,
+      fe_src_out => mb_snk_in,
+      fe_snk_in  => mb_src_out,
+      fe_snk_out => mb_src_in,
+      
+-----------------------------------------------------
 
       pps_p_o => pps,
 
@@ -520,12 +581,39 @@ begin
     port map (
       clk_sys_i => l_clkp,
       rst_n_i   => nreset,
-      src_o     => mb_src_out,
-      src_i     => mb_src_in,
-      snk_o     => mb_snk_out,
-      snk_i     => mb_snk_in,
+      --src_o     => mb_src_out,
+      --src_i     => mb_src_in,
+      --snk_o     => mb_snk_out,
+      --snk_i     => mb_snk_in,
+      src_o     => fe_src_out,
+      src_i     => fe_src_in,
+      snk_o     => fe_snk_out,
+      snk_i     => fe_snk_in,
       master_o  => cbar_slave_i(0),
       master_i  => cbar_slave_o(0));
+
+   component wr_fec is
+    port map(
+      clk_sys_i => l_clkp,
+      rst_n_i   => nreset,
+      -----------------------------------
+      -- To WRPTP core
+      snk_deco_o   => pf_snk_out;
+      snk_deco_i   => pf_snk_in;
+      src_encod_o  => pf_src_out;
+      src_encod_i  => pf_src_in;
+      -----------------------------------
+      -- To Etherbone
+      snk_encod_o  => fe_src_in;
+      snk_encod_in => fe_src_out;
+      src_deco_o   => fe_snk_in;
+      src_deco_i   => fe_snk_out;
+      ----------------------------------
+      -- To Crossbar
+      wb_slave_o  => cbar_ref_master_o(3);
+      wb_slave_i  => cbar_ref_master_i(3));
+  end component wr_fec;
+  
   
 --fake_timestamp_1: fake_timestamp
 --   port map (
