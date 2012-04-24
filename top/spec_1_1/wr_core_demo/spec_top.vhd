@@ -69,6 +69,8 @@ entity spec_top is
       -- Font panel LEDs
       LED_RED   : out std_logic;
       LED_GREEN : out std_logic;
+		
+		led_reset : out std_logic;
 
       dac_sclk_o  : out std_logic;
       dac_din_o   : out std_logic;
@@ -582,25 +584,28 @@ begin
       CLKIN    => clk_20m_vcxo_buf);
 
 
-  --p_gen_reset : process(clk_sys)
-  --begin
-  --  if rising_edge(clk_sys) then
-  --    button1_synced(0) <= button1_i;
-  --    button1_synced(1) <= button1_synced(0);
-  --    button1_synced(2) <= button1_synced(1);
+  p_gen_reset : process(clk_sys)
+  begin
+  if rising_edge(clk_sys) then
+      button1_synced(0) <= button1_i;
+      button1_synced(1) <= button1_synced(0);
+      button1_synced(2) <= button1_synced(1);
 
-  --    if(L_RST_N = '0') then
-  --      local_reset_n <= '0';
-  --    elsif (button1_synced(2) = '0') then
-  --      local_reset_n <= '0';
-  --    else
-  --      local_reset_n <= '1';
-  --    end if;
-  --  end if;
-  --end process;
+      --if(L_RST_N = '0') then
+      --  local_reset_n <= '0';
+      --elsif (button1_synced(2) = '0') then
+		if (button1_synced(2) = '0') then
+        local_reset_n <= '0';
+		  led_reset <= '0';
+      else
+        local_reset_n <= '1';
+		  led_reset <= '1';
+      end if;
+    end if;
+  end process;
 
 
-  local_reset_n <= L_RST_N;
+  --local_reset_n <= L_RST_N;
 
   cmp_clk_sys_buf : BUFG
     port map (
@@ -760,7 +765,7 @@ begin
       g_with_external_clock_input => true,
       g_aux_clks                  => 1,
       g_ep_rxbuf_size             => 1024,
-      g_dpram_initf               => "",
+      g_dpram_initf               => "/home/bradomyn/project/wrpc-sw/wrc.ram",
       g_dpram_size                => 16384,
       g_interface_mode            => PIPELINED,
       g_address_granularity       => WORD)
