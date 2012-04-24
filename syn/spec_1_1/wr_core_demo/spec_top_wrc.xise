@@ -1243,6 +1243,62 @@
     <file xil_pn:name="../../../top/spec_1_1/wr_core_demo/spec_top.ucf" xil_pn:type="FILE_UCF">
       <association xil_pn:name="Implementation" xil_pn:seqID="272"/>
     </file>
+    <file xil_pn:name="../../../ip_cores/etherbone-core/hdl/EB_SPEC_Test/EB_2_wb_converter.vhd" xil_pn:type="FILE_VHDL">
+      <association xil_pn:name="BehavioralSimulation" xil_pn:seqID="323"/>
+      <association xil_pn:name="Implementation" xil_pn:seqID="323"/>
+    </file>
+    <file xil_pn:name="../../../ip_cores/etherbone-core/hdl/EB_SPEC_Test/EB_checksum.vhd" xil_pn:type="FILE_VHDL">
+      <association xil_pn:name="BehavioralSimulation" xil_pn:seqID="324"/>
+      <association xil_pn:name="Implementation" xil_pn:seqID="324"/>
+    </file>
+    <file xil_pn:name="../../../ip_cores/etherbone-core/hdl/EB_SPEC_Test/eb_config_new.vhd" xil_pn:type="FILE_VHDL">
+      <association xil_pn:name="BehavioralSimulation" xil_pn:seqID="325"/>
+      <association xil_pn:name="Implementation" xil_pn:seqID="325"/>
+    </file>
+    <file xil_pn:name="../../../ip_cores/etherbone-core/hdl/EB_SPEC_Test/EB_CORE.vhd" xil_pn:type="FILE_VHDL">
+      <association xil_pn:name="BehavioralSimulation" xil_pn:seqID="326"/>
+      <association xil_pn:name="Implementation" xil_pn:seqID="326"/>
+    </file>
+    <file xil_pn:name="../../../ip_cores/etherbone-core/hdl/EB_SPEC_Test/EB_HDR_pkg.vhd" xil_pn:type="FILE_VHDL">
+      <association xil_pn:name="BehavioralSimulation" xil_pn:seqID="327"/>
+      <association xil_pn:name="Implementation" xil_pn:seqID="327"/>
+    </file>
+    <file xil_pn:name="../../../ip_cores/etherbone-core/hdl/EB_SPEC_Test/EB_RX_CTRL.vhd" xil_pn:type="FILE_VHDL">
+      <association xil_pn:name="BehavioralSimulation" xil_pn:seqID="328"/>
+      <association xil_pn:name="Implementation" xil_pn:seqID="328"/>
+    </file>
+    <file xil_pn:name="../../../ip_cores/etherbone-core/hdl/EB_SPEC_Test/EB_TX_CTRL.vhd" xil_pn:type="FILE_VHDL">
+      <association xil_pn:name="BehavioralSimulation" xil_pn:seqID="329"/>
+      <association xil_pn:name="Implementation" xil_pn:seqID="329"/>
+    </file>
+    <file xil_pn:name="../../../ip_cores/etherbone-core/hdl/EB_SPEC_Test/piso_flag.vhd" xil_pn:type="FILE_VHDL">
+      <association xil_pn:name="BehavioralSimulation" xil_pn:seqID="330"/>
+      <association xil_pn:name="Implementation" xil_pn:seqID="330"/>
+    </file>
+    <file xil_pn:name="../../../ip_cores/etherbone-core/hdl/EB_SPEC_Test/sipo_flag.vhd" xil_pn:type="FILE_VHDL">
+      <association xil_pn:name="BehavioralSimulation" xil_pn:seqID="331"/>
+      <association xil_pn:name="Implementation" xil_pn:seqID="331"/>
+    </file>
+    <file xil_pn:name="../../../ip_cores/etherbone-core/hdl/EB_SPEC_Test/vhdl_2008_workaround_pkg.vhd" xil_pn:type="FILE_VHDL">
+      <association xil_pn:name="BehavioralSimulation" xil_pn:seqID="332"/>
+      <association xil_pn:name="Implementation" xil_pn:seqID="332"/>
+    </file>
+    <file xil_pn:name="../../../ip_cores/etherbone-core/hdl/EB_SPEC_Test/WB_bus_adapter_streaming_sg.vhd" xil_pn:type="FILE_VHDL">
+      <association xil_pn:name="BehavioralSimulation" xil_pn:seqID="333"/>
+      <association xil_pn:name="Implementation" xil_pn:seqID="333"/>
+    </file>
+    <file xil_pn:name="../../../ip_cores/etherbone-core/hdl/EB_SPEC_Test/wishbone_package16.vhd" xil_pn:type="FILE_VHDL">
+      <association xil_pn:name="BehavioralSimulation" xil_pn:seqID="334"/>
+      <association xil_pn:name="Implementation" xil_pn:seqID="334"/>
+    </file>
+    <file xil_pn:name="../../../ip_cores/etherbone-core/hdl/EB_SPEC_Test/wishbone_package32.vhd" xil_pn:type="FILE_VHDL">
+      <association xil_pn:name="BehavioralSimulation" xil_pn:seqID="335"/>
+      <association xil_pn:name="Implementation" xil_pn:seqID="335"/>
+    </file>
+    <file xil_pn:name="../../../ip_cores/etherbone-core/hdl/EB_SPEC_Test/xetherbone_core.vhd" xil_pn:type="FILE_VHDL">
+      <association xil_pn:name="BehavioralSimulation" xil_pn:seqID="336"/>
+      <association xil_pn:name="Implementation" xil_pn:seqID="336"/>
+    </file>
   </files>
 
   <bindings/>
