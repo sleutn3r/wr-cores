@@ -780,7 +780,7 @@ begin
       g_with_external_clock_input => true,
       g_aux_clks                  => 1,
       g_ep_rxbuf_size             => 1024,
-      g_dpram_initf               => "/home/bradomyn/project/wrpc-sw/wrc.ram",
+      g_dpram_initf               => "/home/bradomyn/project/wr-core-software/wrc.ram",
       g_dpram_size                => 16384,
       g_interface_mode            => PIPELINED,
       g_address_granularity       => WORD)
