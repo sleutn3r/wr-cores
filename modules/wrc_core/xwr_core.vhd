@@ -6,7 +6,7 @@
 -- Author     : Grzegorz Daniluk
 -- Company    : Elproma
 -- Created    : 2011-02-02
--- Last update: 2012-04-20
+-- Last update: 2012-04-25
 -- Platform   : FPGA-generics
 -- Standard   : VHDL
 -------------------------------------------------------------------------------
@@ -54,7 +54,7 @@ entity xwr_core is
     g_ep_rxbuf_size             : integer                        := 1024;
     g_dpram_initf               : string                         := "";
     g_dpram_initv               : t_xwb_dpram_init               := c_xwb_dpram_init_nothing;
-    g_dpram_size                : integer                        := 16384;  --in 32-bit words
+    g_dpram_size                : integer                        := 20480;  --in 32-bit words
     g_interface_mode            : t_wishbone_interface_mode      := CLASSIC;
     g_address_granularity       : t_wishbone_address_granularity := WORD
     );
@@ -76,10 +76,10 @@ entity xwr_core is
     clk_aux_i : in std_logic_vector(g_aux_clks-1 downto 0) := (others => '0');
 
     -- External 10 MHz reference (cesium, GPSDO, etc.), used in Grandmaster mode
-    clk_ext_i : in std_logic;
+    clk_ext_i : in std_logic := '0';
 
     -- External PPS input (cesium, GPSDO, etc.), used in Grandmaster mode
-    pps_ext_i : in std_logic;
+    pps_ext_i : in std_logic := '0';
 
     rst_n_i            : in  std_logic;
     -----------------------------------------
@@ -161,6 +161,7 @@ entity xwr_core is
     -- Timecode/Servo Control
     -----------------------------------------
 
+    tm_link_up_o : out std_logic;
     -- DAC Control
     tm_dac_value_o       : out std_logic_vector(23 downto 0);
     tm_dac_wr_o          : out std_logic;
@@ -252,6 +253,8 @@ architecture struct of xwr_core is
       wb_cyc_i   : in  std_logic;
       wb_stb_i   : in  std_logic;
       wb_ack_o   : out std_logic;
+      wb_err_o   : out std_logic;
+      wb_rty_o   : out std_logic;
       wb_stall_o : out std_logic;
 
       ext_snk_adr_i   : in  std_logic_vector(1 downto 0)  := "00";
@@ -281,6 +284,7 @@ architecture struct of xwr_core is
       txtsu_stb_o          : out std_logic;
       txtsu_ack_i          : in  std_logic;
 
+      tm_link_up_o : out std_logic;
       tm_dac_value_o       : out std_logic_vector(23 downto 0);
       tm_dac_wr_o          : out std_logic;
       tm_clk_aux_lock_en_i : in  std_logic;
@@ -365,6 +369,8 @@ begin
       wb_cyc_i   => slave_i.cyc,
       wb_stb_i   => slave_i.stb,
       wb_ack_o   => slave_o.ack,
+      wb_err_o   => slave_o.err,
+      wb_rty_o   => slave_o.rty,
       wb_stall_o => slave_o.stall,
 
       ext_snk_adr_i   => wrf_snk_i.adr,
@@ -394,6 +400,7 @@ begin
       txtsu_stb_o          => timestamps_o.stb,
       txtsu_ack_i          => timestamps_ack_i,
 
+      tm_link_up_o => tm_link_up_o,
       tm_dac_value_o       => tm_dac_value_o,
       tm_dac_wr_o          => tm_dac_wr_o,
       tm_clk_aux_lock_en_i => tm_clk_aux_lock_en_i,
@@ -411,8 +418,6 @@ begin
 
   timestamps_o.port_id(5) <= '0';
 
-  slave_o.err <= '0';
-  slave_o.rty <= '0';
   slave_o.int <= '0';
 
   wrf_snk_o.rty <= '0';

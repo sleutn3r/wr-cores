@@ -5,7 +5,7 @@
 -- Author     : Grzegorz Daniluk
 -- Company    : Elproma
 -- Created    : 2011-02-02
--- Last update: 2012-04-20
+-- Last update: 2012-05-02
 -- Platform   : FPGA-generics
 -- Standard   : VHDL
 -------------------------------------------------------------------------------
@@ -27,7 +27,7 @@
 -- Date        Version  Author          Description
 -- 2011-02-02  1.0      greg.d          Created
 -- 2011-10-25  2.0      greg.d          Redesigned and wishbonized
--- 2012-03-05  3.0      wterpstra       Added SDWB descriptors
+-- 2012-03-05  3.0      wterpstra       Added SDB descriptors
 -------------------------------------------------------------------------------
 
 
@@ -67,7 +67,7 @@ entity wr_core is
     g_rx_buffer_size            : integer                        := 1024;
     g_dpram_initf               : string                         := "";
     g_dpram_initv               : t_xwb_dpram_init               := c_xwb_dpram_init_nothing;
-    g_dpram_size                : integer                        := 16384;  --in 32-bit words
+    g_dpram_size                : integer                        := 20480;  --in 32-bit words
     g_interface_mode            : t_wishbone_interface_mode      := PIPELINED;
     g_address_granularity       : t_wishbone_address_granularity := WORD
     );
@@ -90,10 +90,10 @@ entity wr_core is
     clk_aux_i : in std_logic_vector(g_aux_clks-1 downto 0) := (others => '0');
 
     -- External 10 MHz reference (cesium, GPSDO, etc.), used in Grandmaster mode
-    clk_ext_i : in std_logic;
+    clk_ext_i : in std_logic := '0';
 
     -- External PPS input (cesium, GPSDO, etc.), used in Grandmaster mode
-    pps_ext_i : in std_logic;
+    pps_ext_i : in std_logic := '0';
 
     rst_n_i : in std_logic;
 
@@ -131,21 +131,21 @@ entity wr_core is
     led_red_o   : out std_logic;
     led_green_o : out std_logic;
     scl_o       : out std_logic;
-    scl_i       : in  std_logic;
+    scl_i       : in  std_logic := '1';
     sda_o       : out std_logic;
-    sda_i       : in  std_logic;
+    sda_i       : in  std_logic := '1';
     sfp_scl_o   : out std_logic;
-    sfp_scl_i   : in  std_logic;
+    sfp_scl_i   : in  std_logic := '1';
     sfp_sda_o   : out std_logic;
-    sfp_sda_i   : in  std_logic;
-    sfp_det_i   : in  std_logic;
-    btn1_i      : in  std_logic;
-    btn2_i      : in  std_logic;
+    sfp_sda_i   : in  std_logic := '1';
+    sfp_det_i   : in  std_logic := '1';
+    btn1_i      : in  std_logic := '1';
+    btn2_i      : in  std_logic := '1';
 
     -----------------------------------------
     --UART
     -----------------------------------------
-    uart_rxd_i : in  std_logic;
+    uart_rxd_i : in  std_logic := '0';
     uart_txd_o : out std_logic;
 
     -----------------------------------------
@@ -157,14 +157,16 @@ entity wr_core is
     -----------------------------------------
     --External WB interface
     -----------------------------------------
-    wb_adr_i   : in  std_logic_vector(c_wishbone_address_width-1 downto 0);
-    wb_dat_i   : in  std_logic_vector(c_wishbone_data_width-1 downto 0);
+    wb_adr_i   : in  std_logic_vector(c_wishbone_address_width-1 downto 0)   := (others => '0');
+    wb_dat_i   : in  std_logic_vector(c_wishbone_data_width-1 downto 0)      := (others => '0');
     wb_dat_o   : out std_logic_vector(c_wishbone_data_width-1 downto 0);
-    wb_sel_i   : in  std_logic_vector(c_wishbone_address_width/8-1 downto 0);
-    wb_we_i    : in  std_logic;
-    wb_cyc_i   : in  std_logic;
-    wb_stb_i   : in  std_logic;
+    wb_sel_i   : in  std_logic_vector(c_wishbone_address_width/8-1 downto 0) := (others => '0');
+    wb_we_i    : in  std_logic                                               := '0';
+    wb_cyc_i   : in  std_logic                                               := '0';
+    wb_stb_i   : in  std_logic                                               := '0';
     wb_ack_o   : out std_logic;
+    wb_err_o   : out std_logic;
+    wb_rty_o   : out std_logic;
     wb_stall_o : out std_logic;
 
     -----------------------------------------
@@ -198,17 +200,18 @@ entity wr_core is
     txtsu_ts_value_o     : out std_logic_vector(31 downto 0);
     txtsu_ts_incorrect_o : out std_logic;
     txtsu_stb_o          : out std_logic;
-    txtsu_ack_i          : in  std_logic;
+    txtsu_ack_i          : in  std_logic := '1';
 
     -----------------------------------------
     -- Timecode/Servo Control
     -----------------------------------------
 
+    tm_link_up_o         : out std_logic;
     -- DAC Control
     tm_dac_value_o       : out std_logic_vector(23 downto 0);
     tm_dac_wr_o          : out std_logic;
     -- Aux clock lock enable
-    tm_clk_aux_lock_en_i : in  std_logic;
+    tm_clk_aux_lock_en_i : in  std_logic := '0';
     -- Aux clock locked flag
     tm_clk_aux_locked_o  : out std_logic;
     -- Timecode output
@@ -285,17 +288,17 @@ architecture struct of wr_core is
   -----------------------------------------------------------------------------
   --WB Secondary Crossbar
   -----------------------------------------------------------------------------
-  constant c_secbar_layout : t_sdwb_device_array(6 downto 0) :=
-    (0 => f_sdwb_set_address(c_xwr_mini_nic_sdwb, x"00000000"),
-     1 => f_sdwb_set_address(c_xwr_endpoint_sdwb, x"00000100"),
-     2 => f_sdwb_set_address(c_xwr_softpll_ng_sdwb, x"00000200"),
-     3 => f_sdwb_set_address(c_xwr_pps_gen_sdwb, x"00000300"),
-     4 => f_sdwb_set_address(c_wrc_periph0_sdwb, x"00000400"),   -- Syscon
-     5 => f_sdwb_set_address(c_wrc_periph1_sdwb, x"00000500"),   -- UART
-     6 => f_sdwb_set_address(c_wrc_periph2_sdwb, x"00000600"));  -- 1-Wire
-  constant c_secbar_sdwb_address : t_wishbone_address := x"00000800";
-  constant c_secbar_bridge_sdwb  : t_sdwb_device      :=
-    f_xwb_bridge_layout_sdwb(true, c_secbar_layout, c_secbar_sdwb_address);
+  constant c_secbar_layout : t_sdb_record_array(6 downto 0) :=
+    (0 => f_sdb_embed_device(c_xwr_mini_nic_sdb,   x"00000000"),
+     1 => f_sdb_embed_device(c_xwr_endpoint_sdb,   x"00000100"),
+     2 => f_sdb_embed_device(c_xwr_softpll_ng_sdb, x"00000200"),
+     3 => f_sdb_embed_device(c_xwr_pps_gen_sdb,    x"00000300"),
+     4 => f_sdb_embed_device(c_wrc_periph0_sdb,    x"00000400"),  -- Syscon
+     5 => f_sdb_embed_device(c_wrc_periph1_sdb,    x"00000500"),  -- UART
+     6 => f_sdb_embed_device(c_wrc_periph2_sdb,    x"00000600")); -- 1-Wire
+  constant c_secbar_sdb_address : t_wishbone_address := x"00000800";
+  constant c_secbar_bridge_sdb : t_sdb_bridge := 
+     f_xwb_bridge_layout_sdb(true, c_secbar_layout, c_secbar_sdb_address);
 
   signal secbar_master_i : t_wishbone_master_in_array(6 downto 0);
   signal secbar_master_o : t_wishbone_master_out_array(6 downto 0);
@@ -303,10 +306,10 @@ architecture struct of wr_core is
   -----------------------------------------------------------------------------
   --WB intercon
   -----------------------------------------------------------------------------
-  constant c_layout : t_sdwb_device_array(1 downto 0) :=
-    (0 => f_sdwb_set_address(f_xwb_dpram(g_dpram_size), x"00000000"),
-     1 => f_sdwb_set_address(c_secbar_bridge_sdwb, x"00020000"));
-  constant c_sdwb_address : t_wishbone_address := x"00030000";
+  constant c_layout : t_sdb_record_array(1 downto 0) :=
+   (0 => f_sdb_embed_device(f_xwb_dpram(g_dpram_size), x"00000000"),
+    1 => f_sdb_embed_bridge(c_secbar_bridge_sdb,       x"00020000"));
+  constant c_sdb_address : t_wishbone_address := x"00030000";
 
   signal cbar_slave_i  : t_wishbone_slave_in_array (2 downto 0);
   signal cbar_slave_o  : t_wishbone_slave_out_array(2 downto 0);
@@ -364,6 +367,7 @@ architecture struct of wr_core is
   signal ext_snk_in  : t_wrf_sink_in;
   signal dummy       : std_logic_vector(31 downto 0);
 
+  signal spll_out_locked : std_logic_vector(g_aux_clks downto 0);
 
   component xwbp_mux
     port (
@@ -383,6 +387,11 @@ architecture struct of wr_core is
       ext_snk_i    : in  t_wrf_sink_in;
       class_core_i : in  std_logic_vector(7 downto 0));
   end component;
+
+  signal dac_dpll_data    : std_logic_vector(15 downto 0);
+  signal dac_dpll_sel     : std_logic_vector(3 downto 0);
+  signal dac_dpll_load_p1 : std_logic;
+
 
   --component chipscope_ila
   --  port (
@@ -448,6 +457,7 @@ begin
     generic map(
       g_with_ext_clock_input => g_with_external_clock_input,
       g_reverse_dmtds        => false,
+      g_divide_input_by_2    => true,
       g_with_undersampling   => false,
       g_with_period_detector => false,
       g_with_debug_fifo      => true,
@@ -460,7 +470,7 @@ begin
       g_interface_mode      => PIPELINED,
       g_address_granularity => BYTE,
       g_num_ref_inputs      => 1,
-      g_num_outputs         => 1)
+      g_num_outputs         => 1 + g_aux_clks)
     port map(
       clk_sys_i => clk_sys_i,
       rst_n_i   => rst_net_n,
@@ -469,6 +479,7 @@ begin
       clk_ref_i(0) => phy_rx_rbclk_i,
       -- Feedback clocks (i.e. the outputs of the main or aux oscillator)
       clk_fb_i(0)  => clk_ref_i,
+      clk_fb_i(1)  => clk_aux_i(0),
       -- DMTD Offset clock
       clk_dmtd_i   => clk_dmtd_i,
 
@@ -480,13 +491,15 @@ begin
       dac_dmtd_load_o => dac_hpll_load_p1_o,
 
       -- Output channel DAC value
-      dac_out_data_o => dac_dpll_data_o,  --: out std_logic_vector(15 downto 0);
+      dac_out_data_o => dac_dpll_data,  --: out std_logic_vector(15 downto 0);
       -- Output channel select (0 = channel 0, etc. )
-      dac_out_sel_o  => open,           --for now use only one output
-      dac_out_load_o => dac_dpll_load_p1_o,
+      dac_out_sel_o  => dac_dpll_sel,   --for now use only one output
+      dac_out_load_o => dac_dpll_load_p1,
 
       out_enable_i(0) => '1',
-      out_locked_o    => open,
+      out_enable_i(1) => tm_clk_aux_lock_en_i,
+
+      out_locked_o => spll_out_locked,
 
       slave_i => spll_wb_in,
       slave_o => spll_wb_out,
@@ -494,6 +507,13 @@ begin
       debug_o => dio_o
       );
 
+  dac_dpll_data_o    <= dac_dpll_data;
+  dac_dpll_load_p1_o <= '1' when (dac_dpll_load_p1 = '1' and dac_dpll_sel= x"0") else '0';
+
+  tm_dac_value_o <= x"00" & dac_dpll_data;
+  tm_dac_wr_o    <= '1' when (dac_dpll_load_p1 = '1' and dac_dpll_sel = x"1") else '0';
+
+  tm_clk_aux_locked_o <= spll_out_locked(1);
 
   softpll_irq <= spll_wb_out.int;
 
@@ -513,8 +533,7 @@ begin
       g_with_dpi_classifier => true,
       g_with_vlans          => false,
       g_with_rtu            => false,
-      g_with_leds           => true,
-      g_with_dmtd           => true)
+      g_with_leds           => true)
     port map (
       clk_ref_i      => clk_ref_i,
       clk_sys_i      => clk_sys_i,
@@ -560,6 +579,9 @@ begin
   ep_txtsu_ack <= txtsu_ack_i or mnic_txtsu_ack;
   led_green_o  <= ep_led_link;
   link_ok_o    <= ep_led_link;
+
+  tm_link_up_o <= ep_led_link;
+
   -----------------------------------------------------------------------------
   -- Mini-NIC
   -----------------------------------------------------------------------------
@@ -583,11 +605,12 @@ begin
       snk_o => minic_snk_out,
       snk_i => minic_snk_in,
 
-      txtsu_port_id_i  => ep_txtsu_port_id,
-      txtsu_frame_id_i => ep_txtsu_frame_id,
-      txtsu_tsval_i    => ep_txtsu_ts_value,
-      txtsu_valid_i    => ep_txtsu_stb,
-      txtsu_ack_o      => mnic_txtsu_ack,
+      txtsu_port_id_i     => ep_txtsu_port_id,
+      txtsu_frame_id_i    => ep_txtsu_frame_id,
+      txtsu_tsval_i       => ep_txtsu_ts_value,
+      txtsu_tsincorrect_i => ep_txtsu_ts_incorrect,
+      txtsu_stb_i         => ep_txtsu_stb,
+      txtsu_ack_o         => mnic_txtsu_ack,
 
       wb_i => minic_wb_in,
       wb_o => minic_wb_out
@@ -600,7 +623,7 @@ begin
   -- LM32
   -----------------------------------------------------------------------------  
   LM32_CORE : xwb_lm32
-    generic map(g_profile => "medium_icache_debug")
+    generic map(g_profile => "medium_icache")
     port map(
       clk_sys_i => clk_sys_i,
       rst_n_i   => rst_wrc_n,
@@ -703,19 +726,21 @@ begin
       sl_we_i    => wb_we_i,
       sl_dat_o   => wb_dat_o,
       sl_ack_o   => wb_ack_o,
+      sl_err_o   => wb_err_o,
+      sl_rty_o   => wb_rty_o,
       sl_stall_o => wb_stall_o);
 
   -----------------------------------------------------------------------------
   -- WB intercon
   -----------------------------------------------------------------------------
-  WB_CON : xwb_sdwb_crossbar
+  WB_CON : xwb_sdb_crossbar
     generic map(
       g_num_masters => 3,
       g_num_slaves  => 2,
       g_registered  => true,
       g_wraparound  => true,
       g_layout      => c_layout,
-      g_sdwb_addr   => c_sdwb_address
+      g_sdb_addr    => c_sdb_address
       )  
     port map(
       clk_sys_i => clk_sys_i,
@@ -777,14 +802,14 @@ begin
   -----------------------------------------------------------------------------
   -- WB Secondary Crossbar
   -----------------------------------------------------------------------------
-  WB_SECONDARY_CON : xwb_sdwb_crossbar
+  WB_SECONDARY_CON : xwb_sdb_crossbar
     generic map(
       g_num_masters => 1,
       g_num_slaves  => 7,
       g_registered  => true,
       g_wraparound  => true,
       g_layout      => c_secbar_layout,
-      g_sdwb_addr   => c_secbar_sdwb_address
+      g_sdb_addr    => c_secbar_sdb_address
       )
     port map(
       clk_sys_i  => clk_sys_i,
