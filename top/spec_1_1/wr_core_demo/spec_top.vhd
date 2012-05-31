@@ -616,15 +616,19 @@ begin
       DIVCLK_DIVIDE      => 1,
       CLKFBOUT_MULT      => 8,
       CLKFBOUT_PHASE     => 0.000,
+
       CLKOUT0_DIVIDE     => 16,         -- 62.5 MHz
       CLKOUT0_PHASE      => 0.000,
       CLKOUT0_DUTY_CYCLE => 0.500,
+
       CLKOUT1_DIVIDE     => 16,         -- 125 MHz
       CLKOUT1_PHASE      => 0.000,
       CLKOUT1_DUTY_CYCLE => 0.500,
+
       CLKOUT2_DIVIDE     => 16,
       CLKOUT2_PHASE      => 0.000,
       CLKOUT2_DUTY_CYCLE => 0.500,
+
       CLKIN_PERIOD       => 8.0,
       REF_JITTER         => 0.016)
     port map (
@@ -640,7 +644,7 @@ begin
       CLKFBIN  => pllout_clk_fb_pllref,
       CLKIN    => clk_125m_pllref);
 
-  cmp_dmtd_clk_pll : PLL_BASE
+  cmp_dmtd_clk_pll : PLL_BASE -- input clk 20 Mhz 
     generic map (
       BANDWIDTH          => "OPTIMIZED",
       CLK_FEEDBACK       => "CLKFBOUT",
@@ -648,15 +652,19 @@ begin
       DIVCLK_DIVIDE      => 1,
       CLKFBOUT_MULT      => 50,
       CLKFBOUT_PHASE     => 0.000,
+
       CLKOUT0_DIVIDE     => 8,          -- 62.5 MHz
       CLKOUT0_PHASE      => 0.000,
       CLKOUT0_DUTY_CYCLE => 0.500,
+
       CLKOUT1_DIVIDE     => 8,          -- 125 MHz
       CLKOUT1_PHASE      => 0.000,
       CLKOUT1_DUTY_CYCLE => 0.500,
+
       CLKOUT2_DIVIDE     => 8,
       CLKOUT2_PHASE      => 0.000,
       CLKOUT2_DUTY_CYCLE => 0.500,
+
       CLKIN_PERIOD       => 50.0,
       REF_JITTER         => 0.016)
     port map (
@@ -696,16 +704,18 @@ begin
 
   --local_reset_n <= L_RST_N;
 
-  cmp_clk_sys_buf : BUFG
-    port map (
-      O => clk_sys,
-      I => pllout_clk_sys);
+--  cmp_clk_sys_buf : BUFG
+--    port map (
+--      O => clk_sys,
+--      I => pllout_clk_sys);
 
   cmp_clk_dmtd_buf : BUFG
     port map (
       O => clk_dmtd,
       I => pllout_clk_dmtd);
-
+		
+ clk_sys <= clk_dmtd;
+ 
   cmp_clk_vcxo : BUFG
     port map (
       O => clk_20m_vcxo_buf,
@@ -854,7 +864,7 @@ begin
       g_with_external_clock_input => true,
       g_aux_clks                  => 1,
       g_ep_rxbuf_size             => 1024,
-      g_dpram_initf               => "/home/bradomyn/project/wr-core-software/wrc.ram",
+      g_dpram_initf               => "../../../../../wr-core-software/wrc.ram",
       g_dpram_size                => 16384,
       g_interface_mode            => PIPELINED,
       g_address_granularity       => WORD)
