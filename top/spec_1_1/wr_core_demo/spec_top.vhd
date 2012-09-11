@@ -15,7 +15,8 @@ use UNISIM.vcomponents.all;
 
 library work;
 use work.wishbone_pkg.all;
-
+use work.xwr_eca_pkg.all;
+use work.wb_cores_pkg_gsi.all;
 
 entity spec_top is
   generic
@@ -263,6 +264,43 @@ architecture rtl of spec_top is
   --end component;
 
   ------------------------------------------------------------------------------
+  -- Crossbar configuration
+  ------------------------------------------------------------------------------
+  
+  -- WR core layout
+  constant c_wrcore_bridge_sdb : t_sdb_bridge := f_xwb_bridge_manual_sdb(x"0003ffff", x"00030000");
+  
+  -- Ref clock crossbar
+  constant c_ref_slaves  : natural := 2;
+  constant c_ref_masters : natural := 1;
+  constant c_ref_layout : t_sdb_record_array(c_ref_slaves-1 downto 0) :=
+   (0 => f_sdb_embed_device(c_xwr_eca_sdb,                x"00040000"),
+    1 => f_sdb_embed_device(c_xwr_wb_timestamp_latch_sdb, x"00080000"));
+  constant c_ref_sdb_address : t_wishbone_address := x"000C0000";
+  constant c_ref_bridge : t_sdb_bridge := 
+    f_xwb_bridge_layout_sdb(true, c_ref_layout, c_ref_sdb_address);
+  
+  signal cbar_ref_slave_i  : t_wishbone_slave_in_array (c_ref_masters-1 downto 0);
+  signal cbar_ref_slave_o  : t_wishbone_slave_out_array(c_ref_masters-1 downto 0);
+  signal cbar_ref_master_i : t_wishbone_master_in_array(c_ref_slaves-1 downto 0);
+  signal cbar_ref_master_o : t_wishbone_master_out_array(c_ref_slaves-1 downto 0);
+  
+  -- Top crossbar layout
+  constant c_slaves : natural := 2;
+  constant c_masters : natural := 2;
+  constant c_test_dpram_size : natural := 2048;
+  constant c_layout : t_sdb_record_array(c_slaves-1 downto 0) :=
+   (0 => f_sdb_embed_bridge(c_wrcore_bridge_sdb,            x"00000000"),
+    1 => f_sdb_embed_bridge(c_ref_bridge,                   x"00100000"));
+  constant c_sdb_address : t_wishbone_address := x"00300000";
+
+  signal cbar_slave_i  : t_wishbone_slave_in_array (c_masters-1 downto 0);
+  signal cbar_slave_o  : t_wishbone_slave_out_array(c_masters-1 downto 0);
+  signal cbar_master_i : t_wishbone_master_in_array(c_slaves-1 downto 0);
+  signal cbar_master_o : t_wishbone_master_out_array(c_slaves-1 downto 0);
+
+
+  ------------------------------------------------------------------------------
   -- Constants declaration
   ------------------------------------------------------------------------------
   constant c_BAR0_APERTURE     : integer := 20;
@@ -328,13 +366,16 @@ architecture rtl of spec_top is
   signal sfp_sda_i : std_logic;
   signal dio       : std_logic_vector(3 downto 0);
 
+  signal tm_utc    : std_logic_vector(39 downto 0);
+  signal tm_cycles : std_logic_vector(27 downto 0);
+  
   signal dac_hpll_load_p1 : std_logic;
   signal dac_dpll_load_p1 : std_logic;
   signal dac_hpll_data    : std_logic_vector(15 downto 0);
   signal dac_dpll_data    : std_logic_vector(15 downto 0);
 
-  signal pps     : std_logic;
-  signal pps_led : std_logic;
+  signal pps 		  : std_logic;
+  signal pps_led          : std_logic;
 
   signal phy_tx_data      : std_logic_vector(7 downto 0);
   signal phy_tx_k         : std_logic;
@@ -624,7 +665,7 @@ begin
       g_with_external_clock_input => true,
       g_aux_clks                  => 1,
       g_ep_rxbuf_size             => 1024,
-      g_dpram_initf               => "",
+      g_dpram_initf               => "../../../../wrpc-sw/wrc.ram",
       g_dpram_size                => 90112/4,  --16384,
       g_interface_mode            => PIPELINED,
       g_address_granularity       => BYTE)
@@ -691,18 +732,18 @@ begin
       tm_clk_aux_lock_en_i => '0',
       tm_clk_aux_locked_o  => open,
       tm_time_valid_o      => open,
-      tm_utc_o             => open,
-      tm_cycles_o          => open,
+      tm_utc_o             => tm_utc,
+      tm_cycles_o          => tm_cycles,
       pps_p_o              => pps,
       pps_led_o            => pps_led,
 
-      dio_o       => dio_out(4 downto 1),
+      dio_o       => open,
       rst_aux_n_o => etherbone_rst_n
       );
 
   Etherbone : EB_CORE
     generic map (
-      g_sdb_address => x"0000000000030000")
+      g_sdb_address => x"00000000" & c_sdb_address)
     port map (
       clk_i       => clk_sys,
       nRst_i      => etherbone_rst_n,
@@ -715,23 +756,88 @@ begin
       master_o    => etherbone_wb_out,
       master_i    => etherbone_wb_in);
 
-  ---------------------
-  masterbar : xwb_crossbar
+  TLU : wb_timestamp_latch
     generic map (
-      g_num_masters => 2,
-      g_num_slaves  => 1,
-      g_registered  => false,
-      g_address     => (0 => x"00000000"),
-      g_mask        => (0 => x"00000000"))
+      g_num_triggers => 1,
+      g_fifo_depth   => 10)
     port map (
-      clk_sys_i   => clk_sys,
+      ref_clk_i       => clk_125m_pllref,
+      sys_clk_i       => clk_125m_pllref,
+      nRSt_i          => local_reset_n,
+      triggers_i(0)   => dio_in(4), 
+      tm_time_valid_i => '0',
+      tm_utc_i        => tm_utc,
+      tm_cycles_i     => tm_cycles,
+      wb_slave_i      => cbar_ref_master_o(1),
+      wb_slave_o      => cbar_ref_master_i(1));
+
+  ECA : xwr_eca
+    port map(
+      clk_i       => clk_125m_pllref,
       rst_n_i     => local_reset_n,
-      slave_i(0)  => genum_wb_out,
-      slave_i(1)  => etherbone_wb_out,
-      slave_o(0)  => genum_wb_in,
-      slave_o(1)  => etherbone_wb_in,
-      master_i(0) => wrc_slave_o,
-      master_o(0) => wrc_slave_i);
+      slave_i     => cbar_ref_master_o(0),
+      slave_o     => cbar_ref_master_i(0),
+      tm_utc_i    => tm_utc,
+      tm_cycle_i  => tm_cycles,
+      toggle_o(0) => dio_led_bot_o, 
+      toggle_o(1) => dio_out(1), 
+      toggle_o(2) => dio_out(2), 
+      toggle_o(c_wishbone_data_width-1 downto 3) => open);
+  
+  REF_CON : xwb_sdb_crossbar
+   generic map(
+     g_num_masters => c_ref_masters,
+     g_num_slaves  => c_ref_slaves,
+     g_registered  => true,
+     g_wraparound  => true,
+     g_layout      => c_ref_layout,
+     g_sdb_addr    => c_ref_sdb_address)
+   port map(
+     clk_sys_i     => clk_125m_pllref,
+     rst_n_i       => local_reset_n,
+     -- Master connections (INTERCON is a slave)
+     slave_i       => cbar_ref_slave_i,
+     slave_o       => cbar_ref_slave_o,
+     -- Slave connections (INTERCON is a master)
+     master_i      => cbar_ref_master_i,
+     master_o      => cbar_ref_master_o);
+  
+  cross_my_clocks : xwb_clock_crossing
+    port map(
+      slave_clk_i    => clk_sys,
+      slave_rst_n_i  => local_reset_n,
+      slave_i        => cbar_master_o(1),
+      slave_o        => cbar_master_i(1),
+      master_clk_i   => clk_125m_pllref,
+      master_rst_n_i => local_reset_n,
+      master_i       => cbar_ref_slave_o(0),
+      master_o       => cbar_ref_slave_i(0));
+   
+  TOP_CON : xwb_sdb_crossbar
+   generic map(
+     g_num_masters => c_masters,
+     g_num_slaves  => c_slaves,
+     g_registered  => true,
+     g_wraparound  => true,
+     g_layout      => c_layout,
+     g_sdb_addr    => c_sdb_address)
+   port map(
+     clk_sys_i     => clk_sys,
+     rst_n_i       => local_reset_n,
+     -- Master connections (INTERCON is a slave)
+     slave_i       => cbar_slave_i,
+     slave_o       => cbar_slave_o,
+     -- Slave connections (INTERCON is a master)
+     master_i      => cbar_master_i,
+     master_o      => cbar_master_o);
+  
+  wrc_slave_i <= cbar_master_o(0);
+  cbar_master_i(0) <= wrc_slave_o;
+  
+  cbar_slave_i(0) <= genum_wb_out;
+  genum_wb_in <= cbar_slave_o(0);
+  cbar_slave_i(1) <= etherbone_wb_out;
+  etherbone_wb_in <= cbar_slave_o(1);
 
   ---------------------
 
@@ -837,8 +943,6 @@ begin
       I  => dio_clk_p_i,
       IB => dio_clk_n_i
       );
-
-  dio_led_bot_o <= '0';
 
   dio_out(0)             <= pps;
   dio_oe_n_o(0)          <= '0';
