@@ -14,6 +14,7 @@ use work.pcie_wb_pkg.all;
 use work.wr_altera_pkg.all;
 use work.lpc_uart_pkg.all;
 use work.etherbone_pkg.all;
+use work.wrc_bin_pkg.all;
 
 entity scu_top is
   port(
@@ -323,6 +324,7 @@ begin
       g_aux_clks                  => 1,
       g_ep_rxbuf_size             => 1024,
       g_dpram_initf               => "",
+      g_dpram_initv               => wrc_bin_init,
       g_dpram_size                => 90112/4,
       g_interface_mode            => PIPELINED,
       g_address_granularity       => BYTE)
