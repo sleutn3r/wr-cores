@@ -20,13 +20,7 @@ entity exploder_top is
     
     L_CLKp : in std_logic;            -- local clk from 125Mhz oszillator
     nres   : in std_logic;            -- powerup reset
-    
-    -----------------------------------------
-    -- UART on front panel
-    -----------------------------------------
-    uart_rxd_i : in  std_logic;
-    uart_txd_o : out std_logic;
-    
+        
     -----------------------------------------------------------------------
     -- OneWire
     -----------------------------------------------------------------------
@@ -50,6 +44,11 @@ entity exploder_top is
     dac_din          : out std_logic;
     ndac_cs          : out std_logic_vector(2 downto 1);
     
+    -- HPLA1 pins
+    uart_pwr : out std_logic;
+    uart_tx  : out std_logic;
+    uart_rx  : in  std_logic;
+    
     -----------------------------------------
     -- LED on baseboard
     -- hpv0: red
@@ -58,8 +57,6 @@ entity exploder_top is
     -- hpv3: blue
     -----------------------------------------
     hpv       : out std_logic_vector(7 downto 0);
-    la_port_o : out std_logic_vector(3 downto 0);
-    la_port_i : in  std_logic_vector(1 downto 0);
     usb_reset : out std_logic);
 end exploder_top;
 
@@ -117,9 +114,14 @@ architecture rtl of exploder_top is
 
   signal pllout_clk_sys   : std_logic;
   signal pllout_clk_dmtd  : std_logic;
+  signal locked           : std_logic;
   signal clk_sys          : std_logic;
   signal clk_dmtd         : std_logic;
   signal clk_reconf       : std_logic;
+  
+  signal pllout_clk_sys_rstn    : std_logic;
+  signal clk_125m_pllref_p_rstn : std_logic;
+  signal reset_clks, reset_rstn : std_logic_vector(1 downto 0);
 
   signal dac_hpll_load_p1 : std_logic;
   signal dac_dpll_load_p1 : std_logic;
@@ -145,7 +147,6 @@ architecture rtl of exploder_top is
 
   signal wrc_master_i  : t_wishbone_master_in;
   signal wrc_master_o  : t_wishbone_master_out;
-  signal nreset        : std_logic := '0';
 
   signal mb_src_out    : t_wrf_source_out;
   signal mb_src_in     : t_wrf_source_in;
@@ -196,11 +197,6 @@ begin
     port map(
       noe_in   => '0');
   
-  reset : pow_reset
-    port map (
-      clk    => pllout_clk_sys,
-      nreset => nreset);
-  
   dmtd_clk_pll_inst : dmtd_clk_pll port map (
     inclk0 => clk_20m_vcxo_i,           -- 20Mhz 
     c0     => pllout_clk_dmtd);         -- 62.5Mhz
@@ -209,7 +205,20 @@ begin
     inclk0 => clk_125m_pllref_p,        -- 125Mhz 
     c0     => pllout_clk_sys,           -- 62.5Mhy sys clk
     c1     => clk_reconf,               -- 50Mhz for reconfig block
-    locked => open);
+    locked => locked);
+  
+  reset : gc_reset
+    generic map(
+      g_clocks => 2)
+    port map(
+      free_clk_i => clk_20m_vcxo_i,
+      locked_i   => locked,
+      clks_i     => reset_clks,
+      rstn_o     => reset_rstn);
+  reset_clks(0) <= pllout_clk_sys;
+  reset_clks(1) <= clk_125m_pllref_p;
+  pllout_clk_sys_rstn <= reset_rstn(0);
+  clk_125m_pllref_p_rstn <= reset_rstn(1);
 
   U_WR_CORE : xwr_core
     generic map (
@@ -230,7 +239,7 @@ begin
       clk_aux_i  => (others => '0'),
       clk_ext_i  => '0', -- g_with_external_clock_input controls usage
       pps_ext_i  => '0',
-      rst_n_i    => nreset,
+      rst_n_i    => pllout_clk_sys_rstn,
 
       dac_hpll_load_p1_o => dac_hpll_load_p1,
       dac_hpll_data_o    => dac_hpll_data,
@@ -264,8 +273,8 @@ begin
       btn1_i      => '0',
       btn2_i      => '0',
 
-      uart_rxd_i => uart_rxd_i,
-      uart_txd_o => uart_txd_o,
+      uart_rxd_i => uart_rx,
+      uart_txd_o => uart_tx,
       
       owr_pwren_o => owr_pwren_o,
       owr_en_o    => owr_en_o,
@@ -323,7 +332,7 @@ begin
       g_num_extra_bits => 8)            -- AD DACs with 24bit interface
     port map (
       clk_i   => pllout_clk_sys,
-      rst_n_i => nreset,
+      rst_n_i => pllout_clk_sys_rstn,
 
       val1_i  => dac_dpll_data,
       load1_i => dac_dpll_load_p1,
@@ -342,7 +351,7 @@ begin
       g_width => 10000000)
     port map (
       clk_i      => pllout_clk_sys,
-      rst_n_i    => nreset,
+      rst_n_i    => pllout_clk_sys_rstn,
       pulse_i    => pps,
       extended_o => ext_pps);
   
@@ -357,7 +366,7 @@ begin
       g_slave2_granularity    => WORD)  
     port map(
       clk_sys_i => pllout_clk_sys,
-      rst_n_i   => nreset,
+      rst_n_i   => pllout_clk_sys_rstn,
 
       slave1_i => cbar_master_o(0),
       slave1_o => cbar_master_i(0),
@@ -369,7 +378,7 @@ begin
        g_sdb_address => x"00000000" & c_sdb_address)
     port map(
       clk_i       => pllout_clk_sys,
-      nRst_i      => nreset,
+      nRst_i      => pllout_clk_sys_rstn,
       snk_i       => mb_snk_in,
       snk_o       => mb_snk_out,
       src_o       => mb_src_out,
@@ -388,7 +397,7 @@ begin
     port map (
       ref_clk_i       => clk_125m_pllref_p,
       sys_clk_i       => clk_125m_pllref_p,
-      nRSt_i          => nreset,
+      nRSt_i          => clk_125m_pllref_p_rstn,
       triggers_i      => triggers,
       tm_time_valid_i => '0',
       tm_utc_i        => tm_utc,
@@ -399,7 +408,7 @@ begin
   ECA : xwr_eca
     port map(
       clk_i      => clk_125m_pllref_p,
-      rst_n_i    => nreset,
+      rst_n_i    => clk_125m_pllref_p_rstn,
       slave_i    => cbar_ref_master_o(1),
       slave_o    => cbar_ref_master_i(1),
       tm_utc_i   => tm_utc,
@@ -433,7 +442,7 @@ begin
      g_sdb_addr    => c_ref_sdb_address)
    port map(
      clk_sys_i     => clk_125m_pllref_p,
-     rst_n_i       => nreset,
+     rst_n_i       => clk_125m_pllref_p_rstn,
      -- Master connections (INTERCON is a slave)
      slave_i       => cbar_ref_slave_i,
      slave_o       => cbar_ref_slave_o,
@@ -443,13 +452,14 @@ begin
   
   cross_my_clocks : xwb_clock_crossing
     port map(
-      rst_n_i      => nreset,
-      slave_clk_i  => pllout_clk_sys,
-      slave_i      => cbar_master_o(1),
-      slave_o      => cbar_master_i(1),
-      master_clk_i => clk_125m_pllref_p,
-      master_i     => cbar_ref_slave_o(0),
-      master_o     => cbar_ref_slave_i(0));
+      slave_clk_i    => pllout_clk_sys,
+      slave_rst_n_i  => pllout_clk_sys_rstn,
+      slave_i        => cbar_master_o(1),
+      slave_o        => cbar_master_i(1),
+      master_clk_i   => clk_125m_pllref_p,
+      master_rst_n_i => clk_125m_pllref_p_rstn,
+      master_i       => cbar_ref_slave_o(0),
+      master_o       => cbar_ref_slave_i(0));
    
   GSI_CON : xwb_sdb_crossbar
    generic map(
@@ -461,7 +471,7 @@ begin
      g_sdb_addr    => c_sdb_address)
    port map(
      clk_sys_i     => pllout_clk_sys,
-     rst_n_i       => nreset,
+     rst_n_i       => pllout_clk_sys_rstn,
      -- Master connections (INTERCON is a slave)
      slave_i       => cbar_slave_i,
      slave_o       => cbar_slave_o,
@@ -478,4 +488,5 @@ begin
   
   sfp_tx_disable_o <= '0';
   usb_reset <= '0';
+  uart_pwr <= '1';
 end rtl;

@@ -46,7 +46,7 @@
     <property xil_pn:name="Change Device Speed To" xil_pn:value="-3" xil_pn:valueState="default"/>
     <property xil_pn:name="Change Device Speed To Post Trace" xil_pn:value="-3" xil_pn:valueState="default"/>
     <property xil_pn:name="Combinatorial Logic Optimization" xil_pn:value="false" xil_pn:valueState="default"/>
-    <property xil_pn:name="Compile EDK Simulation Library" xil_pn:value="false" xil_pn:valueState="default"/>
+    <property xil_pn:name="Compile EDK Simulation Library" xil_pn:value="false" xil_pn:valueState="non-default"/>
     <property xil_pn:name="Compile SIMPRIM (Timing) Simulation Library" xil_pn:value="true" xil_pn:valueState="default"/>
     <property xil_pn:name="Compile UNISIM (Functional) Simulation Library" xil_pn:value="true" xil_pn:valueState="default"/>
     <property xil_pn:name="Compile XilinxCoreLib (CORE Generator) Simulation Library" xil_pn:value="true" xil_pn:valueState="default"/>
@@ -637,6 +637,7 @@
     <file xil_pn:name="../../../ip_cores/general-cores/modules/common/gc_dual_pi_controller.vhd" xil_pn:type="FILE_VHDL">
       <association xil_pn:name="Implementation" xil_pn:seqID="98"/>
     </file>
+<<<<<<< HEAD
     <file xil_pn:name="../../../ip_cores/general-cores/modules/common/gc_reset.vhd" xil_pn:type="FILE_VHDL"/>
     <file xil_pn:name="../../../ip_cores/general-cores/modules/common/gc_serial_dac.vhd" xil_pn:type="FILE_VHDL">
       <association xil_pn:name="Implementation" xil_pn:seqID="100"/>
@@ -805,6 +806,178 @@
       <association xil_pn:name="Implementation" xil_pn:seqID="145"/>
       <library xil_pn:name="blk_mem_gen_v4_1"/>
     </file>
+=======
+    <file xil_pn:name="../../../ip_cores/general-cores/modules/common/gc_reset.vhd" xil_pn:type="FILE_VHDL">
+      <association xil_pn:name="Implementation" xil_pn:seqID="99"/>
+    </file>
+    <file xil_pn:name="../../../ip_cores/general-cores/modules/common/gc_serial_dac.vhd" xil_pn:type="FILE_VHDL">
+      <association xil_pn:name="Implementation" xil_pn:seqID="100"/>
+    </file>
+    <file xil_pn:name="../../../ip_cores/general-cores/modules/common/gc_sync_ffs.vhd" xil_pn:type="FILE_VHDL">
+      <association xil_pn:name="Implementation" xil_pn:seqID="101"/>
+    </file>
+    <file xil_pn:name="../../../ip_cores/general-cores/modules/common/gc_arbitrated_mux.vhd" xil_pn:type="FILE_VHDL">
+      <association xil_pn:name="Implementation" xil_pn:seqID="102"/>
+    </file>
+    <file xil_pn:name="../../../ip_cores/general-cores/modules/common/gc_pulse_synchronizer.vhd" xil_pn:type="FILE_VHDL">
+      <association xil_pn:name="Implementation" xil_pn:seqID="103"/>
+    </file>
+    <file xil_pn:name="../../../ip_cores/general-cores/modules/common/gc_frequency_meter.vhd" xil_pn:type="FILE_VHDL">
+      <association xil_pn:name="Implementation" xil_pn:seqID="104"/>
+    </file>
+    <file xil_pn:name="../../../ip_cores/general-cores/modules/common/gc_dual_clock_ram.vhd" xil_pn:type="FILE_VHDL">
+      <association xil_pn:name="Implementation" xil_pn:seqID="105"/>
+    </file>
+    <file xil_pn:name="../../../ip_cores/general-cores/modules/common/gc_wfifo.vhd" xil_pn:type="FILE_VHDL">
+      <association xil_pn:name="Implementation" xil_pn:seqID="106"/>
+    </file>
+    <file xil_pn:name="../../../ip_cores/general-cores/modules/genrams/genram_pkg.vhd" xil_pn:type="FILE_VHDL">
+      <association xil_pn:name="Implementation" xil_pn:seqID="107"/>
+    </file>
+    <file xil_pn:name="../../../ip_cores/general-cores/modules/genrams/memory_loader_pkg.vhd" xil_pn:type="FILE_VHDL">
+      <association xil_pn:name="Implementation" xil_pn:seqID="108"/>
+    </file>
+    <file xil_pn:name="../../../ip_cores/general-cores/modules/genrams/generic_shiftreg_fifo.vhd" xil_pn:type="FILE_VHDL">
+      <association xil_pn:name="Implementation" xil_pn:seqID="109"/>
+    </file>
+    <file xil_pn:name="../../../ip_cores/general-cores/modules/wishbone/wishbone_pkg.vhd" xil_pn:type="FILE_VHDL">
+      <association xil_pn:name="Implementation" xil_pn:seqID="110"/>
+    </file>
+    <file xil_pn:name="../../../ip_cores/general-cores/modules/genrams/xilinx/generic_dpram.vhd" xil_pn:type="FILE_VHDL">
+      <association xil_pn:name="Implementation" xil_pn:seqID="111"/>
+    </file>
+    <file xil_pn:name="../../../ip_cores/general-cores/modules/genrams/xilinx/generic_dpram_sameclock.vhd" xil_pn:type="FILE_VHDL">
+      <association xil_pn:name="Implementation" xil_pn:seqID="112"/>
+    </file>
+    <file xil_pn:name="../../../ip_cores/general-cores/modules/genrams/xilinx/generic_dpram_dualclock.vhd" xil_pn:type="FILE_VHDL">
+      <association xil_pn:name="Implementation" xil_pn:seqID="113"/>
+    </file>
+    <file xil_pn:name="../../../ip_cores/general-cores/modules/genrams/xilinx/generic_spram.vhd" xil_pn:type="FILE_VHDL">
+      <association xil_pn:name="Implementation" xil_pn:seqID="114"/>
+    </file>
+    <file xil_pn:name="../../../ip_cores/general-cores/modules/genrams/xilinx/spartan6/generic_async_fifo.vhd" xil_pn:type="FILE_VHDL">
+      <association xil_pn:name="Implementation" xil_pn:seqID="115"/>
+    </file>
+    <file xil_pn:name="../../../ip_cores/general-cores/modules/genrams/xilinx/spartan6/generic_sync_fifo.vhd" xil_pn:type="FILE_VHDL">
+      <association xil_pn:name="Implementation" xil_pn:seqID="116"/>
+    </file>
+    <file xil_pn:name="../../../ip_cores/general-cores/modules/genrams/coregen_ip/blk_mem_gen_v4_1/blk_mem_gen_v4_1_xst_comp.vhd" xil_pn:type="FILE_VHDL">
+      <association xil_pn:name="Implementation" xil_pn:seqID="117"/>
+      <library xil_pn:name="blk_mem_gen_v4_1"/>
+    </file>
+    <file xil_pn:name="../../../ip_cores/general-cores/modules/genrams/coregen_ip/blk_mem_gen_v4_1/blk_mem_gen_v4_1_defaults.vhd" xil_pn:type="FILE_VHDL">
+      <association xil_pn:name="Implementation" xil_pn:seqID="118"/>
+      <library xil_pn:name="blk_mem_gen_v4_1"/>
+    </file>
+    <file xil_pn:name="../../../ip_cores/general-cores/modules/genrams/coregen_ip/blk_mem_gen_v4_1/blk_mem_gen_v4_1_pkg.vhd" xil_pn:type="FILE_VHDL">
+      <association xil_pn:name="Implementation" xil_pn:seqID="119"/>
+      <library xil_pn:name="blk_mem_gen_v4_1"/>
+    </file>
+    <file xil_pn:name="../../../ip_cores/general-cores/modules/genrams/coregen_ip/blk_mem_gen_v4_1/blk_mem_gen_getinit_pkg.vhd" xil_pn:type="FILE_VHDL">
+      <association xil_pn:name="Implementation" xil_pn:seqID="120"/>
+      <library xil_pn:name="blk_mem_gen_v4_1"/>
+    </file>
+    <file xil_pn:name="../../../ip_cores/general-cores/modules/genrams/coregen_ip/blk_mem_gen_v4_1/blk_mem_min_area_pkg.vhd" xil_pn:type="FILE_VHDL">
+      <association xil_pn:name="Implementation" xil_pn:seqID="121"/>
+      <library xil_pn:name="blk_mem_gen_v4_1"/>
+    </file>
+    <file xil_pn:name="../../../ip_cores/general-cores/modules/genrams/coregen_ip/blk_mem_gen_v4_1/blk_mem_gen_bindec.vhd" xil_pn:type="FILE_VHDL">
+      <association xil_pn:name="Implementation" xil_pn:seqID="122"/>
+      <library xil_pn:name="blk_mem_gen_v4_1"/>
+    </file>
+    <file xil_pn:name="../../../ip_cores/general-cores/modules/genrams/coregen_ip/blk_mem_gen_v4_1/blk_mem_gen_mux.vhd" xil_pn:type="FILE_VHDL">
+      <association xil_pn:name="Implementation" xil_pn:seqID="123"/>
+      <library xil_pn:name="blk_mem_gen_v4_1"/>
+    </file>
+    <file xil_pn:name="../../../ip_cores/general-cores/modules/genrams/coregen_ip/blk_mem_gen_v4_1/blk_mem_gen_prim_wrapper_s6.vhd" xil_pn:type="FILE_VHDL">
+      <association xil_pn:name="Implementation" xil_pn:seqID="124"/>
+      <library xil_pn:name="blk_mem_gen_v4_1"/>
+    </file>
+    <file xil_pn:name="../../../ip_cores/general-cores/modules/genrams/coregen_ip/blk_mem_gen_v4_1/blk_mem_gen_prim_wrapper_s6_init.vhd" xil_pn:type="FILE_VHDL">
+      <association xil_pn:name="Implementation" xil_pn:seqID="125"/>
+      <library xil_pn:name="blk_mem_gen_v4_1"/>
+    </file>
+    <file xil_pn:name="../../../ip_cores/general-cores/modules/genrams/coregen_ip/blk_mem_gen_v4_1/blk_mem_gen_prim_wrapper_s3adsp.vhd" xil_pn:type="FILE_VHDL">
+      <association xil_pn:name="Implementation" xil_pn:seqID="126"/>
+      <library xil_pn:name="blk_mem_gen_v4_1"/>
+    </file>
+    <file xil_pn:name="../../../ip_cores/general-cores/modules/genrams/coregen_ip/blk_mem_gen_v4_1/blk_mem_gen_prim_wrapper_s3adsp_init.vhd" xil_pn:type="FILE_VHDL">
+      <association xil_pn:name="Implementation" xil_pn:seqID="127"/>
+      <library xil_pn:name="blk_mem_gen_v4_1"/>
+    </file>
+    <file xil_pn:name="../../../ip_cores/general-cores/modules/genrams/coregen_ip/blk_mem_gen_v4_1/blk_mem_gen_prim_wrapper_s3a.vhd" xil_pn:type="FILE_VHDL">
+      <association xil_pn:name="Implementation" xil_pn:seqID="128"/>
+      <library xil_pn:name="blk_mem_gen_v4_1"/>
+    </file>
+    <file xil_pn:name="../../../ip_cores/general-cores/modules/genrams/coregen_ip/blk_mem_gen_v4_1/blk_mem_gen_prim_wrapper_s3a_init.vhd" xil_pn:type="FILE_VHDL">
+      <association xil_pn:name="Implementation" xil_pn:seqID="129"/>
+      <library xil_pn:name="blk_mem_gen_v4_1"/>
+    </file>
+    <file xil_pn:name="../../../ip_cores/general-cores/modules/genrams/coregen_ip/blk_mem_gen_v4_1/blk_mem_gen_prim_wrapper_v6.vhd" xil_pn:type="FILE_VHDL">
+      <association xil_pn:name="Implementation" xil_pn:seqID="130"/>
+      <library xil_pn:name="blk_mem_gen_v4_1"/>
+    </file>
+    <file xil_pn:name="../../../ip_cores/general-cores/modules/genrams/coregen_ip/blk_mem_gen_v4_1/blk_mem_gen_prim_wrapper_v6_init.vhd" xil_pn:type="FILE_VHDL">
+      <association xil_pn:name="Implementation" xil_pn:seqID="131"/>
+      <library xil_pn:name="blk_mem_gen_v4_1"/>
+    </file>
+    <file xil_pn:name="../../../ip_cores/general-cores/modules/genrams/coregen_ip/blk_mem_gen_v4_1/blk_mem_gen_prim_wrapper_v5.vhd" xil_pn:type="FILE_VHDL">
+      <association xil_pn:name="Implementation" xil_pn:seqID="132"/>
+      <library xil_pn:name="blk_mem_gen_v4_1"/>
+    </file>
+    <file xil_pn:name="../../../ip_cores/general-cores/modules/genrams/coregen_ip/blk_mem_gen_v4_1/blk_mem_gen_prim_wrapper_v5_init.vhd" xil_pn:type="FILE_VHDL">
+      <association xil_pn:name="Implementation" xil_pn:seqID="133"/>
+      <library xil_pn:name="blk_mem_gen_v4_1"/>
+    </file>
+    <file xil_pn:name="../../../ip_cores/general-cores/modules/genrams/coregen_ip/blk_mem_gen_v4_1/blk_mem_gen_prim_wrapper_v4.vhd" xil_pn:type="FILE_VHDL">
+      <association xil_pn:name="Implementation" xil_pn:seqID="134"/>
+      <library xil_pn:name="blk_mem_gen_v4_1"/>
+    </file>
+    <file xil_pn:name="../../../ip_cores/general-cores/modules/genrams/coregen_ip/blk_mem_gen_v4_1/blk_mem_gen_prim_wrapper_v4_init.vhd" xil_pn:type="FILE_VHDL">
+      <association xil_pn:name="Implementation" xil_pn:seqID="135"/>
+      <library xil_pn:name="blk_mem_gen_v4_1"/>
+    </file>
+    <file xil_pn:name="../../../ip_cores/general-cores/modules/genrams/coregen_ip/blk_mem_gen_v4_1/blk_mem_gen_prim_wrapper_s3.vhd" xil_pn:type="FILE_VHDL">
+      <association xil_pn:name="Implementation" xil_pn:seqID="136"/>
+      <library xil_pn:name="blk_mem_gen_v4_1"/>
+    </file>
+    <file xil_pn:name="../../../ip_cores/general-cores/modules/genrams/coregen_ip/blk_mem_gen_v4_1/blk_mem_gen_prim_wrapper_s3_init.vhd" xil_pn:type="FILE_VHDL">
+      <association xil_pn:name="Implementation" xil_pn:seqID="137"/>
+      <library xil_pn:name="blk_mem_gen_v4_1"/>
+    </file>
+    <file xil_pn:name="../../../ip_cores/general-cores/modules/genrams/coregen_ip/blk_mem_gen_v4_1/blk_mem_gen_prim_width.vhd" xil_pn:type="FILE_VHDL">
+      <association xil_pn:name="Implementation" xil_pn:seqID="138"/>
+      <library xil_pn:name="blk_mem_gen_v4_1"/>
+    </file>
+    <file xil_pn:name="../../../ip_cores/general-cores/modules/genrams/coregen_ip/blk_mem_gen_v4_1/blk_mem_gen_generic_cstr.vhd" xil_pn:type="FILE_VHDL">
+      <association xil_pn:name="Implementation" xil_pn:seqID="139"/>
+      <library xil_pn:name="blk_mem_gen_v4_1"/>
+    </file>
+    <file xil_pn:name="../../../ip_cores/general-cores/modules/genrams/coregen_ip/blk_mem_gen_v4_1/blk_mem_gen_ecc_encoder.vhd" xil_pn:type="FILE_VHDL">
+      <association xil_pn:name="Implementation" xil_pn:seqID="140"/>
+      <library xil_pn:name="blk_mem_gen_v4_1"/>
+    </file>
+    <file xil_pn:name="../../../ip_cores/general-cores/modules/genrams/coregen_ip/blk_mem_gen_v4_1/blk_mem_gen_ecc_decoder.vhd" xil_pn:type="FILE_VHDL">
+      <association xil_pn:name="Implementation" xil_pn:seqID="141"/>
+      <library xil_pn:name="blk_mem_gen_v4_1"/>
+    </file>
+    <file xil_pn:name="../../../ip_cores/general-cores/modules/genrams/coregen_ip/blk_mem_gen_v4_1/blk_mem_input_block.vhd" xil_pn:type="FILE_VHDL">
+      <association xil_pn:name="Implementation" xil_pn:seqID="142"/>
+      <library xil_pn:name="blk_mem_gen_v4_1"/>
+    </file>
+    <file xil_pn:name="../../../ip_cores/general-cores/modules/genrams/coregen_ip/blk_mem_gen_v4_1/blk_mem_output_block.vhd" xil_pn:type="FILE_VHDL">
+      <association xil_pn:name="Implementation" xil_pn:seqID="143"/>
+      <library xil_pn:name="blk_mem_gen_v4_1"/>
+    </file>
+    <file xil_pn:name="../../../ip_cores/general-cores/modules/genrams/coregen_ip/blk_mem_gen_v4_1/blk_mem_gen_top.vhd" xil_pn:type="FILE_VHDL">
+      <association xil_pn:name="Implementation" xil_pn:seqID="144"/>
+      <library xil_pn:name="blk_mem_gen_v4_1"/>
+    </file>
+    <file xil_pn:name="../../../ip_cores/general-cores/modules/genrams/coregen_ip/blk_mem_gen_v4_1/blk_mem_gen_v4_1_xst.vhd" xil_pn:type="FILE_VHDL">
+      <association xil_pn:name="Implementation" xil_pn:seqID="145"/>
+      <library xil_pn:name="blk_mem_gen_v4_1"/>
+    </file>
+>>>>>>> c1e6807b7691da62ee3a5d93f504ccdae26028fb
     <file xil_pn:name="../../../ip_cores/general-cores/modules/genrams/coregen_ip/fifo_generator_v6_1/fifo_generator_v6_1_pkg.vhd" xil_pn:type="FILE_VHDL">
       <association xil_pn:name="Implementation" xil_pn:seqID="146"/>
       <library xil_pn:name="fifo_generator_v6_1"/>
