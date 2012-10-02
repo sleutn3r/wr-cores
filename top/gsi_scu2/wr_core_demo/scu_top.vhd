@@ -498,7 +498,7 @@ begin
       slave2_i => cc_dummy_slave_in,
       slave2_o => open);
     
-  U_ebone : EB_CORE
+  U_ebone : eb_slave_core
     generic map(
        g_sdb_address => x"00000000" & c_sdb_address)
     port map(
