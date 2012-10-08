@@ -32,5 +32,6 @@ files = [	"endpoint_private_pkg.vhd",
                 "ep_crc32_pkg.vhd",
                 "endpoint_pkg.vhd",
                 "wr_endpoint.vhd",
-                "xwr_endpoint.vhd"
+                "xwr_endpoint.vhd",
+                "xwr_endpoint_with_truIF.vhd"
                 ];

@@ -2,6 +2,8 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
+library work;
+use work.wrsw_shared_types_pkg.all;
 use work.wishbone_pkg.all;
 use work.wr_fabric_pkg.all;
 
@@ -105,8 +107,20 @@ package endpoint_pkg is
       wb_dat_o             : out std_logic_vector(31 downto 0);
       wb_ack_o             : out std_logic;
       wb_stall_o           : out std_logic;
+      ---------- new TRU stuff ------------------
+      tru_status_o        : out std_logic;
+      tru_ctrlRd_o        : out std_logic;
+      tru_rx_pck_o        : out std_logic;
+      tru_rx_pck_class_o  : out std_logic_vector(7 downto 0);
+      tru_ctrlWr_i            : in std_logic;
+      tru_tx_pck_i            : in std_logic;
+      tru_tx_pck_class_i      : in std_logic_vector(7  downto 0);
+      tru_pauseSend_i         : in std_logic;
+      tru_pauseTime_i         : in std_logic_vector(15 downto 0);
+      tru_outQueueBlockMask_i : in std_logic_vector(7  downto 0);
       led_link_o           : out std_logic;
       led_act_o            : out std_logic);
+      ---------------------------------------------
   end component;
 
   constant c_xwr_endpoint_sdb : t_sdb_device := (
@@ -193,6 +207,81 @@ package endpoint_pkg is
       led_link_o           : out std_logic;
       led_act_o            : out std_logic);
   end component;
+
+  component xwr_endpoint_with_truIF
+    generic (
+      g_interface_mode      : t_wishbone_interface_mode      := CLASSIC;
+      g_address_granularity : t_wishbone_address_granularity := WORD;
+      g_simulation          : boolean                        := false;
+      g_pcs_16bit           : boolean                        := false;
+      g_tx_force_gap_length : integer                        := 0;
+      g_rx_buffer_size      : integer                        := 1024;
+      g_with_rx_buffer      : boolean                        := true;
+      g_with_flow_control   : boolean                        := true;
+      g_with_timestamper    : boolean                        := true;
+      g_with_dpi_classifier : boolean                        := false;
+      g_with_vlans          : boolean                        := false;
+      g_with_rtu            : boolean                        := false;
+      g_with_leds           : boolean                        := false;
+      g_with_dmtd           : boolean                        := false);
+    port (
+      clk_ref_i            : in  std_logic;
+      clk_sys_i            : in  std_logic;
+      clk_dmtd_i           : in  std_logic                    := '0';
+      rst_n_i              : in  std_logic;
+      pps_csync_p1_i       : in  std_logic                    := '0';
+      pps_valid_i          : in  std_logic                    := '1';
+      phy_rst_o            : out std_logic;
+      phy_loopen_o         : out std_logic;
+      phy_enable_o         : out std_logic;
+      phy_syncen_o         : out std_logic;
+      phy_ref_clk_i        : in  std_logic;
+      phy_tx_data_o        : out std_logic_vector(15 downto 0);
+      phy_tx_k_o           : out std_logic_vector(1 downto 0);
+      phy_tx_disparity_i   : in  std_logic;
+      phy_tx_enc_err_i     : in  std_logic;
+      phy_rx_data_i        : in  std_logic_vector(15 downto 0);
+      phy_rx_clk_i         : in  std_logic;
+      phy_rx_k_i           : in  std_logic_vector(1 downto 0);
+      phy_rx_enc_err_i     : in  std_logic;
+      phy_rx_bitslide_i    : in  std_logic_vector(4 downto 0);
+      gmii_tx_clk_i        : in  std_logic                    := '0';
+      gmii_txd_o           : out std_logic_vector(7 downto 0);
+      gmii_tx_en_o         : out std_logic;
+      gmii_tx_er_o         : out std_logic;
+      gmii_rx_clk_i        : in  std_logic                    := '0';
+      gmii_rxd_i           : in  std_logic_vector(7 downto 0) := x"00";
+      gmii_rx_er_i         : in  std_logic                    := '0';
+      gmii_rx_dv_i         : in  std_logic                    := '0';
+      src_o                : out t_wrf_source_out;
+      src_i                : in  t_wrf_source_in;
+      snk_o                : out t_wrf_sink_out;
+      snk_i                : in  t_wrf_sink_in;
+      txtsu_port_id_o      : out std_logic_vector(4 downto 0);
+      txtsu_frame_id_o     : out std_logic_vector(16 -1 downto 0);
+      txtsu_ts_value_o     : out std_logic_vector(28 + 4 - 1 downto 0);
+      txtsu_ts_incorrect_o : out std_logic;
+      txtsu_stb_o          : out std_logic;
+      txtsu_ack_i          : in  std_logic                    := '1';
+      rtu_full_i           : in  std_logic                    := '0';
+      rtu_almost_full_i    : in  std_logic                    := '0';
+      rtu_rq_strobe_p1_o   : out std_logic;
+      rtu_rq_smac_o        : out std_logic_vector(48 - 1 downto 0);
+      rtu_rq_dmac_o        : out std_logic_vector(48 - 1 downto 0);
+      rtu_rq_vid_o         : out std_logic_vector(12 - 1 downto 0);
+      rtu_rq_has_vid_o     : out std_logic;
+      rtu_rq_prio_o        : out std_logic_vector(3 - 1 downto 0);
+      rtu_rq_has_prio_o    : out std_logic;
+      wb_i                 : in  t_wishbone_slave_in;
+      wb_o                 : out t_wishbone_slave_out;
+      ----------- new TRU stuff ----------
+      tru_i : in  t_tru2ep;
+      tru_o : out t_ep2tru;
+      -----------------------------------
+      led_link_o           : out std_logic;
+      led_act_o            : out std_logic);
+  end component;
+
 end endpoint_pkg;
 
 

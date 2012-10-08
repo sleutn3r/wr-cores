@@ -211,6 +211,22 @@ entity wr_endpoint is
     wb_stall_o : out std_logic;
 
 -------------------------------------------------------------------------------
+-- TRU stuff
+-------------------------------------------------------------------------------
+
+   tru_status_o        : out std_logic;                     -- done
+   tru_ctrlRd_o        : out std_logic;                     -- dummy
+   tru_rx_pck_o        : out std_logic;                     -- done
+   tru_rx_pck_class_o  : out std_logic_vector(7 downto 0);  -- done
+   
+   tru_ctrlWr_i            : in std_logic;                  -- done
+   tru_tx_pck_i            : in std_logic;                      -- dummy
+   tru_tx_pck_class_i      : in std_logic_vector(7  downto 0);  -- dummy
+   tru_pauseSend_i         : in std_logic;                      -- kind-of-done
+   tru_pauseTime_i         : in std_logic_vector(15 downto 0);  -- kind-of-done
+   tru_outQueueBlockMask_i : in std_logic_vector(7  downto 0);
+
+-------------------------------------------------------------------------------
 -- Misc stuff
 -------------------------------------------------------------------------------
 
@@ -307,6 +323,13 @@ architecture syn of wr_endpoint is
       rmon_o                 : inout t_rmon_triggers;
       regs_i                 : in    t_ep_out_registers;
       regs_o                 : out   t_ep_in_registers;
+      -------------------------------------------------------------------------------
+      -- TRU interface
+      -------------------------------------------------------------------------------
+      pfilter_pclass_o       : out std_logic_vector(7 downto 0);
+      pfilter_drop_o         : out std_logic;
+      pfilter_done_o         : out std_logic;
+      -------------------------------------------------------------------------------
       rtu_rq_o               : out   t_ep_internal_rtu_request;
       rtu_full_i             : in    std_logic;
       rtu_rq_valid_o         : out   std_logic);
@@ -506,6 +529,14 @@ architecture syn of wr_endpoint is
   signal rtu_rq               : t_ep_internal_rtu_request;
   signal dvalid_tx, dvalid_rx : std_logic;
 
+  --------- TRU stuff ---------------
+  signal ep_ctrl              : std_logic;
+  signal pfilter_pclass       : std_logic_vector(7 downto 0);
+  signal pfilter_drop         : std_logic;
+  signal pfilter_done         : std_logic;
+  signal tx_pclass            : std_logic_vector(7  downto 0);  
+  -----------------------------------
+
 begin
 
   -----------------------------------------------------------------------------
@@ -626,7 +657,7 @@ begin
 
 
   txfra_flow_enable <= '1';
-  txfra_pause_p     <= '0';
+--   txfra_pause_p     <= '0'; -- commented by ML
 
   sink_in.dat <= snk_dat_i;
   sink_in.adr <= snk_adr_i;
@@ -669,6 +700,10 @@ begin
       rmon_o => rmon,
       regs_i => regs_fromwb,
       regs_o =>regs_towb_rpath,
+
+      pfilter_pclass_o => pfilter_pclass,
+      pfilter_drop_o   => pfilter_drop,
+      pfilter_done_o   => pfilter_done,
 
       rtu_full_i     => rtu_full_i,
       rtu_rq_o       => rtu_rq,
@@ -934,6 +969,53 @@ begin
         led_link_o  => led_link_o,
         led_act_o   => led_act_o);
   end generate gen_leds;
+
+-------------------------- TRU stuff -----------------------------------
+
+  tru_status_o <= link_ok; -- indicates that link is IP
+  
+  tru_ctrlRd_o <= ep_ctrl; --  need to connect it such that it disables/enables rx optics
+                           -- "phy_enable_o" seems perfect but is unconnected (does not control
+                           -- anything)
+  
+
+  tru_rx_pck_class_o <= pfilter_pclass;
+  tru_rx_pck_o       <= pfilter_done;
+
+  txfra_pause_p      <= tru_pauseSend_i;
+  rxfra_pause_delay  <= tru_pauseTime_i;
+
+  -- TRU needs to be able to share the control of ouput path, i.e. turn off the laser
+  p_ep_ctrl: process(clk_sys_i)
+  begin
+    if rising_edge(clk_sys_i) then
+      if rst_n_i = '0' then
+        ep_ctrl     <= '0';
+      else
+        
+        ep_ctrl <= tru_ctrlWr_i ;
+        
+      end if;
+    end if;
+  end process;
+
+  -- need to be able to send pre-defined frames
+  p_dummy_tx: process(clk_sys_i)
+  begin
+    if rising_edge(clk_sys_i) then
+      if rst_n_i = '0' then
+        tx_pclass     <= (others => '0');
+      else
+        
+        if(tru_tx_pck_i = '1') then
+          tx_pclass     <= tru_tx_pck_class_i;
+        end if;
+        
+      end if;
+    end if;
+  end process;
+
+------------------------------------------------------------------------
 
 end syn;
 

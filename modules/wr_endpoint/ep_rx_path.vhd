@@ -90,6 +90,14 @@ entity ep_rx_path is
     regs_o : out   t_ep_in_registers;
 
 -------------------------------------------------------------------------------
+-- TRU interface
+-------------------------------------------------------------------------------
+
+    pfilter_pclass_o : out std_logic_vector(7 downto 0);
+    pfilter_drop_o   : out std_logic;
+    pfilter_done_o   : out std_logic;
+
+-------------------------------------------------------------------------------
 -- RTU interface
 -------------------------------------------------------------------------------
 
@@ -462,6 +470,15 @@ begin  -- behavioral
       src_wb_i   => src_wb_i,
       src_wb_o   => src_wb_o
       );
+
+-------------------------------------------------------------------------------
+-- TRU interface
+-------------------------------------------------------------------------------
+
+    pfilter_pclass_o <= pfilter_pclass;
+    pfilter_drop_o   <= pfilter_drop;
+    pfilter_done_o   <= pfilter_done;
+
 
 end behavioral;
 

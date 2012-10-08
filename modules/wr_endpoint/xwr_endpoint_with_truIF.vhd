@@ -26,7 +26,7 @@ use work.endpoint_pkg.all;
 use work.wr_fabric_pkg.all;
 use work.wishbone_pkg.all;
 
-entity xwr_endpoint is
+entity xwr_endpoint_with_truIF is
   
   generic (
     g_interface_mode      : t_wishbone_interface_mode      := CLASSIC;
@@ -172,7 +172,14 @@ entity xwr_endpoint is
 
     wb_i : in  t_wishbone_slave_in;
     wb_o : out t_wishbone_slave_out;
+
+-------------------------------------------------------------------------------
+-- Interface with TRU
+-------------------------------------------------------------------------------
    
+    tru_i : in  t_tru2ep;
+    tru_o : out t_ep2tru;
+    
 -------------------------------------------------------------------------------
 -- Misc stuff
 -------------------------------------------------------------------------------
@@ -182,9 +189,9 @@ entity xwr_endpoint is
 
     );
 
-end xwr_endpoint;
+end xwr_endpoint_with_truIF;
 
-architecture syn of xwr_endpoint is
+architecture syn of xwr_endpoint_with_truIF is
 
 begin
 
@@ -278,17 +285,17 @@ begin
       wb_ack_o             => wb_o.ack,
       wb_stall_o           => wb_o.stall,
 
-      tru_status_o         => open,
-      tru_ctrlRd_o         => open,
-      tru_rx_pck_o         => open,
-      tru_rx_pck_class_o   => open,
+      tru_status_o         => tru_o.status,
+      tru_ctrlRd_o         => tru_o.ctrlRd,
+      tru_rx_pck_o         => tru_o.rx_pck,
+      tru_rx_pck_class_o   => tru_o.rx_pck_class,
 
-      tru_ctrlWr_i           => '0',
-      tru_tx_pck_i           => '0',
-      tru_tx_pck_class_i     => x"00",
-      tru_pauseSend_i        => '0',
-      tru_pauseTime_i        => x"0000",
-      tru_outQueueBlockMask_i=> x"00",
+      tru_ctrlWr_i           => tru_i.ctrlWr,
+      tru_tx_pck_i           => tru_i.tx_pck,
+      tru_tx_pck_class_i     => tru_i.tx_pck_class,
+      tru_pauseSend_i        => tru_i.pauseSend,
+      tru_pauseTime_i        => tru_i.pauseTime,
+      tru_outQueueBlockMask_i=> tru_i.outQueueBlockMask,
 
       led_link_o           => led_link_o,
       led_act_o            => led_act_o);
