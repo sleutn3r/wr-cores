@@ -420,4 +420,25 @@ constant c_wrc_periph3_sdb : t_sdb_device := (
       dac_din_o   : out std_logic);
   end component;
 
+component cutewr_serial_dac_arb
+  generic(
+    g_invert_sclk    : boolean;
+    g_num_extra_bits : integer
+    );
+  port(
+    clk_i   : in std_logic;
+    rst_n_i : in std_logic;
+
+    val1_i  : in std_logic_vector(15 downto 0);
+    load1_i : in std_logic;
+    val2_i  : in std_logic_vector(15 downto 0);
+    load2_i : in std_logic;
+
+    dac_ldac_n_o : out std_logic;
+    dac_clr_n_o  : out std_logic;
+    dac_sync_n_o : out std_logic;
+    dac_sclk_o   : out std_logic;
+    dac_din_o    : out std_logic);
+end component;
+
 end wrcore_pkg;
