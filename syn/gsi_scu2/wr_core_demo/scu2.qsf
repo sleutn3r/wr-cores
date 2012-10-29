@@ -137,22 +137,6 @@ set_instance_assignment -name IO_STANDARD HCSL -to pcie_refclk_i
 set_location_assignment PIN_AE28 -to "pcie_refclk_i(n)"
 set_instance_assignment -name IO_STANDARD "1.5-V PCML" -to pcie_rx_i
 set_instance_assignment -name IO_STANDARD "1.5-V PCML" -to pcie_tx_o
-set_location_assignment PIN_AF18 -to hpla_ch[15]
-set_location_assignment PIN_AF19 -to hpla_ch[14]
-set_location_assignment PIN_AE18 -to hpla_ch[13]
-set_location_assignment PIN_AE19 -to hpla_ch[12]
-set_location_assignment PIN_AA16 -to hpla_ch[11]
-set_location_assignment PIN_AF17 -to hpla_ch[10]
-set_location_assignment PIN_Y16 -to hpla_ch[9]
-set_location_assignment PIN_AE17 -to hpla_ch[8]
-set_location_assignment PIN_AD15 -to hpla_ch[7]
-set_location_assignment PIN_AF16 -to hpla_ch[6]
-set_location_assignment PIN_AC15 -to hpla_ch[5]
-set_location_assignment PIN_AE16 -to hpla_ch[4]
-set_location_assignment PIN_AA19 -to hpla_ch[3]
-set_location_assignment PIN_AH19 -to hpla_ch[2]
-set_location_assignment PIN_Y18 -to hpla_ch[1]
-set_location_assignment PIN_AG19 -to hpla_ch[0]
 set_location_assignment PIN_AH16 -to hpla_clk
 set_location_assignment PIN_AA27 -to pcie_rx_i[3]
 set_location_assignment PIN_AA28 -to "pcie_rx_i[3](n)"
@@ -711,6 +695,14 @@ set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to nPWRBTN
 set_global_assignment -name USE_SIGNALTAP_FILE stp1.stp
 set_location_assignment PIN_AF3 -to nFPGA_Res_Out
 set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to nFPGA_Res_Out
+
+set_global_assignment -name MISC_FILE "/home/terpstra/white-rabbit/wr-cores/syn/gsi_scu2/wr_core_demo/scu2.dpf"
+
+set_global_assignment -name VHDL_FILE ../../../modules/display/spi_master.vhd
+set_global_assignment -name VHDL_FILE ../../../modules/display/Display_RAM_Ini_v01.vhd
+set_global_assignment -name VHDL_FILE ../../../modules/display/display_console.vhd
+set_global_assignment -name VHDL_FILE ../../../modules/display/char_render.vhd
+set_global_assignment -name VHDL_FILE ../../../modules/display/wb_console.vhd
 set_global_assignment -name VHDL_FILE "../../../ip_cores/etherbone-core/hdl/EB_SPEC_Test/etherbone_pkg.vhd"
 set_global_assignment -name VHDL_FILE ../../../modules/wr_softpll_ng/spll_bangbang_pd.vhd
 set_global_assignment -name VHDL_FILE ../../../modules/wr_endpoint/ep_crc32_pkg.vhd
@@ -922,6 +914,11 @@ set_global_assignment -name VHDL_FILE "../../../ip_cores/general-cores/modules/w
 set_global_assignment -name VHDL_FILE "../../../ip_cores/general-cores/modules/wishbone/wb_pcie/pcie_wb_pkg.vhd"
 set_global_assignment -name QIP_FILE "../../../ip_cores/general-cores/modules/wishbone/wb_pcie/altera_pcie.qip"
 set_global_assignment -name QIP_FILE ../../../platform/altera/sys_pll/sys_pll.qip
-
-set_global_assignment -name MISC_FILE "/home/terpstra/white-rabbit/wr-cores/syn/gsi_scu2/wr_core_demo/scu2.dpf"
+set_location_assignment PIN_AE17 -to disp_rst_o
+set_location_assignment PIN_AF16 -to disp_dc_o
+set_location_assignment PIN_AE16 -to disp_ss_o
+set_location_assignment PIN_AH19 -to disp_sck_o
+set_location_assignment PIN_AF17 -to disp_sdo_o
+set_location_assignment PIN_AG19 -to disp_shvr_o
+set_global_assignment -name MISC_FILE "/home/mkreider/hdlprojects/wr-cores/syn/gsi_scu2/wr_core_demo/scu2.dpf"
 set_instance_assignment -name PARTITION_HIERARCHY root_partition -to | -section_id Top

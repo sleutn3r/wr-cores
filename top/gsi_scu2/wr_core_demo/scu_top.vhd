@@ -29,6 +29,16 @@ entity scu_top is
     uart_rxd_i     : in  std_logic_vector(1 downto 0);
     uart_txd_o     : out std_logic_vector(1 downto 0);
     serial_to_cb_o : out std_logic;
+	 
+	 -----------------------------------------
+    -- OLED display on front panel
+    -----------------------------------------
+	 disp_rst_o			: out std_logic;
+	 disp_dc_o			: out std_logic;
+	 disp_ss_o			: out std_logic;
+	 disp_sck_o			: out std_logic;
+	 disp_sdo_o			: out std_logic;
+	 disp_shvr_o		: out std_logic;
     
     -----------------------------------------
     -- PCI express pins
@@ -178,6 +188,25 @@ end scu_top;
 
 architecture rtl of scu_top is
 
+  component display_console
+	port	(
+			
+			clk_i				: in  std_logic;
+			nRst_i   : in std_logic;
+			
+			slave_i     : in  t_wishbone_slave_in;
+			slave_o     : out t_wishbone_slave_out;
+    --
+			RST_DISP_o			: out std_logic;										-- Display Reset on AI0/pin AB3
+			DC_SPI_o				: out  std_logic;
+			SS_SPI_o				: out  std_logic;
+			SCK_SPI_o				: out  std_logic;
+			SD_SPI_o				: out std_logic;
+--
+			SH_VR_o				: out  std_logic
+			);
+end component;
+
   constant c_xwr_gpio_32_sdb : t_sdb_device := (
     abi_class     => x"0000", -- undocumented device
     abi_ver_major => x"01",
@@ -193,17 +222,35 @@ architecture rtl of scu_top is
     version       => x"00000001",
     date          => x"20120305",
     name          => "GSI_GPIO_32        ")));
+	 
+	 constant c_xwb_display_sdb : t_sdb_device := (
+    abi_class     => x"0000", -- undocumented device
+    abi_ver_major => x"01",
+    abi_ver_minor => x"00",
+    wbd_endian    => c_sdb_endian_big,
+    wbd_width     => x"7", -- 8/16/32-bit port granularity
+    sdb_component => (
+    addr_first    => x"0000000000000000",
+    addr_last     => x"000000000003ffff", -- Two 4 byte registers
+    product => (
+    vendor_id     => x"0000000000000651", -- GSI
+    device_id     => x"11051981",
+    version       => x"00000001",
+    date          => x"20120901",
+    name          => "GSI_DISPLAY        ")));
 	
   -- WR core layout
   constant c_wrcore_bridge_sdb : t_sdb_bridge := f_xwb_bridge_manual_sdb(x"0003ffff", x"00030000");
   
   -- Ref clock crossbar
-  constant c_ref_slaves  : natural := 3;
+  constant c_ref_slaves  : natural := 4;
   constant c_ref_masters : natural := 1;
   constant c_ref_layout : t_sdb_record_array(c_ref_slaves-1 downto 0) :=
    (0 => f_sdb_embed_device(c_xwr_gpio_32_sdb,            x"00000000"),
-    1 => f_sdb_embed_device(c_xwr_eca_sdb,                x"00040000"),
-    2 => f_sdb_embed_device(c_xwr_wb_timestamp_latch_sdb, x"00080000"));
+    1 => f_sdb_embed_device(c_xwr_eca_sdb,                x"00010000"),
+    2 => f_sdb_embed_device(c_xwr_wb_timestamp_latch_sdb, x"00020000"),
+	 3 => f_sdb_embed_device(c_xwb_display_sdb,         	 x"00040000"));
+	 
   constant c_ref_sdb_address : t_wishbone_address := x"000C0000";
   constant c_ref_bridge : t_sdb_bridge := 
     f_xwb_bridge_layout_sdb(true, c_ref_layout, c_ref_sdb_address);
@@ -247,6 +294,7 @@ architecture rtl of scu_top is
   signal pio_reg : std_logic_vector(7 downto 0);
   signal ext_pps : std_logic;
   signal pps : std_logic;
+  signal pps_pulse : std_logic;
 
   signal phy_tx_clk       : std_logic;
   signal phy_tx_data      : std_logic_vector(7 downto 0);
@@ -470,7 +518,12 @@ begin
       clk_i      => pllout_clk_sys,
       rst_n_i    => pllout_clk_sys_rstn,
       pulse_i    => pps,
-      extended_o => lemo_led(1));
+      extended_o => pps_pulse);
+  
+  lemo_led(1) <= pps_pulse;
+  A_Spare(0) <= pps_pulse;
+  A_Spare(1) <= not pps_pulse;
+  A_SysClock <= clk_125m_pllref_p;
   
   lpc_slave: lpc_uart
     port map(
@@ -565,6 +618,26 @@ begin
       tm_utc_i   => tm_utc,
       tm_cycle_i => tm_cycles,
       toggle_o   => eca_toggle);
+		
+		
+	DISP : display_console
+  port map	(
+			
+			clk_i			=>	clk_125m_pllref_p,
+			nRst_i   	=> clk_125m_pllref_p_rstn,
+			
+			slave_i  	=> cbar_ref_master_o(3),
+			slave_o  	=> cbar_ref_master_i(3),
+			
+			RST_DISP_o	=>	disp_rst_o,									
+			DC_SPI_o		=> disp_dc_o,
+			SS_SPI_o		=> disp_ss_o,
+			SCK_SPI_o	=> disp_sck_o,
+			SD_SPI_o		=> disp_sdo_o,
+			SH_VR_o		=> disp_shvr_o
+			);	
+
+			
       
   cbar_ref_master_i(0) <= mb_master_in;
   mb_master_out <= cbar_ref_master_o(0);
