@@ -297,6 +297,7 @@ architecture syn of wr_endpoint is
       txtsu_ack_i            : in  std_logic;
       txts_timestamp_i       : in  std_logic_vector(31 downto 0);
       txts_timestamp_valid_i : in  std_logic;
+      ep_ctrl_i              : in std_logic;
       regs_i                 : in  t_ep_out_registers);
   end component;
 
@@ -355,6 +356,7 @@ architecture syn of wr_endpoint is
       txpcs_dreq_o                  : out   std_logic;
       txpcs_timestamp_trigger_p_a_o : out   std_logic;
       link_ok_o                     : out   std_logic;
+      link_ctr_i                    : in    std_logic;
       serdes_rst_o                  : out   std_logic;
       serdes_syncen_o               : out   std_logic;
       serdes_loopen_o               : out   std_logic;
@@ -590,8 +592,9 @@ begin
 
       txpcs_timestamp_trigger_p_a_o => txpcs_timestamp_trigger_p_a,
 
-      link_ok_o => link_ok,
-
+      link_ok_o    => link_ok,
+      link_ctr_i   => ep_ctrl,
+       
       serdes_rst_o    => phy_rst_o,
       serdes_loopen_o => phy_loopen_o,
       serdes_enable_o => phy_enable_o,
@@ -642,6 +645,7 @@ begin
       fc_pause_delay_i => txfra_pause_delay,
       fc_pause_ack_o   => txfra_pause_ack,
       fc_flow_enable_i => txfra_flow_enable,
+      ep_ctrl_i        => ep_ctrl,
       regs_i           => regs_fromwb,
 
       txts_timestamp_i       => txts_timestamp_value,
@@ -977,7 +981,7 @@ begin
   tru_ctrlRd_o <= ep_ctrl; --  need to connect it such that it disables/enables rx optics
                            -- "phy_enable_o" seems perfect but is unconnected (does not control
                            -- anything)
-  
+
 
   tru_rx_pck_class_o <= pfilter_pclass;
   tru_rx_pck_o       <= pfilter_done;
