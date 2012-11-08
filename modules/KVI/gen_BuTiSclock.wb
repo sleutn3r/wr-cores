@@ -1,0 +1,103 @@
+peripheral { 
+name = "BuTis clock generator"; 
+description = "Generates BuTis clock T0 and C2 in phase with White Rabbit 125MHz clock and PPS signal";
+hdl_entity = "wb_BuTiSclock"; 
+prefix = "WBBuTiS"; 
+	reg { 
+		name = "TimeStamp data Low word"; 
+		description = "TimeStamp data Low word";
+		prefix = "timestamp"; 
+		field { 
+			name = "Low Word"; 
+			prefix = "LW"; 
+			description = "TimeStamp data Low word"; 
+			type = SLV; 
+			size = 32; 
+			access_bus = READ_WRITE; 
+			access_dev = READ_ONLY; 
+		}; 
+	}; 
+	reg { 
+		name = "TimeStamp data High word"; 
+		description = "TimeStamp data High word";
+		prefix = "timestamp"; 
+		field { 
+			name = "High Word"; 
+			prefix = "HW"; 
+			description = "TimeStamp data High word"; 
+			type = SLV; 
+			size = 32; 
+			access_bus = READ_WRITE; 
+			access_dev = READ_ONLY; 
+		}; 
+	}; 
+ 
+	reg { 
+		name = "BuTis clock generator control"; 
+		description = "BuTis clock generator control";
+		prefix = "control"; 
+		field { 
+			name = "Set on next PPS"; 
+			prefix = "set"; 
+			description = "Set on next PPS"; 
+			type = PASS_THROUGH; 
+			size = 1; 
+		}; 
+		field { 
+			name = "Re-synchronize"; 
+			prefix = "sync"; 
+			description = "Start new synchronization"; 
+			type = PASS_THROUGH; 
+			size = 1; 
+		}; 
+		field { 
+			name = "reset phase-PLL"; 
+			prefix = "reset"; 
+			description = "Reset phase-PLL"; 
+			type = PASS_THROUGH; 
+			size = 1; 
+		}; 
+		field { 
+			name = "unused"; 
+			prefix = "unused"; 
+			description = "unused"; 
+			type = SLV; 
+			size = 5; 
+			access_bus = READ_WRITE; 
+			access_dev = READ_ONLY; 
+		}; 
+		field { 
+			name = "PLLphase"; 
+			prefix = "phase"; 
+			description = "Set phase of the PLL"; 
+			type = SLV; 
+			size = 8; 
+			access_bus = READ_WRITE; 
+			access_dev = READ_ONLY; 
+		}; 
+	}; 
+	reg { 
+		name = "BuTis clock generator Status"; 
+		description = "BuTis clock generator Status";
+		prefix = "status"; 
+		field { 
+			name = "timestamp set busy"; 
+			prefix = "set"; 
+			description = "Waiting for PPS to set timestamp";
+			type = SLV; 
+			size = 1; 
+			access_bus = READ_ONLY; 
+			access_dev = WRITE_ONLY; 
+		}; 
+		field { 
+			name = "Phase of the PPS"; 
+			prefix = "PPSphase"; 
+			description = "Set during second half second of the PPS-pulse";
+			type = SLV; 
+			size = 1; 
+			access_bus = READ_ONLY; 
+			access_dev = WRITE_ONLY; 
+		}; 
+	}; 
+ 
+}; 

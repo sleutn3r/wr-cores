@@ -1,0 +1,81 @@
+peripheral { 
+name = "Simple RS232 module"; 
+description = "Write and reads data with a two wire serial (RS232) connection.";
+hdl_entity = "wb_rs232"; 
+prefix = "WBrs232"; 
+	reg { 
+		name = "send data"; 
+		description = "send data";
+		prefix = "send"; 
+		field { 
+			name = "senddata"; 
+			prefix = "data"; 
+			description = "Sends data over rs232 connection"; 
+			type = PASS_THROUGH; 
+			size = 8; 
+		}; 
+	}; 
+	reg { 
+		name = "read data"; 
+		description = "read data";
+		prefix = "read"; 
+		field { 
+			name = "readdata"; 
+			prefix = "data"; 
+			type = SLV; 
+			size = 8; 
+			access_bus = READ_ONLY; 
+			access_dev = WRITE_ONLY; 
+		}; 
+	}; 
+	reg { 
+		name = "reading done"; 
+		description = "reading done";
+		prefix = "done"; 
+		field { 
+			name = "done"; 
+			prefix = "done"; 
+			description = "Data reading done"; 
+			type = PASS_THROUGH; 
+			size = 32; 
+		}; 
+	}; 
+	reg { 
+		name = "status"; 
+		description = "Status of the rs232 connection";
+		prefix = "status"; 
+		field { 
+			name = "sending allowed"; 
+			prefix = "allowed"; 
+			description = "Allowed to send data"; 
+			type = SLV; 
+			size = 1; 
+			access_bus = READ_ONLY; 
+			access_dev = WRITE_ONLY; 
+		}; 
+		field { 
+			name = "data available"; 
+			prefix = "available"; 
+			description = "Serial data available"; 
+			type = SLV; 
+			size = 1; 
+			access_bus = READ_ONLY; 
+			access_dev = WRITE_ONLY; 
+		}; 
+	}; 
+	reg { 
+		name = "control"; 
+		description = "Control register for the rs232";
+		prefix = "control"; 
+		field { 
+			name = "baudrate"; 
+			prefix = "baud"; 
+			description = "Baudrate:0=clk,1=115k2,2=57k6,3=38k4,4=19k2,5=9600,6=4800,7=1200";
+			type = SLV; 
+			size = 3; 
+			access_bus = READ_WRITE; 
+			access_dev = READ_ONLY; 
+		}; 
+	}; 
+ 
+}; 

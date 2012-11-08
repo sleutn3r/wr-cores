@@ -1,0 +1,1780 @@
+<HTML>
+<HEAD>
+<TITLE>wb_readTimestamp</TITLE>
+<STYLE TYPE="text/css" MEDIA="all">
+
+	<!--
+  BODY  { background: white; color: black;
+  			  font-family: Arial,Helvetica; font-size:12; }
+	h1 { font-family: Trebuchet MS,Arial,Helvetica; font-size:30; color:#404040; }
+	h2 { font-family: Trebuchet MS,Arial,Helvetica; font-size:22; color:#404040; }
+	h3 { font-family: Trebuchet MS,Arial,Helvetica; font-size:16; color:#404040; }
+	.td_arrow_left { padding:0px; background: #ffffff; text-align: right; font-size:12;}
+	.td_arrow_right { padding:0px; background: #ffffff; text-align: left; font-size:12;}
+	.td_code { font-family:Courier New,Courier; padding: 3px; }
+	.td_desc { padding: 3px; }
+	.td_sym_center { background: #e0e0f0; padding: 3px; }
+	.td_port_name { font-family:Courier New,Courier; background: #e0e0f0; text-align: right; font-weight:bold;padding: 3px; width:200px; }
+	.td_pblock_left { font-family:Courier New,Courier; background: #e0e0f0; padding: 0px; text-align: left; }
+	.td_pblock_right { font-family:Courier New,Courier; background: #e0e0f0; padding: 0px; text-align: right; }
+	.td_bit { background: #ffffff; color:#404040; font-size:10; width: 70px; font-family:Courier New,Courier; padding: 3px; text-align:center; }
+	.td_field { background: #e0e0f0; padding: 3px; text-align:center; }
+	.td_unused { background: #a0a0a0; padding: 3px; text-align:center;  }
+	th { font-weight:bold; color:#ffffff; background: #202080; padding:3px; }
+	.tr_even { background: #f0eff0; }
+	.tr_odd { background: #e0e0f0; }
+	-->
+</STYLE>
+</HEAD>
+<BODY>
+<h1 class="heading">wb_readTimestamp</h1>
+<h3>Read 64-bits timestamp</h3>
+<p>Reads 64-bit timestamp in two registers</p>
+<h3>Contents:</h3>
+<span style="margin-left: 0px; ">1. <A href="#sect_1_0">Memory map summary</a></span><br/>
+<span style="margin-left: 0px; ">2. <A href="#sect_2_0">HDL symbol</a></span><br/>
+<span style="margin-left: 0px; ">3. <A href="#sect_3_0">Register description</a></span><br/>
+<span style="margin-left: 20px; ">3.1. <A href="#sect_3_1">Timestamp High Word</a></span><br/>
+<span style="margin-left: 20px; ">3.2. <A href="#sect_3_2">Timestamp Low Word</a></span><br/>
+<span style="margin-left: 20px; ">3.3. <A href="#sect_3_3">Timestamp error counter</a></span><br/>
+<span style="margin-left: 20px; ">3.4. <A href="#sect_3_4">Timestamp correction counter</a></span><br/>
+<span style="margin-left: 20px; ">3.5. <A href="#sect_3_5">Read Timestamp control</a></span><br/>
+<h3><a name="sect_1_0">1. Memory map summary</a></h3>
+<table cellpadding=0 cellspacing=0 border=0>
+<tr>
+<th>
+H/W Address
+</th>
+<th>
+Type
+</th>
+<th>
+Name
+</th>
+<th>
+VHDL/Verilog prefix
+</th>
+<th>
+C prefix
+</th>
+</tr>
+<tr class="tr_odd">
+<td  class="td_code">
+0x0
+</td>
+<td>
+REG
+</td>
+<td>
+<A href="#HIGH">Timestamp High Word</a>
+</td>
+<td  class="td_code">
+wbrdtime_high
+</td>
+<td  class="td_code">
+HIGH
+</td>
+</tr>
+<tr class="tr_even">
+<td  class="td_code">
+0x1
+</td>
+<td>
+REG
+</td>
+<td>
+<A href="#LOW">Timestamp Low Word</a>
+</td>
+<td  class="td_code">
+wbrdtime_low
+</td>
+<td  class="td_code">
+LOW
+</td>
+</tr>
+<tr class="tr_odd">
+<td  class="td_code">
+0x2
+</td>
+<td>
+REG
+</td>
+<td>
+<A href="#ERRORS">Timestamp error counter</a>
+</td>
+<td  class="td_code">
+wbrdtime_errors
+</td>
+<td  class="td_code">
+ERRORS
+</td>
+</tr>
+<tr class="tr_even">
+<td  class="td_code">
+0x3
+</td>
+<td>
+REG
+</td>
+<td>
+<A href="#CORRECTIONS">Timestamp correction counter</a>
+</td>
+<td  class="td_code">
+wbrdtime_corrections
+</td>
+<td  class="td_code">
+CORRECTIONS
+</td>
+</tr>
+<tr class="tr_odd">
+<td  class="td_code">
+0x4
+</td>
+<td>
+REG
+</td>
+<td>
+<A href="#CONTROL">Read Timestamp control</a>
+</td>
+<td  class="td_code">
+wbrdtime_control
+</td>
+<td  class="td_code">
+CONTROL
+</td>
+</tr>
+</table>
+
+<h3><a name="sect_2_0">2. HDL symbol</a></h3>
+<table cellpadding=0 cellspacing=0 border=0>
+<tr>
+<td  class="td_arrow_left">
+&rarr;
+</td>
+<td  class="td_pblock_left">
+rst_n_i
+</td>
+<td  class="td_sym_center">
+
+</td>
+<td  class="td_pblock_right">
+<b>Timestamp High Word:</b>
+</td>
+<td  class="td_arrow_right">
+
+</td>
+</tr>
+<tr>
+<td  class="td_arrow_left">
+&rarr;
+</td>
+<td  class="td_pblock_left">
+wb_clk_i
+</td>
+<td  class="td_sym_center">
+
+</td>
+<td  class="td_pblock_right">
+wbrdtime_high_timestamp_i[31:0]
+</td>
+<td  class="td_arrow_right">
+&lArr;
+</td>
+</tr>
+<tr>
+<td  class="td_arrow_left">
+&rArr;
+</td>
+<td  class="td_pblock_left">
+wb_addr_i[2:0]
+</td>
+<td  class="td_sym_center">
+&nbsp;
+</td>
+<td  class="td_pblock_right">
+
+</td>
+<td  class="td_arrow_right">
+
+</td>
+</tr>
+<tr>
+<td  class="td_arrow_left">
+&rArr;
+</td>
+<td  class="td_pblock_left">
+wb_data_i[31:0]
+</td>
+<td  class="td_sym_center">
+
+</td>
+<td  class="td_pblock_right">
+<b>Timestamp Low Word:</b>
+</td>
+<td  class="td_arrow_right">
+
+</td>
+</tr>
+<tr>
+<td  class="td_arrow_left">
+&lArr;
+</td>
+<td  class="td_pblock_left">
+wb_data_o[31:0]
+</td>
+<td  class="td_sym_center">
+
+</td>
+<td  class="td_pblock_right">
+wbrdtime_low_timestamp_i[31:0]
+</td>
+<td  class="td_arrow_right">
+&lArr;
+</td>
+</tr>
+<tr>
+<td  class="td_arrow_left">
+&rarr;
+</td>
+<td  class="td_pblock_left">
+wb_cyc_i
+</td>
+<td  class="td_sym_center">
+&nbsp;
+</td>
+<td  class="td_pblock_right">
+
+</td>
+<td  class="td_arrow_right">
+
+</td>
+</tr>
+<tr>
+<td  class="td_arrow_left">
+&rArr;
+</td>
+<td  class="td_pblock_left">
+wb_sel_i[3:0]
+</td>
+<td  class="td_sym_center">
+
+</td>
+<td  class="td_pblock_right">
+<b>Timestamp error counter:</b>
+</td>
+<td  class="td_arrow_right">
+
+</td>
+</tr>
+<tr>
+<td  class="td_arrow_left">
+&rarr;
+</td>
+<td  class="td_pblock_left">
+wb_stb_i
+</td>
+<td  class="td_sym_center">
+
+</td>
+<td  class="td_pblock_right">
+wbrdtime_errors_nr_i[31:0]
+</td>
+<td  class="td_arrow_right">
+&lArr;
+</td>
+</tr>
+<tr>
+<td  class="td_arrow_left">
+&rarr;
+</td>
+<td  class="td_pblock_left">
+wb_we_i
+</td>
+<td  class="td_sym_center">
+&nbsp;
+</td>
+<td  class="td_pblock_right">
+
+</td>
+<td  class="td_arrow_right">
+
+</td>
+</tr>
+<tr>
+<td  class="td_arrow_left">
+&larr;
+</td>
+<td  class="td_pblock_left">
+wb_ack_o
+</td>
+<td  class="td_sym_center">
+
+</td>
+<td  class="td_pblock_right">
+<b>Timestamp correction counter:</b>
+</td>
+<td  class="td_arrow_right">
+
+</td>
+</tr>
+<tr>
+<td  class="td_arrow_left">
+
+</td>
+<td  class="td_pblock_left">
+
+</td>
+<td  class="td_sym_center">
+
+</td>
+<td  class="td_pblock_right">
+wbrdtime_corrections_nr_i[31:0]
+</td>
+<td  class="td_arrow_right">
+&lArr;
+</td>
+</tr>
+<tr>
+<td  class="td_arrow_left">
+
+</td>
+<td  class="td_pblock_left">
+
+</td>
+<td  class="td_sym_center">
+&nbsp;
+</td>
+<td  class="td_pblock_right">
+
+</td>
+<td  class="td_arrow_right">
+
+</td>
+</tr>
+<tr>
+<td  class="td_arrow_left">
+
+</td>
+<td  class="td_pblock_left">
+
+</td>
+<td  class="td_sym_center">
+
+</td>
+<td  class="td_pblock_right">
+<b>Read Timestamp control:</b>
+</td>
+<td  class="td_arrow_right">
+
+</td>
+</tr>
+<tr>
+<td  class="td_arrow_left">
+
+</td>
+<td  class="td_pblock_left">
+
+</td>
+<td  class="td_sym_center">
+
+</td>
+<td  class="td_pblock_right">
+wbrdtime_control_disable_o
+</td>
+<td  class="td_arrow_right">
+&rarr;
+</td>
+</tr>
+<tr>
+<td  class="td_arrow_left">
+
+</td>
+<td  class="td_pblock_left">
+
+</td>
+<td  class="td_sym_center">
+
+</td>
+<td  class="td_pblock_right">
+wbrdtime_control_error_i
+</td>
+<td  class="td_arrow_right">
+&larr;
+</td>
+</tr>
+<tr>
+<td  class="td_arrow_left">
+
+</td>
+<td  class="td_pblock_left">
+
+</td>
+<td  class="td_sym_center">
+
+</td>
+<td  class="td_pblock_right">
+wbrdtime_control_correction_i
+</td>
+<td  class="td_arrow_right">
+&larr;
+</td>
+</tr>
+<tr>
+<td  class="td_arrow_left">
+
+</td>
+<td  class="td_pblock_left">
+
+</td>
+<td  class="td_sym_center">
+
+</td>
+<td  class="td_pblock_right">
+wbrdtime_control_clear_o
+</td>
+<td  class="td_arrow_right">
+&rarr;
+</td>
+</tr>
+<tr>
+<td  class="td_arrow_left">
+
+</td>
+<td  class="td_pblock_left">
+
+</td>
+<td  class="td_sym_center">
+
+</td>
+<td  class="td_pblock_right">
+wbrdtime_control_clear_wr_o
+</td>
+<td  class="td_arrow_right">
+&rarr;
+</td>
+</tr>
+</table>
+
+<h3><a name="sect_3_0">3. Register description</a></h3>
+<a name="HIGH"></a>
+<h3><a name="sect_3_1">3.1. Timestamp High Word</a></h3>
+<table cellpadding=0 cellspacing=0 border=0>
+<tr>
+<td>
+<b>HW prefix: </b>
+</td>
+<td  class="td_code">
+wbrdtime_high
+</td>
+</tr>
+<tr>
+<td>
+<b>HW address: </b>
+</td>
+<td  class="td_code">
+0x0
+</td>
+</tr>
+<tr>
+<td>
+<b>C prefix: </b>
+</td>
+<td  class="td_code">
+HIGH
+</td>
+</tr>
+<tr>
+<td>
+<b>C offset: </b>
+</td>
+<td  class="td_code">
+0x0
+</td>
+</tr>
+</table>
+<p>
+Timestamp High Word
+</p>
+<table cellpadding=0 cellspacing=0 border=0>
+<tr>
+<td  class="td_bit">
+31
+</td>
+<td  class="td_bit">
+30
+</td>
+<td  class="td_bit">
+29
+</td>
+<td  class="td_bit">
+28
+</td>
+<td  class="td_bit">
+27
+</td>
+<td  class="td_bit">
+26
+</td>
+<td  class="td_bit">
+25
+</td>
+<td  class="td_bit">
+24
+</td>
+</tr>
+<tr>
+<td style="border: solid 1px black;" colspan=8  class="td_field">
+TIMESTAMP[31:24]
+</td>
+<td>
+
+</td>
+<td>
+
+</td>
+<td>
+
+</td>
+<td>
+
+</td>
+<td>
+
+</td>
+<td>
+
+</td>
+<td>
+
+</td>
+</tr>
+</table>
+<table cellpadding=0 cellspacing=0 border=0>
+<tr>
+<td  class="td_bit">
+23
+</td>
+<td  class="td_bit">
+22
+</td>
+<td  class="td_bit">
+21
+</td>
+<td  class="td_bit">
+20
+</td>
+<td  class="td_bit">
+19
+</td>
+<td  class="td_bit">
+18
+</td>
+<td  class="td_bit">
+17
+</td>
+<td  class="td_bit">
+16
+</td>
+</tr>
+<tr>
+<td style="border: solid 1px black;" colspan=8  class="td_field">
+TIMESTAMP[23:16]
+</td>
+<td>
+
+</td>
+<td>
+
+</td>
+<td>
+
+</td>
+<td>
+
+</td>
+<td>
+
+</td>
+<td>
+
+</td>
+<td>
+
+</td>
+</tr>
+</table>
+<table cellpadding=0 cellspacing=0 border=0>
+<tr>
+<td  class="td_bit">
+15
+</td>
+<td  class="td_bit">
+14
+</td>
+<td  class="td_bit">
+13
+</td>
+<td  class="td_bit">
+12
+</td>
+<td  class="td_bit">
+11
+</td>
+<td  class="td_bit">
+10
+</td>
+<td  class="td_bit">
+9
+</td>
+<td  class="td_bit">
+8
+</td>
+</tr>
+<tr>
+<td style="border: solid 1px black;" colspan=8  class="td_field">
+TIMESTAMP[15:8]
+</td>
+<td>
+
+</td>
+<td>
+
+</td>
+<td>
+
+</td>
+<td>
+
+</td>
+<td>
+
+</td>
+<td>
+
+</td>
+<td>
+
+</td>
+</tr>
+</table>
+<table cellpadding=0 cellspacing=0 border=0>
+<tr>
+<td  class="td_bit">
+7
+</td>
+<td  class="td_bit">
+6
+</td>
+<td  class="td_bit">
+5
+</td>
+<td  class="td_bit">
+4
+</td>
+<td  class="td_bit">
+3
+</td>
+<td  class="td_bit">
+2
+</td>
+<td  class="td_bit">
+1
+</td>
+<td  class="td_bit">
+0
+</td>
+</tr>
+<tr>
+<td style="border: solid 1px black;" colspan=8  class="td_field">
+TIMESTAMP[7:0]
+</td>
+<td>
+
+</td>
+<td>
+
+</td>
+<td>
+
+</td>
+<td>
+
+</td>
+<td>
+
+</td>
+<td>
+
+</td>
+<td>
+
+</td>
+</tr>
+</table>
+<ul>
+<li><b>
+TIMESTAMP
+</b>[<i>read-only</i>]: timestamp
+<br>Timestamp High Word
+</ul>
+<a name="LOW"></a>
+<h3><a name="sect_3_2">3.2. Timestamp Low Word</a></h3>
+<table cellpadding=0 cellspacing=0 border=0>
+<tr>
+<td>
+<b>HW prefix: </b>
+</td>
+<td  class="td_code">
+wbrdtime_low
+</td>
+</tr>
+<tr>
+<td>
+<b>HW address: </b>
+</td>
+<td  class="td_code">
+0x1
+</td>
+</tr>
+<tr>
+<td>
+<b>C prefix: </b>
+</td>
+<td  class="td_code">
+LOW
+</td>
+</tr>
+<tr>
+<td>
+<b>C offset: </b>
+</td>
+<td  class="td_code">
+0x4
+</td>
+</tr>
+</table>
+<p>
+Timestamp Low Word
+</p>
+<table cellpadding=0 cellspacing=0 border=0>
+<tr>
+<td  class="td_bit">
+31
+</td>
+<td  class="td_bit">
+30
+</td>
+<td  class="td_bit">
+29
+</td>
+<td  class="td_bit">
+28
+</td>
+<td  class="td_bit">
+27
+</td>
+<td  class="td_bit">
+26
+</td>
+<td  class="td_bit">
+25
+</td>
+<td  class="td_bit">
+24
+</td>
+</tr>
+<tr>
+<td style="border: solid 1px black;" colspan=8  class="td_field">
+TIMESTAMP[31:24]
+</td>
+<td>
+
+</td>
+<td>
+
+</td>
+<td>
+
+</td>
+<td>
+
+</td>
+<td>
+
+</td>
+<td>
+
+</td>
+<td>
+
+</td>
+</tr>
+</table>
+<table cellpadding=0 cellspacing=0 border=0>
+<tr>
+<td  class="td_bit">
+23
+</td>
+<td  class="td_bit">
+22
+</td>
+<td  class="td_bit">
+21
+</td>
+<td  class="td_bit">
+20
+</td>
+<td  class="td_bit">
+19
+</td>
+<td  class="td_bit">
+18
+</td>
+<td  class="td_bit">
+17
+</td>
+<td  class="td_bit">
+16
+</td>
+</tr>
+<tr>
+<td style="border: solid 1px black;" colspan=8  class="td_field">
+TIMESTAMP[23:16]
+</td>
+<td>
+
+</td>
+<td>
+
+</td>
+<td>
+
+</td>
+<td>
+
+</td>
+<td>
+
+</td>
+<td>
+
+</td>
+<td>
+
+</td>
+</tr>
+</table>
+<table cellpadding=0 cellspacing=0 border=0>
+<tr>
+<td  class="td_bit">
+15
+</td>
+<td  class="td_bit">
+14
+</td>
+<td  class="td_bit">
+13
+</td>
+<td  class="td_bit">
+12
+</td>
+<td  class="td_bit">
+11
+</td>
+<td  class="td_bit">
+10
+</td>
+<td  class="td_bit">
+9
+</td>
+<td  class="td_bit">
+8
+</td>
+</tr>
+<tr>
+<td style="border: solid 1px black;" colspan=8  class="td_field">
+TIMESTAMP[15:8]
+</td>
+<td>
+
+</td>
+<td>
+
+</td>
+<td>
+
+</td>
+<td>
+
+</td>
+<td>
+
+</td>
+<td>
+
+</td>
+<td>
+
+</td>
+</tr>
+</table>
+<table cellpadding=0 cellspacing=0 border=0>
+<tr>
+<td  class="td_bit">
+7
+</td>
+<td  class="td_bit">
+6
+</td>
+<td  class="td_bit">
+5
+</td>
+<td  class="td_bit">
+4
+</td>
+<td  class="td_bit">
+3
+</td>
+<td  class="td_bit">
+2
+</td>
+<td  class="td_bit">
+1
+</td>
+<td  class="td_bit">
+0
+</td>
+</tr>
+<tr>
+<td style="border: solid 1px black;" colspan=8  class="td_field">
+TIMESTAMP[7:0]
+</td>
+<td>
+
+</td>
+<td>
+
+</td>
+<td>
+
+</td>
+<td>
+
+</td>
+<td>
+
+</td>
+<td>
+
+</td>
+<td>
+
+</td>
+</tr>
+</table>
+<ul>
+<li><b>
+TIMESTAMP
+</b>[<i>read-only</i>]: timestamp
+<br>Timestamp Low Word
+</ul>
+<a name="ERRORS"></a>
+<h3><a name="sect_3_3">3.3. Timestamp error counter</a></h3>
+<table cellpadding=0 cellspacing=0 border=0>
+<tr>
+<td>
+<b>HW prefix: </b>
+</td>
+<td  class="td_code">
+wbrdtime_errors
+</td>
+</tr>
+<tr>
+<td>
+<b>HW address: </b>
+</td>
+<td  class="td_code">
+0x2
+</td>
+</tr>
+<tr>
+<td>
+<b>C prefix: </b>
+</td>
+<td  class="td_code">
+ERRORS
+</td>
+</tr>
+<tr>
+<td>
+<b>C offset: </b>
+</td>
+<td  class="td_code">
+0x8
+</td>
+</tr>
+</table>
+<p>
+Timestamp error counter
+</p>
+<table cellpadding=0 cellspacing=0 border=0>
+<tr>
+<td  class="td_bit">
+31
+</td>
+<td  class="td_bit">
+30
+</td>
+<td  class="td_bit">
+29
+</td>
+<td  class="td_bit">
+28
+</td>
+<td  class="td_bit">
+27
+</td>
+<td  class="td_bit">
+26
+</td>
+<td  class="td_bit">
+25
+</td>
+<td  class="td_bit">
+24
+</td>
+</tr>
+<tr>
+<td style="border: solid 1px black;" colspan=8  class="td_field">
+NR[31:24]
+</td>
+<td>
+
+</td>
+<td>
+
+</td>
+<td>
+
+</td>
+<td>
+
+</td>
+<td>
+
+</td>
+<td>
+
+</td>
+<td>
+
+</td>
+</tr>
+</table>
+<table cellpadding=0 cellspacing=0 border=0>
+<tr>
+<td  class="td_bit">
+23
+</td>
+<td  class="td_bit">
+22
+</td>
+<td  class="td_bit">
+21
+</td>
+<td  class="td_bit">
+20
+</td>
+<td  class="td_bit">
+19
+</td>
+<td  class="td_bit">
+18
+</td>
+<td  class="td_bit">
+17
+</td>
+<td  class="td_bit">
+16
+</td>
+</tr>
+<tr>
+<td style="border: solid 1px black;" colspan=8  class="td_field">
+NR[23:16]
+</td>
+<td>
+
+</td>
+<td>
+
+</td>
+<td>
+
+</td>
+<td>
+
+</td>
+<td>
+
+</td>
+<td>
+
+</td>
+<td>
+
+</td>
+</tr>
+</table>
+<table cellpadding=0 cellspacing=0 border=0>
+<tr>
+<td  class="td_bit">
+15
+</td>
+<td  class="td_bit">
+14
+</td>
+<td  class="td_bit">
+13
+</td>
+<td  class="td_bit">
+12
+</td>
+<td  class="td_bit">
+11
+</td>
+<td  class="td_bit">
+10
+</td>
+<td  class="td_bit">
+9
+</td>
+<td  class="td_bit">
+8
+</td>
+</tr>
+<tr>
+<td style="border: solid 1px black;" colspan=8  class="td_field">
+NR[15:8]
+</td>
+<td>
+
+</td>
+<td>
+
+</td>
+<td>
+
+</td>
+<td>
+
+</td>
+<td>
+
+</td>
+<td>
+
+</td>
+<td>
+
+</td>
+</tr>
+</table>
+<table cellpadding=0 cellspacing=0 border=0>
+<tr>
+<td  class="td_bit">
+7
+</td>
+<td  class="td_bit">
+6
+</td>
+<td  class="td_bit">
+5
+</td>
+<td  class="td_bit">
+4
+</td>
+<td  class="td_bit">
+3
+</td>
+<td  class="td_bit">
+2
+</td>
+<td  class="td_bit">
+1
+</td>
+<td  class="td_bit">
+0
+</td>
+</tr>
+<tr>
+<td style="border: solid 1px black;" colspan=8  class="td_field">
+NR[7:0]
+</td>
+<td>
+
+</td>
+<td>
+
+</td>
+<td>
+
+</td>
+<td>
+
+</td>
+<td>
+
+</td>
+<td>
+
+</td>
+<td>
+
+</td>
+</tr>
+</table>
+<ul>
+<li><b>
+NR
+</b>[<i>read-only</i>]: error_counter
+<br>Timestamp error counter
+</ul>
+<a name="CORRECTIONS"></a>
+<h3><a name="sect_3_4">3.4. Timestamp correction counter</a></h3>
+<table cellpadding=0 cellspacing=0 border=0>
+<tr>
+<td>
+<b>HW prefix: </b>
+</td>
+<td  class="td_code">
+wbrdtime_corrections
+</td>
+</tr>
+<tr>
+<td>
+<b>HW address: </b>
+</td>
+<td  class="td_code">
+0x3
+</td>
+</tr>
+<tr>
+<td>
+<b>C prefix: </b>
+</td>
+<td  class="td_code">
+CORRECTIONS
+</td>
+</tr>
+<tr>
+<td>
+<b>C offset: </b>
+</td>
+<td  class="td_code">
+0xc
+</td>
+</tr>
+</table>
+<p>
+Timestamp correction counter
+</p>
+<table cellpadding=0 cellspacing=0 border=0>
+<tr>
+<td  class="td_bit">
+31
+</td>
+<td  class="td_bit">
+30
+</td>
+<td  class="td_bit">
+29
+</td>
+<td  class="td_bit">
+28
+</td>
+<td  class="td_bit">
+27
+</td>
+<td  class="td_bit">
+26
+</td>
+<td  class="td_bit">
+25
+</td>
+<td  class="td_bit">
+24
+</td>
+</tr>
+<tr>
+<td style="border: solid 1px black;" colspan=8  class="td_field">
+NR[31:24]
+</td>
+<td>
+
+</td>
+<td>
+
+</td>
+<td>
+
+</td>
+<td>
+
+</td>
+<td>
+
+</td>
+<td>
+
+</td>
+<td>
+
+</td>
+</tr>
+</table>
+<table cellpadding=0 cellspacing=0 border=0>
+<tr>
+<td  class="td_bit">
+23
+</td>
+<td  class="td_bit">
+22
+</td>
+<td  class="td_bit">
+21
+</td>
+<td  class="td_bit">
+20
+</td>
+<td  class="td_bit">
+19
+</td>
+<td  class="td_bit">
+18
+</td>
+<td  class="td_bit">
+17
+</td>
+<td  class="td_bit">
+16
+</td>
+</tr>
+<tr>
+<td style="border: solid 1px black;" colspan=8  class="td_field">
+NR[23:16]
+</td>
+<td>
+
+</td>
+<td>
+
+</td>
+<td>
+
+</td>
+<td>
+
+</td>
+<td>
+
+</td>
+<td>
+
+</td>
+<td>
+
+</td>
+</tr>
+</table>
+<table cellpadding=0 cellspacing=0 border=0>
+<tr>
+<td  class="td_bit">
+15
+</td>
+<td  class="td_bit">
+14
+</td>
+<td  class="td_bit">
+13
+</td>
+<td  class="td_bit">
+12
+</td>
+<td  class="td_bit">
+11
+</td>
+<td  class="td_bit">
+10
+</td>
+<td  class="td_bit">
+9
+</td>
+<td  class="td_bit">
+8
+</td>
+</tr>
+<tr>
+<td style="border: solid 1px black;" colspan=8  class="td_field">
+NR[15:8]
+</td>
+<td>
+
+</td>
+<td>
+
+</td>
+<td>
+
+</td>
+<td>
+
+</td>
+<td>
+
+</td>
+<td>
+
+</td>
+<td>
+
+</td>
+</tr>
+</table>
+<table cellpadding=0 cellspacing=0 border=0>
+<tr>
+<td  class="td_bit">
+7
+</td>
+<td  class="td_bit">
+6
+</td>
+<td  class="td_bit">
+5
+</td>
+<td  class="td_bit">
+4
+</td>
+<td  class="td_bit">
+3
+</td>
+<td  class="td_bit">
+2
+</td>
+<td  class="td_bit">
+1
+</td>
+<td  class="td_bit">
+0
+</td>
+</tr>
+<tr>
+<td style="border: solid 1px black;" colspan=8  class="td_field">
+NR[7:0]
+</td>
+<td>
+
+</td>
+<td>
+
+</td>
+<td>
+
+</td>
+<td>
+
+</td>
+<td>
+
+</td>
+<td>
+
+</td>
+<td>
+
+</td>
+</tr>
+</table>
+<ul>
+<li><b>
+NR
+</b>[<i>read-only</i>]: correction_counter
+<br>Timestamp correction counter
+</ul>
+<a name="CONTROL"></a>
+<h3><a name="sect_3_5">3.5. Read Timestamp control</a></h3>
+<table cellpadding=0 cellspacing=0 border=0>
+<tr>
+<td>
+<b>HW prefix: </b>
+</td>
+<td  class="td_code">
+wbrdtime_control
+</td>
+</tr>
+<tr>
+<td>
+<b>HW address: </b>
+</td>
+<td  class="td_code">
+0x4
+</td>
+</tr>
+<tr>
+<td>
+<b>C prefix: </b>
+</td>
+<td  class="td_code">
+CONTROL
+</td>
+</tr>
+<tr>
+<td>
+<b>C offset: </b>
+</td>
+<td  class="td_code">
+0x10
+</td>
+</tr>
+</table>
+<p>
+Controlregister for reading timestamp
+</p>
+<table cellpadding=0 cellspacing=0 border=0>
+<tr>
+<td  class="td_bit">
+31
+</td>
+<td  class="td_bit">
+30
+</td>
+<td  class="td_bit">
+29
+</td>
+<td  class="td_bit">
+28
+</td>
+<td  class="td_bit">
+27
+</td>
+<td  class="td_bit">
+26
+</td>
+<td  class="td_bit">
+25
+</td>
+<td  class="td_bit">
+24
+</td>
+</tr>
+<tr>
+<td  class="td_unused">
+-
+</td>
+<td  class="td_unused">
+-
+</td>
+<td  class="td_unused">
+-
+</td>
+<td  class="td_unused">
+-
+</td>
+<td  class="td_unused">
+-
+</td>
+<td  class="td_unused">
+-
+</td>
+<td  class="td_unused">
+-
+</td>
+<td  class="td_unused">
+-
+</td>
+</tr>
+</table>
+<table cellpadding=0 cellspacing=0 border=0>
+<tr>
+<td  class="td_bit">
+23
+</td>
+<td  class="td_bit">
+22
+</td>
+<td  class="td_bit">
+21
+</td>
+<td  class="td_bit">
+20
+</td>
+<td  class="td_bit">
+19
+</td>
+<td  class="td_bit">
+18
+</td>
+<td  class="td_bit">
+17
+</td>
+<td  class="td_bit">
+16
+</td>
+</tr>
+<tr>
+<td  class="td_unused">
+-
+</td>
+<td  class="td_unused">
+-
+</td>
+<td  class="td_unused">
+-
+</td>
+<td  class="td_unused">
+-
+</td>
+<td  class="td_unused">
+-
+</td>
+<td  class="td_unused">
+-
+</td>
+<td  class="td_unused">
+-
+</td>
+<td  class="td_unused">
+-
+</td>
+</tr>
+</table>
+<table cellpadding=0 cellspacing=0 border=0>
+<tr>
+<td  class="td_bit">
+15
+</td>
+<td  class="td_bit">
+14
+</td>
+<td  class="td_bit">
+13
+</td>
+<td  class="td_bit">
+12
+</td>
+<td  class="td_bit">
+11
+</td>
+<td  class="td_bit">
+10
+</td>
+<td  class="td_bit">
+9
+</td>
+<td  class="td_bit">
+8
+</td>
+</tr>
+<tr>
+<td  class="td_unused">
+-
+</td>
+<td  class="td_unused">
+-
+</td>
+<td  class="td_unused">
+-
+</td>
+<td  class="td_unused">
+-
+</td>
+<td  class="td_unused">
+-
+</td>
+<td  class="td_unused">
+-
+</td>
+<td  class="td_unused">
+-
+</td>
+<td  class="td_unused">
+-
+</td>
+</tr>
+</table>
+<table cellpadding=0 cellspacing=0 border=0>
+<tr>
+<td  class="td_bit">
+7
+</td>
+<td  class="td_bit">
+6
+</td>
+<td  class="td_bit">
+5
+</td>
+<td  class="td_bit">
+4
+</td>
+<td  class="td_bit">
+3
+</td>
+<td  class="td_bit">
+2
+</td>
+<td  class="td_bit">
+1
+</td>
+<td  class="td_bit">
+0
+</td>
+</tr>
+<tr>
+<td  class="td_unused">
+-
+</td>
+<td  class="td_unused">
+-
+</td>
+<td  class="td_unused">
+-
+</td>
+<td  class="td_unused">
+-
+</td>
+<td style="border: solid 1px black;" class="td_field">
+CLEAR
+</td>
+<td style="border: solid 1px black;" class="td_field">
+CORRECTION
+</td>
+<td style="border: solid 1px black;" class="td_field">
+ERROR
+</td>
+<td style="border: solid 1px black;" class="td_field">
+DISABLE
+</td>
+</tr>
+</table>
+<ul>
+<li><b>
+DISABLE
+</b>[<i>read/write</i>]: disable
+<br>Disable new timestamp
+<li><b>
+ERROR
+</b>[<i>read-only</i>]: Error
+<br>Error in timestamp
+<li><b>
+CORRECTION
+</b>[<i>read-only</i>]: Correction
+<br>Timestamp succesfully corrected
+<li><b>
+CLEAR
+</b>[<i>write-only</i>]: Clear
+<br>Clear error and corection counter
+</ul>
+
+
+
+</BODY>
+</HTML>

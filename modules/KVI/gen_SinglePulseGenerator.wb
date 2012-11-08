@@ -1,0 +1,95 @@
+peripheral { 
+name = "Single Pulse Generator"; 
+description = "Generates a pulse with adjustable delay and duration on a trigger (external or soft-trigger.";
+hdl_entity = "wb_SinglePulseGenerator"; 
+prefix = "WBpulse"; 
+	reg { 
+		name = "Delay after trigger"; 
+		description = "Number of clock-cycles before the pulse starts.";
+		prefix = "delay"; 
+		field { 
+			name = "delay"; 
+			description = "Number of clock-cycles before the pulse starts."; 
+			type = SLV; 
+			size = 32; 
+			access_bus = READ_WRITE; 
+			access_dev = READ_ONLY; 
+		}; 
+	}; 
+	reg { 
+		name = "Pulse duration"; 
+		description = "Pulse duration in number of clock-cycles.";
+		prefix = "duration"; 
+		field { 
+			name = "duration"; 
+			description = "Pulse duration in number of clock-cycles."; 
+			type = SLV; 
+			size = 32; 
+			access_bus = READ_WRITE; 
+			access_dev = READ_ONLY; 
+		}; 
+	}; 
+ 
+	reg { 
+		name = "Pulse control"; 
+		description = "Controlregister for Single Pulse Generator.";
+		prefix = "control"; 
+		field { 
+			name = "enable"; 
+			prefix = "enable"; 
+			description = "Enable Single Pulse Generation."; 
+			type = SLV; 
+			size = 1; 
+			access_bus = READ_WRITE; 
+			access_dev = READ_ONLY; 
+		}; 
+		field { 
+			name = "Not used"; 
+			prefix = "reserved"; 
+			description = "Not used."; 
+			type = SLV; 
+			size = 1; 
+			access_bus = READ_WRITE; 
+			access_dev = READ_ONLY; 
+		}; 
+		field { 
+			name = "Stop pulse"; 
+			prefix = "stop"; 
+			description = "Stops and resets current pulse on writing 1."; 
+			type = PASS_THROUGH; 
+			size = 1; 
+		}; 
+		field { 
+			name = "Soft trigger"; 
+			prefix = "softtrigger"; 
+			description = "Generates a trigger on writing 1."; 
+			type = PASS_THROUGH; 
+			size = 1; 
+		}; 
+	}; 
+ 
+	reg { 
+		name = "Pulse Status"; 
+		description = "Status of the pulse generator.";
+		prefix = "status"; 
+		field { 
+			name = "Pulse busy"; 
+			prefix = "Pulse_busy"; 
+			description = "Pulse in progress";
+			type = SLV; 
+			size = 1; 
+			access_bus = READ_ONLY; 
+			access_dev = WRITE_ONLY; 
+		}; 
+		field { 
+			name = "Pulse active"; 
+			prefix = "Pulse_active"; 
+			description = "Pulse output is active";
+			type = SLV; 
+			size = 1; 
+			access_bus = READ_ONLY; 
+			access_dev = WRITE_ONLY; 
+		}; 
+	}; 
+ 
+}; 

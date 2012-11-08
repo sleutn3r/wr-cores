@@ -1,0 +1,110 @@
+peripheral { 
+name = "Digital pattern generator"; 
+description = "Generates an user defined digital pattern. Number of pattern output bits and memory size is defined at design time. The pattern is written sequentially, the number of writes determines the pattern length.";
+hdl_entity = "wb_PatternGenerator"; 
+prefix = "WBpattern"; 
+	reg { 
+		name = "Pattern data input"; 
+		description = "Data that defines pattern";
+		prefix = "data_in"; 
+		field { 
+			name = "data_in"; 
+			type = PASS_THROUGH; 
+			size = 32; 
+		}; 
+	}; 
+	reg { 
+		name = "Pattern period time"; 
+		description = "Number of clock cycles for each pattern value";
+		prefix = "period"; 
+		field { 
+			name = "period"; 
+			prefix = "period"; 
+			description = "attern period time"; 
+			type = SLV; 
+			size = 32; 
+			access_bus = READ_WRITE; 
+			access_dev = READ_ONLY; 
+		}; 
+	}; 
+	reg { 
+		name = "Pattern control"; 
+		description = "Control register for pattern generator";
+		prefix = "control"; 
+		field { 
+			name = "Enable"; 
+			prefix = "enable"; 
+			description = "Enable trigger."; 
+			type = SLV; 
+			size = 1; 
+			access_bus = READ_WRITE; 
+			access_dev = READ_ONLY; 
+		}; 
+		field { 
+			name = "Load pattern"; 
+			prefix = "load"; 
+			description = "Enable writing new digital pattern to memory."; 
+			type = SLV; 
+			size = 1; 
+			access_bus = READ_WRITE; 
+			access_dev = READ_ONLY; 
+		}; 
+		field { 
+			name = "Stop pattern"; 
+			prefix = "stop"; 
+			description = "Stops and resets current pattern on writing 1."; 
+			type = PASS_THROUGH; 
+			size = 1; 
+		}; 
+		field { 
+			name = "Soft trigger"; 
+			prefix = "softtrigger"; 
+			description = "Generates a trigger on writing 1."; 
+			type = PASS_THROUGH; 
+			size = 1; 
+		}; 
+	}; 
+ 
+	reg { 
+		name = "Pattern Status"; 
+		description = "Status of the pattern generator.";
+		prefix = "status"; 
+		field { 
+			name = "Pattern busy"; 
+			prefix = "pattern_busy"; 
+			description = "Pattern output is busy.";
+			type = SLV; 
+			size = 1; 
+			access_bus = READ_ONLY; 
+			access_dev = WRITE_ONLY; 
+		}; 
+		field { 
+			name = "Not used"; 
+			prefix = "reserved"; 
+			description = "Not used.";
+			type = SLV; 
+			size = 15; 
+			access_bus = READ_ONLY; 
+			access_dev = WRITE_ONLY; 
+		}; 
+		field { 
+			name = "Pattern width"; 
+			prefix = "width"; 
+			description = "Number of pattern output bits.";
+			type = SLV; 
+			size = 8; 
+			access_bus = READ_ONLY; 
+			access_dev = WRITE_ONLY; 
+		}; 
+		field { 
+			name = "Bits for pattern memory depth"; 
+			prefix = "depthbits"; 
+			description = "Number of bits for pattern memory depth.";
+			type = SLV; 
+			size = 8; 
+			access_bus = READ_ONLY; 
+			access_dev = WRITE_ONLY; 
+		}; 
+	}; 
+ 
+}; 
