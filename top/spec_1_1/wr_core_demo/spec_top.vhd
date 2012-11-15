@@ -110,28 +110,19 @@ entity spec_top is
 
 
       -------------------------------------------------------------------------
-      -- Digital I/O FMC Pins
+      -- SIXIO 2 FMC Pins - SIXIO 2
       -------------------------------------------------------------------------
 
-      dio_clk_p_i : in std_logic;
-      dio_clk_n_i : in std_logic;
+      sixio_o   : out  std_logic_vector(3 downto 0);
+      sixio_i   : in std_logic_vector(2 downto 0);
 
-      dio_n_i : in std_logic_vector(4 downto 0);
-      dio_p_i : in std_logic_vector(4 downto 0);
+      sixio_oe_n_o    : out std_logic_vector(2 downto 0);
+      sixio_pg_o : out std_logic_vector(1 downto 0);
 
-      dio_n_o : out std_logic_vector(4 downto 0);
-      dio_p_o : out std_logic_vector(4 downto 0);
+      sixio_led_front_o   : out std_logic_vector(1 downto 0);
+      sixio_led_bot_o     : out std_logic_vector(7 downto 0);
 
-      dio_oe_n_o    : out std_logic_vector(4 downto 0);
-      dio_term_en_o : out std_logic_vector(4 downto 0);
-
-      dio_onewire_b  : inout std_logic;
-      dio_sdn_n_o    : out   std_logic;
-      dio_sdn_ck_n_o : out   std_logic;
-
-      dio_led_top_o : out std_logic;
-      dio_led_bot_o : out std_logic;
-
+      sixio_hpwx    : out std_logic_vector(15 downto 0);
       -----------------------------------------
       --UART
       -----------------------------------------
@@ -364,7 +355,7 @@ architecture rtl of spec_top is
   signal sfp_scl_i : std_logic;
   signal sfp_sda_o : std_logic;
   signal sfp_sda_i : std_logic;
-  signal dio       : std_logic_vector(3 downto 0);
+  --signal dio       : std_logic_vector(3 downto 0);
 
   signal tm_utc    : std_logic_vector(39 downto 0);
   signal tm_cycles : std_logic_vector(27 downto 0);
@@ -392,6 +383,7 @@ architecture rtl of spec_top is
   signal dio_in  : std_logic_vector(4 downto 0);
   signal dio_out : std_logic_vector(4 downto 0);
   signal dio_clk : std_logic;
+  signal dio_clk_o : std_logic_vector(1 downto 0);
 
   signal local_reset_n  : std_logic;
   signal button1_synced : std_logic_vector(2 downto 0);
@@ -779,7 +771,7 @@ begin
       slave_o     => cbar_ref_master_i(0),
       tm_utc_i    => tm_utc,
       tm_cycle_i  => tm_cycles,
-      toggle_o(0) => dio_led_bot_o, 
+      toggle_o(0) => sixio_led_front_o(1),
       toggle_o(1) => dio_out(1), 
       toggle_o(2) => dio_out(2), 
       toggle_o(c_wishbone_data_width-1 downto 3) => open);
@@ -915,48 +907,50 @@ begin
       clk_i      => clk_125m_pllref,
       rst_n_i    => local_reset_n,
       pulse_i    => pps_led,
-      extended_o => dio_led_top_o);
+      extended_o => dio_out(3));
+  
+  sixio_led_bot_o(7 downto 0)  <= (others => '0');
+  
+  -- FMC inputs
+  dio_clk   <= sixio_i(0);  -- CHN_1 from LVDS1_P LVDS1_N -> to clk_ext_i
+  dio_in(4) <= sixio_i(1);  -- CHN_2 from LVDS2_P LVDS2_N -> to ECA unit
+  dio_in(3) <= sixio_i(2);  -- CHN_7 from TTLIN1          -> to pps_ext_i wrpcore
+
+  -- FMC outputs
+  sixio_o(2)    <= dio_out(3);
+  sixio_led_front_o(0) <= not dio_out(3);
+
+  -- clk_125m_pllref to sixio_o(3) -- CHN_6 single ended output
+  clk_sys_o : ODDR2
+  generic map(
+          DDR_ALIGNMENT => "NONE", -- Sets output alignment to "NONE", "C0", "C1"
+          INIT => '0', -- Sets initial state of the Q output to '0' or '1'
+          SRTYPE => "SYNC") -- Specifies "SYNC" or "ASYNC" set/reset
+  port map (
+          Q   => dio_clk_o(1), -- 1-bit output data
+          C0  => clk_125m_pllref, -- 1-bit clock input
+          C1  => not clk_125m_pllref, -- 1-bit clock input
+          CE  => '1', -- 1-bit clock enable input
+          D0  => '1', -- 1-bit data input (associated with C0)  
+          D1  => '0', -- 1-bit data input (associated with C1)
+          R   => '0', -- 1-bit reset input
+          S   => '0' -- 1-bit set input
+          );
+  -- logic analyzer connector
+  sixio_hpwx(15 downto 0) <= (others => '1');
+
+  out_buf_clk : OBUF
+  port map(
+    O => sixio_o(3),
+    I => dio_clk_o(1)
+    );
 
 
-  gen_dio_iobufs : for i in 0 to 4 generate
-    U_ibuf : IBUFDS
-      generic map (
-        DIFF_TERM => true)
-      port map (
-        O  => dio_in(i),
-        I  => dio_p_i(i),
-        IB => dio_n_i(i)
-        );
-
-    U_obuf : OBUFDS
-      port map (
-        I  => dio_out(i),
-        O  => dio_p_o(i),
-        OB => dio_n_o(i)
-        );
-  end generate gen_dio_iobufs;
-  U_input_buffer : IBUFDS
-    generic map (
-      DIFF_TERM => true)
-    port map (
-      O  => dio_clk,
-      I  => dio_clk_p_i,
-      IB => dio_clk_n_i
-      );
-
-  dio_out(0)             <= pps;
-  dio_oe_n_o(0)          <= '0';
-  dio_oe_n_o(2 downto 1) <= (others => '0');
-  dio_oe_n_o(3)          <= '1';        -- for external 1-PPS
-  dio_oe_n_o(4)          <= '1';        -- for external 10MHz clock
-
-  dio_onewire_b <= '0' when owr_en(1) = '1' else 'Z';
-  owr_i(1)      <= dio_onewire_b;
-
-  dio_term_en_o <= (others => '0');
-
-  dio_sdn_ck_n_o <= '1';
-  dio_sdn_n_o    <= '1';
+  sixio_o(0)    <= dio_out(1);      -- CHN_3 LVDS output
+  sixio_o(1)    <= dio_out(2);      -- CHN_4 LVDS output
+  
+  sixio_oe_n_o(2 downto 0) <= (others => '0'); -- TTLENx, NGx
+  sixio_pg_o(1 downto 0) <= (others => '1'); -- PGx
 
   sfp_tx_disable_o <= '0';
 
