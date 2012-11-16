@@ -6,7 +6,7 @@
 -- Author     : Tomasz Włostowski
 -- Company    : CERN BE-CO-HT
 -- Created    : 2010-11-18
--- Last update: 2012-03-16
+-- Last update: 2012-11-15
 -- Platform   : FPGA-generic
 -- Standard   : VHDL'93
 -------------------------------------------------------------------------------
@@ -283,18 +283,20 @@ architecture rtl of ep_1000basex_pcs is
       rmon_o                     : inout t_rmon_triggers);
   end component;
 
+
   component ep_pcs_tbi_mdio_wb
     port (
       rst_n_i                    : in  std_logic;
-      wb_clk_i                   : in  std_logic;
-      wb_addr_i                  : in  std_logic_vector(4 downto 0);
-      wb_data_i                  : in  std_logic_vector(31 downto 0);
-      wb_data_o                  : out std_logic_vector(31 downto 0);
+      clk_sys_i                  : in  std_logic;
+      wb_adr_i                   : in  std_logic_vector(4 downto 0);
+      wb_dat_i                   : in  std_logic_vector(31 downto 0);
+      wb_dat_o                   : out std_logic_vector(31 downto 0);
       wb_cyc_i                   : in  std_logic;
       wb_sel_i                   : in  std_logic_vector(3 downto 0);
       wb_stb_i                   : in  std_logic;
       wb_we_i                    : in  std_logic;
       wb_ack_o                   : out std_logic;
+      wb_stall_o                 : out std_logic;
       tx_clk_i                   : in  std_logic;
       rx_clk_i                   : in  std_logic;
       mdio_mcr_uni_en_o          : out std_logic;
@@ -304,6 +306,7 @@ architecture rtl of ep_1000basex_pcs is
       mdio_mcr_loopback_o        : out std_logic;
       mdio_mcr_reset_o           : out std_logic;
       mdio_msr_lstatus_i         : in  std_logic;
+      lstat_read_notify_o        : out std_logic;
       mdio_msr_rfault_i          : in  std_logic;
       mdio_msr_anegcomplete_i    : in  std_logic;
       mdio_advertise_pause_o     : out std_logic_vector(1 downto 0);
@@ -317,11 +320,8 @@ architecture rtl of ep_1000basex_pcs is
       mdio_wr_spec_tx_cal_o      : out std_logic;
       mdio_wr_spec_rx_cal_stat_i : in  std_logic;
       mdio_wr_spec_cal_crst_o    : out std_logic;
-      mdio_wr_spec_bslide_i      : in  std_logic_vector(4 downto 0);
-      lstat_read_notify_o        : out std_logic);
+      mdio_wr_spec_bslide_i      : in  std_logic_vector(4 downto 0));
   end component;
-
-
 
   component ep_autonegotiation
     generic (
@@ -495,6 +495,8 @@ begin  -- rtl
         );
 
     
+    serdes_tx_k_o(1)              <= 'X';
+    serdes_tx_data_o(15 downto 8) <= (others => 'X');
 
     U_RX_PCS : ep_rx_pcs_8bit
       generic map (
@@ -541,12 +543,12 @@ begin  -- rtl
   U_MDIO_WB : ep_pcs_tbi_mdio_wb
     port map (
       rst_n_i                 => rst_n_i,
-      wb_clk_i                => clk_sys_i,
-      wb_addr_i               => mdio_addr_i(4 downto 0),
-      wb_data_i(15 downto 0)  => mdio_data_i,
-      wb_data_i(31 downto 16) => x"0000",
-      wb_data_o(15 downto 0)  => mdio_data_o,
-      wb_data_o(31 downto 16) => dummy(31 downto 16),
+      clk_sys_i                => clk_sys_i,
+      wb_adr_i               => mdio_addr_i(4 downto 0),
+      wb_dat_i(15 downto 0)  => mdio_data_i,
+      wb_dat_i(31 downto 16) => x"0000",
+      wb_dat_o(15 downto 0)  => mdio_data_o,
+      wb_dat_o(31 downto 16) => dummy(31 downto 16),
 
       wb_cyc_i => wb_stb,
       wb_sel_i => "1111",
