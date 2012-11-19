@@ -275,33 +275,6 @@ constant c_wrc_periph3_sdb : t_sdb_device := (
       dbg_fifo_irq_o  : out std_logic);
   end component;
 
-  -----------------------------------------------------------------------------
-  -- WBP MUX
-  -----------------------------------------------------------------------------
-  component xwbp_mux is
-    port(
-      clk_sys_i : in std_logic;
-      rst_n_i   : in std_logic;
-
-      --ENDPOINT
-      ep_src_o     : out t_wrf_source_out;
-      ep_src_i     : in  t_wrf_source_in;
-      ep_snk_o     : out t_wrf_sink_out;
-      ep_snk_i     : in  t_wrf_sink_in;
-      --PTP packets eg. from Mini-NIC
-      ptp_src_o    : out t_wrf_source_out;
-      ptp_src_i    : in  t_wrf_source_in;
-      ptp_snk_o    : out t_wrf_sink_out;
-      ptp_snk_i    : in  t_wrf_sink_in;
-      --External WBP port
-      ext_src_o    : out t_wrf_source_out;
-      ext_src_i    : in  t_wrf_source_in;
-      ext_snk_o    : out t_wrf_sink_out;
-      ext_snk_i    : in  t_wrf_sink_in;
-      class_core_i : in  std_logic_vector(7 downto 0)
-      );
-  end component;
-
   constant cc_unused_master_in : t_wishbone_master_in :=
     ('1', '0', '0', '0', '0', cc_dummy_data);
 
