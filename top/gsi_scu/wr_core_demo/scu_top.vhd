@@ -48,7 +48,7 @@ entity scu_top is
     -- LEMO on front panel
     -----------------------------------------
     lemo_io1       : out std_logic_vector(0 downto 0);
-    lemo_io2       : in  std_logic_vector(0 downto 0);
+    lemo_io2       : out std_logic_vector(0 downto 0);
     lemo_en_in     : out std_logic_vector(2 downto 1);
     lemo_led       : out std_logic_vector(2 downto 1);
     
@@ -221,6 +221,11 @@ architecture rtl of scu_top is
 
   signal ext_pps : std_logic;
   signal pps : std_logic;
+  
+  signal int_counter : unsigned(26 downto 0);
+  signal int_shift : std_logic_vector(4 downto 0);
+  signal int_gen : std_logic;
+  signal int_gen_long : std_logic;
 
   signal phy_tx_clk       : std_logic;
   signal phy_tx_data      : std_logic_vector(7 downto 0);
@@ -481,7 +486,7 @@ begin
     generic map(
        sdb_addr => c_sdb_address)
     port map(
-       clk125_i      => pllout_clk_sys,
+       clk125_i      => clk_125m_pllref_p,
        cal_clk50_i   => clk_reconf,
        pcie_refclk_i => pcie_refclk_i,
        pcie_rstn_i   => nPCI_RESET,
@@ -490,7 +495,14 @@ begin
        wb_clk        => pllout_clk_sys,
        wb_rstn_i     => pllout_clk_sys_rstn,
        master_o      => cbar_slave_i(1),
-       master_i      => cbar_slave_o(1));
+       master_i      => cbar_slave_o(1),
+       slave_i.cyc   => '1',
+       slave_i.stb   => int_gen,
+       slave_i.we    => '1',
+       slave_i.adr   => x"00010000",
+       slave_i.dat   => x"deadbeef",
+       slave_i.sel   => "1111",
+       slave_o       => open);
   
   TLU : wb_timestamp_latch
     generic map (
@@ -500,7 +512,7 @@ begin
       ref_clk_i       => clk_125m_pllref_p,
       sys_clk_i       => clk_125m_pllref_p,
       nRSt_i          => clk_125m_pllref_p_rstn,
-      triggers_i      => lemo_io2,
+      triggers_i(0)   => '0',
       tm_time_valid_i => '0',
       tm_utc_i        => tm_utc,
       tm_cycles_i     => tm_cycles,
@@ -575,6 +587,36 @@ begin
     end if;	
   end process;
   
+  int_edge : process(pllout_clk_sys)
+  begin
+    if rising_edge(pllout_clk_sys) then
+      if int_gen = '1' then
+	int_gen_long <= '1';
+      end if;
+      if cbar_slave_i(1).cyc = '1' and cbar_slave_i(1).stb = '1' and cbar_slave_i(1).adr = x"00000000" and 
+         cbar_slave_i(1).we = '1' and cbar_slave_i(1).sel(0) = '1' then
+	lemo_io2(0) <= cbar_slave_i(1).dat(0);
+	int_gen_long <= '0';
+      end if;
+      
+      int_shift(int_shift'length-2 downto 0) <=
+        int_shift(int_shift'length-1 downto 1);
+    end if;
+  end process;
+  int_gen <= int_shift(1) xor int_shift(0);
+  
+  intgen125 : process(clk_125m_pllref_p)
+  begin
+    if rising_edge(clk_125m_pllref_p) then
+      if int_counter = 125000 then
+        int_shift(int_shift'length-1) <= not int_shift(int_shift'length-1);
+	int_counter <= to_unsigned(0, int_counter'length);
+      else
+        int_counter <= int_counter + 1;
+      end if;
+    end if;
+  end process;
+  
   hpla_ch <= std_logic_vector(s_hpla_ch);
   hpla_clk <= pllout_clk_sys;
   
@@ -582,8 +624,8 @@ begin
   
   sfp2_tx_disable_o <= '0';				-- enable SFP
   
-  lemo_en_in <= "01";                 -- configure lemo 1 as output, lemo 2 as input
-  lemo_io1 <= eca_toggle(0 downto 0);
+  lemo_en_in <= "00"; -- both outputs
+  lemo_io1(0) <= int_gen_long;
   
   --leds_o(0) <= eca_toggle(0);
   --leds_o(1) <= pio_reg(0);
