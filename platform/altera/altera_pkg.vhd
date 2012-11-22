@@ -4,8 +4,6 @@ use ieee.std_logic_1164.all;
 library work;
 use work.genram_pkg.all;
 use work.wishbone_pkg.all;
-use work.sysc_wbgen2_pkg.all;
-use work.wr_fabric_pkg.all;
 
 package wr_altera_pkg is
 
