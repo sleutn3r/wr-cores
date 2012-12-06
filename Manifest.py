@@ -9,8 +9,9 @@ modules =  {"local" :
 												"modules/wr_endpoint",
 												"modules/wr_pps_gen",
 												"modules/wr_dacs",
-												"modules/wr_eca",
-												"modules/wr_tlu",
+#												"modules/wr_eca",
+#												"modules/wr_tlu",
+												"platform",
 												"modules/wrc_core" ],
                       "git" : "git://ohwr.org/hdl-core-lib/general-cores.git"
 						}
