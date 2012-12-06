@@ -7,6 +7,7 @@ use work.wishbone_pkg.all;
 use work.sysc_wbgen2_pkg.all;
 use work.wr_fabric_pkg.all;
 use work.endpoint_pkg.all;
+use work.softpll_pkg.all;
 
 package wrcore_pkg is
 
@@ -15,20 +16,20 @@ package wrcore_pkg is
   --PPS generator
   -----------------------------------------------------------------------------
   constant c_xwr_pps_gen_sdb : t_sdb_device := (
-    abi_class     => x"0000", -- undocumented device
+    abi_class     => x"0000",              -- undocumented device
     abi_ver_major => x"01",
     abi_ver_minor => x"01",
     wbd_endian    => c_sdb_endian_big,
-    wbd_width     => x"7", -- 8/16/32-bit port granularity
+    wbd_width     => x"7",                 -- 8/16/32-bit port granularity
     sdb_component => (
-    addr_first    => x"0000000000000000",
-    addr_last     => x"00000000000000ff",
-    product => (
-    vendor_id     => x"000000000000CE42", -- CERN
-    device_id     => x"de0d8ced",
-    version       => x"00000001",
-    date          => x"20120305",
-    name          => "WR-PPS-Generator   ")));
+      addr_first  => x"0000000000000000",
+      addr_last   => x"00000000000000ff",
+      product     => (
+        vendor_id => x"000000000000CE42",  -- CERN
+        device_id => x"de0d8ced",
+        version   => x"00000001",
+        date      => x"20120305",
+        name      => "WR-PPS-Generator   ")));
   component xwr_pps_gen is
     generic(
       g_interface_mode       : t_wishbone_interface_mode;
@@ -47,7 +48,7 @@ package wrcore_pkg is
       pps_in_i        : in  std_logic;
       pps_csync_o     : out std_logic;
       pps_out_o       : out std_logic;
-			pps_led_o				: out std_logic;
+      pps_led_o       : out std_logic;
       pps_valid_o     : out std_logic;
       tm_utc_o        : out std_logic_vector(39 downto 0);
       tm_cycles_o     : out std_logic_vector(27 downto 0);
@@ -59,20 +60,20 @@ package wrcore_pkg is
   --Mini NIC
   -----------------------------------------------------------------------------
   constant c_xwr_mini_nic_sdb : t_sdb_device := (
-    abi_class     => x"0000", -- undocumented device
+    abi_class     => x"0000",              -- undocumented device
     abi_ver_major => x"01",
     abi_ver_minor => x"01",
     wbd_endian    => c_sdb_endian_big,
-    wbd_width     => x"7", -- 8/16/32-bit port granularity
+    wbd_width     => x"7",                 -- 8/16/32-bit port granularity
     sdb_component => (
-    addr_first    => x"0000000000000000",
-    addr_last     => x"00000000000000ff",
-    product => (
-    vendor_id     => x"000000000000CE42", -- CERN
-    device_id     => x"ab28633a",
-    version       => x"00000001",
-    date          => x"20120305",
-    name          => "WR-Mini-NIC        ")));
+      addr_first  => x"0000000000000000",
+      addr_last   => x"00000000000000ff",
+      product     => (
+        vendor_id => x"000000000000CE42",  -- CERN
+        device_id => x"ab28633a",
+        version   => x"00000001",
+        date      => x"20120305",
+        name      => "WR-Mini-NIC        ")));
   component xwr_mini_nic
     generic (
       g_interface_mode       : t_wishbone_interface_mode;
@@ -121,69 +122,69 @@ package wrcore_pkg is
   end component;
 
   constant c_wrc_periph0_sdb : t_sdb_device := (
-    abi_class     => x"0000", -- undocumented device
+    abi_class     => x"0000",              -- undocumented device
     abi_ver_major => x"01",
     abi_ver_minor => x"01",
     wbd_endian    => c_sdb_endian_big,
-    wbd_width     => x"7", -- 8/16/32-bit port granularity
+    wbd_width     => x"7",                 -- 8/16/32-bit port granularity
     sdb_component => (
-    addr_first    => x"0000000000000000",
-    addr_last     => x"00000000000000ff",
-    product => (
-    vendor_id     => x"000000000000CE42", -- CERN
-    device_id     => x"ff07fc47",
-    version       => x"00000001",
-    date          => x"20120305",
-    name          => "WR-Periph-Syscon   ")));
+      addr_first  => x"0000000000000000",
+      addr_last   => x"00000000000000ff",
+      product     => (
+        vendor_id => x"000000000000CE42",  -- CERN
+        device_id => x"ff07fc47",
+        version   => x"00000001",
+        date      => x"20120305",
+        name      => "WR-Periph-Syscon   ")));
   constant c_wrc_periph1_sdb : t_sdb_device := (
-    abi_class     => x"0000", -- undocumented device
+    abi_class     => x"0000",              -- undocumented device
     abi_ver_major => x"01",
     abi_ver_minor => x"01",
     wbd_endian    => c_sdb_endian_big,
-    wbd_width     => x"7", -- 8/16/32-bit port granularity
+    wbd_width     => x"7",                 -- 8/16/32-bit port granularity
     sdb_component => (
-    addr_first    => x"0000000000000000",
-    addr_last     => x"00000000000000ff",
-    product => (
-    vendor_id     => x"000000000000CE42", -- CERN
-    device_id     => x"e2d13d04",
-    version       => x"00000001",
-    date          => x"20120305",
-    name          => "WR-Periph-UART     ")));
+      addr_first  => x"0000000000000000",
+      addr_last   => x"00000000000000ff",
+      product     => (
+        vendor_id => x"000000000000CE42",  -- CERN
+        device_id => x"e2d13d04",
+        version   => x"00000001",
+        date      => x"20120305",
+        name      => "WR-Periph-UART     ")));
 
   constant c_wrc_periph2_sdb : t_sdb_device := (
-    abi_class     => x"0000", -- undocumented device
+    abi_class     => x"0000",              -- undocumented device
     abi_ver_major => x"01",
     abi_ver_minor => x"01",
     wbd_endian    => c_sdb_endian_big,
-    wbd_width     => x"7", -- 8/16/32-bit port granularity
+    wbd_width     => x"7",                 -- 8/16/32-bit port granularity
     sdb_component => (
-    addr_first    => x"0000000000000000",
-    addr_last     => x"00000000000000ff",
-    product => (
-    vendor_id     => x"000000000000CE42", -- CERN
-    device_id     => x"779c5443",
-    version       => x"00000001",
-    date          => x"20120305",
-    name          => "WR-Periph-1Wire    ")));
+      addr_first  => x"0000000000000000",
+      addr_last   => x"00000000000000ff",
+      product     => (
+        vendor_id => x"000000000000CE42",  -- CERN
+        device_id => x"779c5443",
+        version   => x"00000001",
+        date      => x"20120305",
+        name      => "WR-Periph-1Wire    ")));
 
 
-constant c_wrc_periph3_sdb : t_sdb_device := (
-    abi_class     => x"0000", -- undocumented device
+  constant c_wrc_periph3_sdb : t_sdb_device := (
+    abi_class     => x"0000",              -- undocumented device
     abi_ver_major => x"01",
     abi_ver_minor => x"01",
     wbd_endian    => c_sdb_endian_big,
-    wbd_width     => x"7", -- 8/16/32-bit port granularity
+    wbd_width     => x"7",                 -- 8/16/32-bit port granularity
     sdb_component => (
-    addr_first    => x"0000000000000000",
-    addr_last     => x"00000000000000ff",
-    product => (
-    vendor_id     => x"000000000000CE42", -- CERN
-    device_id     => x"779c5445",
-    version       => x"00000001",
-    date          => x"20120615",
-    name          => "WR-Periph-AuxWB    ")));
-  
+      addr_first  => x"0000000000000000",
+      addr_last   => x"00000000000000ff",
+      product     => (
+        vendor_id => x"000000000000CE42",  -- CERN
+        device_id => x"779c5445",
+        version   => x"00000001",
+        date      => x"20120615",
+        name      => "WR-Periph-AuxWB    ")));
+
   component wrc_periph is
     generic(
       g_phys_uart    : boolean := true;
@@ -224,36 +225,33 @@ constant c_wrc_periph3_sdb : t_sdb_device := (
   -- Soft-PLL
   -----------------------------------------------------------------------------
   constant c_xwr_softpll_ng_sdb : t_sdb_device := (
-    abi_class     => x"0000", -- undocumented device
+    abi_class     => x"0000",              -- undocumented device
     abi_ver_major => x"01",
     abi_ver_minor => x"01",
     wbd_endian    => c_sdb_endian_big,
-    wbd_width     => x"7", -- 8/16/32-bit port granularity
+    wbd_width     => x"7",                 -- 8/16/32-bit port granularity
     sdb_component => (
-    addr_first    => x"0000000000000000",
-    addr_last     => x"00000000000000ff",
-    product => (
-    vendor_id     => x"000000000000CE42", -- CERN
-    device_id     => x"65158dc0",
-    version       => x"00000001",
-    date          => x"20120305",
-    name          => "WR-Soft-PLL        ")));
+      addr_first  => x"0000000000000000",
+      addr_last   => x"00000000000000ff",
+      product     => (
+        vendor_id => x"000000000000CE42",  -- CERN
+        device_id => x"65158dc0",
+        version   => x"00000002",
+        date      => x"20120305",
+        name      => "WR-Soft-PLL        ")));
   component xwr_softpll_ng
     generic (
       g_tag_bits             : integer;
       g_num_ref_inputs       : integer;
       g_num_outputs          : integer;
-      g_with_period_detector : boolean := false;
-      g_with_debug_fifo      : boolean := false;
-      g_with_ext_clock_input : boolean := false;
-      g_with_undersampling   : boolean := false;
-      g_reverse_dmtds        : boolean := false;
-      g_bb_ref_divider       : integer := 1;
-      g_bb_feedback_divider  : integer := 1;
-      g_bb_log2_gating       : integer := 1;
-      g_divide_input_by_2 : boolean := false;
+      g_with_debug_fifo      : boolean                        := false;
+      g_with_ext_clock_input : boolean                        := false;
+      g_reverse_dmtds        : boolean                        := false;
+      g_divide_input_by_2    : boolean                        := false;
       g_interface_mode       : t_wishbone_interface_mode;
-      g_address_granularity  : t_wishbone_address_granularity);
+      g_address_granularity  : t_wishbone_address_granularity;
+      g_channels_config      : t_softpll_channel_config_array := c_softpll_default_channel_config
+      );
     port (
       clk_sys_i       : in  std_logic;
       rst_n_i         : in  std_logic;
@@ -305,7 +303,7 @@ constant c_wrc_periph3_sdb : t_sdb_device := (
   constant cc_unused_master_in : t_wishbone_master_in :=
     ('1', '0', '0', '0', '0', cc_dummy_data);
 
-  
+
   -----------------------------------------------------------------------------
   -- Public WR component definitions
   -----------------------------------------------------------------------------
@@ -321,7 +319,9 @@ constant c_wrc_periph3_sdb : t_sdb_device := (
       g_dpram_initv               : t_xwb_dpram_init               := c_xwb_dpram_init_nothing;
       g_dpram_size                : integer                        := 20480;  --in 32-bit words
       g_interface_mode            : t_wishbone_interface_mode      := CLASSIC;
-      g_address_granularity       : t_wishbone_address_granularity := WORD
+      g_address_granularity       : t_wishbone_address_granularity := WORD;
+      g_aux_sdb                   : t_sdb_device                   := c_wrc_periph3_sdb;
+      g_softpll_channels_config    : t_softpll_channel_config_array := c_softpll_default_channel_config
       );
     port(
       clk_sys_i  : in std_logic;
@@ -374,8 +374,8 @@ constant c_wrc_periph3_sdb : t_sdb_device := (
       slave_i : in  t_wishbone_slave_in;
       slave_o : out t_wishbone_slave_out;
 
-      aux_master_o : out  t_wishbone_master_out;
-      aux_master_i : in t_wishbone_master_in := cc_unused_master_in;
+      aux_master_o : out t_wishbone_master_out;
+      aux_master_i : in  t_wishbone_master_in := cc_unused_master_in;
 
       wrf_src_o : out t_wrf_source_out;
       wrf_src_i : in  t_wrf_source_in := c_dummy_src_in;
@@ -394,11 +394,11 @@ constant c_wrc_periph3_sdb : t_sdb_device := (
       tm_utc_o             : out std_logic_vector(39 downto 0);
       tm_cycles_o          : out std_logic_vector(27 downto 0);
       pps_p_o              : out std_logic;
-			pps_led_o						 : out std_logic;
+      pps_led_o            : out std_logic;
 
       dio_o       : out std_logic_vector(3 downto 0);
       rst_aux_n_o : out std_logic;
-      
+
       link_ok_o : out std_logic
       );
   end component;

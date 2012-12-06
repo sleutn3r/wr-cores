@@ -5,7 +5,7 @@
 -- Author     : Grzegorz Daniluk
 -- Company    : Elproma
 -- Created    : 2011-02-02
--- Last update: 2012-07-09
+-- Last update: 2012-12-04
 -- Platform   : FPGA-generics
 -- Standard   : VHDL
 -------------------------------------------------------------------------------
@@ -55,6 +55,7 @@ use work.wishbone_pkg.all;
 use work.endpoint_pkg.all;
 use work.wr_fabric_pkg.all;
 use work.sysc_wbgen2_pkg.all;
+use work.softpll_pkg.all;
 
 entity wr_core is
   generic(
@@ -71,7 +72,8 @@ entity wr_core is
     g_dpram_size                : integer                        := 20480;  --in 32-bit words
     g_interface_mode            : t_wishbone_interface_mode      := PIPELINED;
     g_address_granularity       : t_wishbone_address_granularity := WORD;
-    g_aux_sdb                   : t_sdb_device                   := c_wrc_periph3_sdb
+    g_aux_sdb                   : t_sdb_device                   := c_wrc_periph3_sdb;
+    g_softpll_channels_config    : t_softpll_channel_config_array := c_softpll_default_channel_config
     );
   port(
 
@@ -175,16 +177,16 @@ entity wr_core is
     -----------------------------------------
     -- Auxillary WB master
     -----------------------------------------
-    aux_adr_o   : out  std_logic_vector(c_wishbone_address_width-1 downto 0);
-    aux_dat_o   : out  std_logic_vector(c_wishbone_data_width-1 downto 0);
-    aux_dat_i   : in std_logic_vector(c_wishbone_data_width-1 downto 0);
-    aux_sel_o   : out  std_logic_vector(c_wishbone_address_width/8-1 downto 0);
-    aux_we_o    : out  std_logic;                                              
-    aux_cyc_o   : out  std_logic;                                             
-    aux_stb_o   : out  std_logic;
-    aux_ack_i   : in std_logic := '1';
-    aux_stall_i : in std_logic := '0';
-    
+    aux_adr_o   : out std_logic_vector(c_wishbone_address_width-1 downto 0);
+    aux_dat_o   : out std_logic_vector(c_wishbone_data_width-1 downto 0);
+    aux_dat_i   : in  std_logic_vector(c_wishbone_data_width-1 downto 0);
+    aux_sel_o   : out std_logic_vector(c_wishbone_address_width/8-1 downto 0);
+    aux_we_o    : out std_logic;
+    aux_cyc_o   : out std_logic;
+    aux_stb_o   : out std_logic;
+    aux_ack_i   : in  std_logic := '1';
+    aux_stall_i : in  std_logic := '0';
+
     -----------------------------------------
     -- External Fabric I/F
     -----------------------------------------
@@ -236,7 +238,7 @@ entity wr_core is
     tm_cycles_o          : out std_logic_vector(27 downto 0);
     -- 1PPS output
     pps_p_o              : out std_logic;
-		pps_led_o						 : out std_logic;
+    pps_led_o            : out std_logic;
 
 
     dio_o       : out std_logic_vector(3 downto 0);
@@ -306,19 +308,19 @@ architecture struct of wr_core is
   --WB Secondary Crossbar
   -----------------------------------------------------------------------------
   constant c_secbar_layout : t_sdb_record_array(7 downto 0) :=
-    (0 => f_sdb_embed_device(c_xwr_mini_nic_sdb,   x"00000000"),
-     1 => f_sdb_embed_device(c_xwr_endpoint_sdb,   x"00000100"),
+    (0 => f_sdb_embed_device(c_xwr_mini_nic_sdb, x"00000000"),
+     1 => f_sdb_embed_device(c_xwr_endpoint_sdb, x"00000100"),
      2 => f_sdb_embed_device(c_xwr_softpll_ng_sdb, x"00000200"),
-     3 => f_sdb_embed_device(c_xwr_pps_gen_sdb,    x"00000300"),
-     4 => f_sdb_embed_device(c_wrc_periph0_sdb,    x"00000400"),  -- Syscon
-     5 => f_sdb_embed_device(c_wrc_periph1_sdb,    x"00000500"),  -- UART
-     6 => f_sdb_embed_device(c_wrc_periph2_sdb,    x"00000600"),  -- 1-Wire
-     7 => f_sdb_embed_device(g_aux_sdb,            x"00000700")  -- aux WB bus
+     3 => f_sdb_embed_device(c_xwr_pps_gen_sdb, x"00000300"),
+     4 => f_sdb_embed_device(c_wrc_periph0_sdb, x"00000400"),  -- Syscon
+     5 => f_sdb_embed_device(c_wrc_periph1_sdb, x"00000500"),  -- UART
+     6 => f_sdb_embed_device(c_wrc_periph2_sdb, x"00000600"),  -- 1-Wire
+     7 => f_sdb_embed_device(g_aux_sdb, x"00000700")           -- aux WB bus
      );
 
   constant c_secbar_sdb_address : t_wishbone_address := x"00000800";
-  constant c_secbar_bridge_sdb : t_sdb_bridge := 
-     f_xwb_bridge_layout_sdb(true, c_secbar_layout, c_secbar_sdb_address);
+  constant c_secbar_bridge_sdb  : t_sdb_bridge       :=
+    f_xwb_bridge_layout_sdb(true, c_secbar_layout, c_secbar_sdb_address);
 
   signal secbar_master_i : t_wishbone_master_in_array(7 downto 0);
   signal secbar_master_o : t_wishbone_master_out_array(7 downto 0);
@@ -327,8 +329,8 @@ architecture struct of wr_core is
   --WB intercon
   -----------------------------------------------------------------------------
   constant c_layout : t_sdb_record_array(1 downto 0) :=
-   (0 => f_sdb_embed_device(f_xwb_dpram(g_dpram_size), x"00000000"),
-    1 => f_sdb_embed_bridge(c_secbar_bridge_sdb,       x"00020000"));
+    (0 => f_sdb_embed_device(f_xwb_dpram(g_dpram_size), x"00000000"),
+     1 => f_sdb_embed_bridge(c_secbar_bridge_sdb, x"00020000"));
   constant c_sdb_address : t_wishbone_address := x"00030000";
 
   signal cbar_slave_i  : t_wishbone_slave_in_array (2 downto 0);
@@ -411,8 +413,8 @@ architecture struct of wr_core is
   signal dac_dpll_data    : std_logic_vector(15 downto 0);
   signal dac_dpll_sel     : std_logic_vector(3 downto 0);
   signal dac_dpll_load_p1 : std_logic;
-  
-  signal clk_fb : std_logic_vector(g_aux_clks downto 0);
+
+  signal clk_fb     : std_logic_vector(g_aux_clks downto 0);
   signal out_enable : std_logic_vector(g_aux_clks downto 0);
 
   --component chipscope_ila
@@ -464,7 +466,7 @@ begin
       pps_in_i    => pps_ext_i,
       pps_csync_o => s_pps_csync,
       pps_out_o   => pps_p_o,
-			pps_led_o		=> pps_led_o,
+      pps_led_o   => pps_led_o,
       pps_valid_o => pps_valid,
 
       tm_utc_o        => tm_utc_o,
@@ -481,19 +483,13 @@ begin
       g_with_ext_clock_input => g_with_external_clock_input,
       g_reverse_dmtds        => false,
       g_divide_input_by_2    => true,
-      g_with_undersampling   => false,
-      g_with_period_detector => false,
       g_with_debug_fifo      => true,
-
-      g_bb_ref_divider      => 8,
-      g_bb_feedback_divider => 50,
-      g_bb_log2_gating      => 13,
-
-      g_tag_bits            => 22,
-      g_interface_mode      => PIPELINED,
-      g_address_granularity => BYTE,
-      g_num_ref_inputs      => 1,
-      g_num_outputs         => 1 + g_aux_clks)
+      g_tag_bits             => 22,
+      g_interface_mode       => PIPELINED,
+      g_address_granularity  => BYTE,
+      g_num_ref_inputs       => 1,
+      g_num_outputs          => 1 + g_aux_clks,
+      g_channels_config       => g_softpll_channels_config)
     port map(
       clk_sys_i => clk_sys_i,
       rst_n_i   => rst_net_n,
@@ -518,7 +514,7 @@ begin
       dac_out_sel_o  => dac_dpll_sel,   --for now use only one output
       dac_out_load_o => dac_dpll_load_p1,
 
-      out_enable_i   => out_enable,
+      out_enable_i => out_enable,
 
       out_locked_o => spll_out_locked,
 
@@ -528,19 +524,19 @@ begin
       debug_o => dio_o
       );
 
-  clk_fb(0) <= clk_ref_i;
-  clk_fb(g_aux_clks downto 1) <= clk_aux_i;
-  out_enable(0) <= '1';
+  clk_fb(0)                       <= clk_ref_i;
+  clk_fb(g_aux_clks downto 1)     <= clk_aux_i;
+  out_enable(0)                   <= '1';
   out_enable(g_aux_clks downto 1) <= (others => tm_clk_aux_lock_en_i);
-		
+
   dac_dpll_data_o    <= dac_dpll_data;
-  dac_dpll_load_p1_o <= '1' when (dac_dpll_load_p1 = '1' and dac_dpll_sel= x"0") else '0';
+  dac_dpll_load_p1_o <= '1' when (dac_dpll_load_p1 = '1' and dac_dpll_sel = x"0") else '0';
 
   tm_dac_value_o <= x"00" & dac_dpll_data;
   tm_dac_wr_o    <= '1' when (dac_dpll_load_p1 = '1' and dac_dpll_sel = x"1") else '0';
 
   locked_spll : if g_aux_clks > 0 generate
-    tm_clk_aux_locked_o <= spll_out_locked(1); -- !!! what if more than one clock?! FIXME
+    tm_clk_aux_locked_o <= spll_out_locked(1);  -- !!! what if more than one clock?! FIXME
   end generate;
 
   softpll_irq <= spll_wb_out.int;
@@ -730,8 +726,8 @@ begin
       uart_txd_o => uart_txd_o,
 
       owr_pwren_o => owr_pwren_o,
-      owr_en_o => owr_en_o,
-      owr_i    => owr_i
+      owr_en_o    => owr_en_o,
+      owr_i       => owr_i
       );
 
   U_Adapter : wb_slave_adapter
@@ -873,13 +869,13 @@ begin
   aux_sel_o <= secbar_master_o(7).sel;
   aux_cyc_o <= secbar_master_o(7).cyc;
   aux_stb_o <= secbar_master_o(7).stb;
-  aux_we_o <= secbar_master_o(7).we;
+  aux_we_o  <= secbar_master_o(7).we;
 
-  secbar_master_i(7).dat <= aux_dat_i;
-  secbar_master_i(7).ack <= aux_ack_i;
+  secbar_master_i(7).dat   <= aux_dat_i;
+  secbar_master_i(7).ack   <= aux_ack_i;
   secbar_master_i(7).stall <= aux_stall_i;
-  secbar_master_i(7).err <= '0';
-  secbar_master_i(7).rty <= '0';
+  secbar_master_i(7).err   <= '0';
+  secbar_master_i(7).rty   <= '0';
 
   --secbar_master_i(6).err <= '0';
   --secbar_master_i(5).err <= '0';
@@ -896,9 +892,9 @@ begin
   --secbar_master_i(2).rty <= '0';
   --secbar_master_i(1).rty <= '0';
   --secbar_master_i(0).rty <= '0';
-  
 
-  
+
+
   -----------------------------------------------------------------------------
   -- WBP MUX
   -----------------------------------------------------------------------------

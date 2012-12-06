@@ -6,7 +6,7 @@
 -- Author     : Grzegorz Daniluk
 -- Company    : Elproma
 -- Created    : 2011-02-02
--- Last update: 2012-07-09
+-- Last update: 2012-12-04
 -- Platform   : FPGA-generics
 -- Standard   : VHDL
 -------------------------------------------------------------------------------
@@ -40,6 +40,7 @@ use work.wishbone_pkg.all;
 use work.endpoint_pkg.all;
 use work.wr_fabric_pkg.all;
 use work.sysc_wbgen2_pkg.all;
+use work.softpll_pkg.all;
 
 
 entity xwr_core is
@@ -57,7 +58,9 @@ entity xwr_core is
     g_dpram_size                : integer                        := 20480;  --in 32-bit words
     g_interface_mode            : t_wishbone_interface_mode      := CLASSIC;
     g_address_granularity       : t_wishbone_address_granularity := WORD;
-    g_aux_sdb                   : t_sdb_device                   := c_wrc_periph3_sdb
+    g_aux_sdb                   : t_sdb_device                   := c_wrc_periph3_sdb;
+    g_softpll_channels_config    : t_softpll_channel_config_array := c_softpll_default_channel_config
+
     );
   port(
     ---------------------------------------------------------------------------
@@ -204,7 +207,9 @@ architecture struct of xwr_core is
       g_dpram_size                : integer                        := 16384;  --in 32-bit words
       g_interface_mode            : t_wishbone_interface_mode      := CLASSIC;
       g_address_granularity       : t_wishbone_address_granularity := WORD;
-    	g_aux_sdb                   : t_sdb_device                   := c_wrc_periph3_sdb);
+      g_aux_sdb                   : t_sdb_device                   := c_wrc_periph3_sdb;
+      g_softpll_channels_config    : t_softpll_channel_config_array := c_softpll_default_channel_config
+);
     port(
       clk_sys_i  : in std_logic;
       clk_dmtd_i : in std_logic;
@@ -336,7 +341,8 @@ begin
       g_dpram_size                => g_dpram_size,
       g_interface_mode            => g_interface_mode,
       g_address_granularity       => g_address_granularity,
-			g_aux_sdb										=> g_aux_sdb)
+      g_aux_sdb										=> g_aux_sdb,
+      g_softpll_channels_config => g_softpll_channels_config)
     port map(
       clk_sys_i  => clk_sys_i,
       clk_dmtd_i => clk_dmtd_i,
