@@ -29,10 +29,16 @@ NET "dac_din_o" IOSTANDARD = "LVCMOS25";
 NET "dac_sclk_o" LOC = A4;
 NET "dac_sclk_o" IOSTANDARD = "LVCMOS25";
 
-#NET "SI57X_CLK_N" LOC = F15;
-#NET "SI57X_CLK_N" IOSTANDARD = "LVDS_25";
-#NET "SI57X_CLK_P" LOC = F14;
-#NET "SI57X_CLK_P" IOSTANDARD = "LVDS_25";
+NET "SI570_CLK_N_i" LOC = F15;
+NET "SI570_CLK_N_i" IOSTANDARD = "LVDS_25";
+NET "SI570_CLK_P_i" LOC = F14;
+NET "SI570_CLK_P_i" IOSTANDARD = "LVDS_25";
+NET "SI570_SCL_b" LOC = AA14;
+NET "SI570_SCL_b" IOSTANDARD = "LVCMOS25";
+NET "SI570_SDA_b" LOC = AB14;
+NET "SI570_SDA_b" IOSTANDARD = "LVCMOS25";
+
+
 #NET "TCK_TO_FMC" LOC = G8;
 #NET "TCK_TO_FMC" IOSTANDARD = "LVCMOS25";
 #NET "TDI_TO_FMC" LOC = H11;
@@ -370,10 +376,7 @@ NET "GPIO[0]" IOSTANDARD = "LVCMOS25";
 #NET "LA33_N" IOSTANDARD = "LVCMOS25";
 #NET "LA33_P" LOC = C19;
 #NET "LA33_P" IOSTANDARD = "LVCMOS25";
-#NET "SI57X_SCL" LOC = AA14;
-#NET "SI57X_SCL" IOSTANDARD = "LVCMOS25";
-#NET "SI57X_SDA" LOC = AB14;
-#NET "SI57X_SDA" IOSTANDARD = "LVCMOS25";#NET "DDR3_CAS_N" LOC = M4;
+#NET "DDR3_CAS_N" LOC = M4;
 #NET "DDR3_CAS_N" IOSTANDARD = "LVCMOS15";
 #NET "DDR3_CK_N" LOC = K3;
 #NET "DDR3_CK_N" IOSTANDARD = "LVCMOS15";
@@ -633,10 +636,9 @@ NET "U_GTP/ch1_gtp_clkout_int<1>" TNM_NET = U_GTP/ch1_gtp_clkout_int<1>;
 TIMESPEC TS_U_GTP_ch1_gtp_clkout_int_1_ = PERIOD "U_GTP/ch1_gtp_clkout_int<1>" 8 ns HIGH 50%;
 # PIN "cmp_clk_dmtd_buf.O" CLOCK_DEDICATED_ROUTE = FALSE; 
 ##Created by Constraints Editor (xc6slx45t-fgg484-3) - 2012/08/07
-INST "U_WR_CORE/WRPC/U_SOFTPLL/U_Wrapped_Softpll/gen_feedback_dmtds[0].DMTD_FB/clk_in" TNM = skew_limit;
-INST "U_WR_CORE/WRPC/U_SOFTPLL/U_Wrapped_Softpll/gen_feedback_dmtds[1].DMTD_FB/clk_in" TNM = skew_limit;
-INST "U_WR_CORE/WRPC/U_SOFTPLL/U_Wrapped_Softpll/gen_ref_dmtds[0].DMTD_REF/clk_in" TNM = skew_limit;
-TIMESPEC TS_ = FROM "skew_limit" TO "FFS" 1 ns DATAPATHONLY;
+#INST "U_WR_CORE/WRPC/U_SOFTPLL/U_Wrapped_Softpll/gen_feedback_dmtds[0].DMTD_FB/clk_in" TNM = skew_limit;
+#INST "U_WR_CORE/WRPC/U_SOFTPLL/U_Wrapped_Softpll/gen_ref_dmtds[0].DMTD_REF/clk_in" TNM = skew_limit;
+#TIMESPEC TS_ = FROM "skew_limit" TO "FFS" 1 ns DATAPATHONLY;
 #Created by Constraints Editor (xc6slx45t-fgg484-3) - 2012/08/08
 INST "U_WR_CORE/WRPC/U_Endpoint/U_Wrapped_Endpoint/U_PCS_1000BASEX/gen_8bit.U_RX_PCS/timestamp_trigger_p_a_o" TNM = rx_ts_trig;
 TIMESPEC TS_RXTS = FROM "rx_ts_trig" TO "FFS" 1 ns DATAPATHONLY;

@@ -135,7 +135,18 @@ entity spec_top is
       --UART
       -----------------------------------------
       uart_rxd_i : in  std_logic;
-      uart_txd_o : out std_logic
+      uart_txd_o : out std_logic;
+
+      -------------------------------------------------------------------------
+      -- Silabs oscillator (ADC board)
+      -------------------------------------------------------------------------
+
+      si570_sda_b: inout std_logic;
+      si570_scl_b: inout std_logic;
+
+      si570_clk_p_i: in std_logic;
+      si570_clk_n_i: in std_logic
+
       );
 
 end spec_top;
@@ -357,6 +368,10 @@ architecture rtl of spec_top is
 
   signal genum_wb_out    : t_wishbone_master_out;
   signal genum_wb_in     : t_wishbone_master_in;
+
+  signal etherbone_wb_out, aux_wb_out    : t_wishbone_master_out;
+  signal etherbone_wb_in, aux_wb_in     : t_wishbone_master_in;
+
   signal genum_csr_ack_i : std_logic;
 
   signal wrc_slave_i : t_wishbone_slave_in;
@@ -367,15 +382,35 @@ architecture rtl of spec_top is
 
   signal wb_adr : std_logic_vector(31 downto 0);  --c_BAR0_APERTURE-priv_log2_ceil(c_CSR_WB_SLAVES_NB+1)-1 downto 0);
 
-  signal etherbone_rst_n   : std_logic;
-  signal etherbone_src_out : t_wrf_source_out;
-  signal etherbone_src_in  : t_wrf_source_in;
-  signal etherbone_snk_out : t_wrf_sink_out;
-  signal etherbone_snk_in  : t_wrf_sink_in;
-  signal etherbone_wb_out  : t_wishbone_master_out;
-  signal etherbone_wb_in   : t_wishbone_master_in;
-  signal etherbone_cfg_in  : t_wishbone_slave_in;
-  signal etherbone_cfg_out : t_wishbone_slave_out;
+  component si570_if
+ 
+    port (
+      clk_sys_i         : in  std_logic;
+      rst_n_i           : in  std_logic;
+      tm_dac_value_i    : in  std_logic_vector(15 downto 0);
+      tm_dac_value_wr_i : in  std_logic;
+      scl_pad_oen_o     : out std_logic;
+      sda_pad_oen_o     : out std_logic;
+      scl_pad_i         : in  std_logic;
+      sda_pad_i         : in  std_logic;
+      wb_adr_i          : in  std_logic_vector(c_wishbone_address_width-1 downto 0)   := (others => '0');
+      wb_dat_i          : in  std_logic_vector(c_wishbone_data_width-1 downto 0)      := (others => '0');
+      wb_dat_o          : out std_logic_vector(c_wishbone_data_width-1 downto 0);
+      wb_sel_i          : in  std_logic_vector(c_wishbone_address_width/8-1 downto 0) := (others => '0');
+      wb_we_i           : in  std_logic                                               := '0';
+      wb_cyc_i          : in  std_logic                                               := '0';
+      wb_stb_i          : in  std_logic                                               := '0';
+      wb_ack_o          : out std_logic;
+      wb_err_o          : out std_logic;
+      wb_rty_o          : out std_logic;
+      wb_stall_o        : out std_logic);
+  end component;
+
+  signal tm_dac_value : std_logic_vector(23 downto 0);
+  signal tm_dac_wr : std_logic;
+
+  signal si570_sda_oen, si570_scl_oen : std_logic;
+  signal clk_si570 : std_logic;
   
 begin
 
@@ -477,6 +512,17 @@ begin
       O  => l_clk,                      -- Buffer output
       I  => L_CLKp,  -- Diff_p buffer input (connect directly to top-level port)
       IB => L_CLKn  -- Diff_n buffer input (connect directly to top-level port)
+      );
+
+  U_Si570_clk_buf : IBUFDS
+    generic map (
+      DIFF_TERM    => true,            -- Differential Termination
+      IBUF_LOW_PWR => false,  -- Low power (TRUE) vs. performance (FALSE) setting for referenced I/O standards
+      IOSTANDARD   => "DEFAULT")
+    port map (
+      O  => clk_si570,                      -- Buffer output
+      I  => si570_clk_p_i,  -- Diff_p buffer input (connect directly to top-level port)
+      IB => si570_clk_n_i -- Diff_n buffer input (connect directly to top-level port)
       );
 
   cmp_pllrefclk_buf : IBUFGDS
@@ -621,7 +667,7 @@ begin
       g_simulation                => 0,
       g_phys_uart                 => true,
       g_virtual_uart              => true,
-      g_with_external_clock_input => true,
+      g_with_external_clock_input => false,
       g_aux_clks                  => 1,
       g_ep_rxbuf_size             => 1024,
       g_dpram_initf               => "",
@@ -632,7 +678,7 @@ begin
       clk_sys_i  => clk_sys,
       clk_dmtd_i => clk_dmtd,
       clk_ref_i  => clk_125m_pllref,
-      clk_aux_i  => (others => '0'),
+      clk_aux_i(0)  => clk_si570,
       clk_ext_i  => dio_clk,
       pps_ext_i  => dio_in(3),
       rst_n_i    => local_reset_n,
@@ -678,16 +724,12 @@ begin
       slave_i => wrc_slave_i,
       slave_o => wrc_slave_o,
 
-      aux_master_o => etherbone_cfg_in,
-      aux_master_i => etherbone_cfg_out,
+      aux_master_o => aux_wb_out,
+      aux_master_i => aux_wb_in,
 
-      wrf_src_o => etherbone_snk_in,
-      wrf_src_i => etherbone_snk_out,
-      wrf_snk_o => etherbone_src_in,
-      wrf_snk_i => etherbone_src_out,
+      tm_dac_value_o       => tm_dac_value,
+      tm_dac_wr_o          => tm_dac_wr,
 
-      tm_dac_value_o       => open,
-      tm_dac_wr_o          => open,
       tm_clk_aux_lock_en_i => '0',
       tm_clk_aux_locked_o  => open,
       tm_time_valid_o      => open,
@@ -697,24 +739,40 @@ begin
       pps_led_o            => pps_led,
 
       dio_o       => dio_out(4 downto 1),
-      rst_aux_n_o => etherbone_rst_n
+      rst_aux_n_o => open
       );
 
-  Etherbone : eb_slave_core
-    generic map (
-      g_sdb_address => x"0000000000030000")
-    port map (
-      clk_i       => clk_sys,
-      nRst_i      => etherbone_rst_n,
-      src_o       => etherbone_src_out,
-      src_i       => etherbone_src_in,
-      snk_o       => etherbone_snk_out,
-      snk_i       => etherbone_snk_in,
-      cfg_slave_o => etherbone_cfg_out,
-      cfg_slave_i => etherbone_cfg_in,
-      master_o    => etherbone_wb_out,
-      master_i    => etherbone_wb_in);
 
+  -----------------------------------------------------------------------------
+  -- "Special" Si570 I2C Master
+  -----------------------------------------------------------------------------
+  
+  U_Silabs_IF: si570_if
+    port map (
+      clk_sys_i         => clk_sys,
+      rst_n_i           => local_reset_n,
+      tm_dac_value_i    => tm_dac_value(15 downto 0),
+      tm_dac_value_wr_i => tm_dac_wr,
+      scl_pad_oen_o     => si570_scl_oen,
+      sda_pad_oen_o     => si570_sda_oen,
+      scl_pad_i         => si570_scl_b,
+      sda_pad_i         => si570_sda_b,
+      wb_adr_i          => aux_wb_out.adr,
+      wb_dat_i          => aux_wb_out.dat,
+      wb_dat_o          => aux_wb_in.dat,
+      wb_sel_i          => aux_wb_out.sel,
+      wb_we_i           => aux_wb_out.we,
+      wb_cyc_i          => aux_wb_out.cyc,
+      wb_stb_i          => aux_wb_out.stb,
+      wb_ack_o          => aux_wb_in.ack,
+      wb_stall_o        => aux_wb_in.stall);
+
+
+  si570_sda_b <= '0' when si570_sda_oen = '0' else 'Z';
+  si570_scl_b <= '0' when si570_scl_oen = '0' else 'Z';
+
+  etherbone_wb_out.cyc <= '0';
+  
   ---------------------
   masterbar : xwb_crossbar
     generic map (
@@ -856,6 +914,7 @@ begin
 
   sfp_tx_disable_o <= '0';
 
+  
 end rtl;
 
 
