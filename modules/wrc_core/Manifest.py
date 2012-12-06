@@ -7,5 +7,8 @@ files = [ "xwr_core.vhd",
           "wbp_mux.vhd",
           "wrc_syscon_wb.vhd",
           "wrc_syscon_pkg.vhd",
-          "xwr_syscon_wb.vhd"];
+          "xwr_syscon_wb.vhd",
+          "si570_if.vhd",
+          "si570_if_wb.vhd",
+          "si570_if_wbgen2_pkg.vhd" ];
 
