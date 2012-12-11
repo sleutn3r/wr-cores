@@ -74,7 +74,7 @@ architecture rtl of si570_if is
 
   type t_i2c_transaction is (START, STOP, SEND_BYTE);
 
-    type t_state is (IDLE, SI_START, SI_ADDR, SI_REG, SI_RF0, SI_RF1, SI_RF2, SI_RF3, SI_RF4, SI_STOP);
+    type t_state is (IDLE, SI_START0, SI_START1, SI_START2, SI_ADDR0, SI_ADDR1, SI_ADDR2, SI_REG0, SI_REG1, SI_REG2, SI_RF0, SI_RF1, SI_RF2, SI_RF3, SI_RF4, SI_STOP0, SI_STOP1, SI_STOP2, SI_FREEZE0, SI_FREEZE2);
 
   signal state : t_state;
 
@@ -218,14 +218,24 @@ begin  -- rtl
         case state is
           when IDLE =>
             if(new_rfreq = '1') then
-              state <= SI_START;
+              state <= SI_START0;
             end if;
 
-          when SI_START =>
-            f_i2c_iterate(i2c_tick, seq_count, x"00", START, scl_out_fsm, sda_out_fsm, state, SI_ADDR);
-          when SI_ADDR =>
-            f_i2c_iterate(i2c_tick, seq_count, x"aa", SEND_BYTE, scl_out_fsm, sda_out_fsm, state, SI_REG);
-          when SI_REG =>
+          when SI_START0 =>
+            f_i2c_iterate(i2c_tick, seq_count, x"00", START, scl_out_fsm, sda_out_fsm, state, SI_ADDR0);
+          when SI_ADDR0 =>
+            f_i2c_iterate(i2c_tick, seq_count, x"aa", SEND_BYTE, scl_out_fsm, sda_out_fsm, state, SI_REG0);
+          when SI_REG0 =>
+            f_i2c_iterate(i2c_tick, seq_count, x"87", SEND_BYTE, scl_out_fsm, sda_out_fsm, state, SI_FREEZE0);
+          when SI_FREEZE0 =>
+            f_i2c_iterate(i2c_tick, seq_count, x"20", SEND_BYTE, scl_out_fsm, sda_out_fsm, state, SI_STOP0);
+          when SI_STOP0 =>
+            f_i2c_iterate(i2c_tick, seq_count, x"00", STOP, scl_out_fsm, sda_out_fsm, state, SI_START1);
+          when SI_START1 =>
+            f_i2c_iterate(i2c_tick, seq_count, x"00", START, scl_out_fsm, sda_out_fsm, state, SI_ADDR1);
+          when SI_ADDR1 =>
+            f_i2c_iterate(i2c_tick, seq_count, x"aa", SEND_BYTE, scl_out_fsm, sda_out_fsm, state, SI_REG1);
+          when SI_REG1 =>
             f_i2c_iterate(i2c_tick, seq_count, x"08", SEND_BYTE, scl_out_fsm, sda_out_fsm, state, SI_RF0);
           when SI_RF0 =>
             f_i2c_iterate(i2c_tick, seq_count, n1 & std_logic_vector(rfreq_current(37 downto 32)), SEND_BYTE, scl_out_fsm, sda_out_fsm, state, SI_RF1);
@@ -240,12 +250,20 @@ begin  -- rtl
             f_i2c_iterate(i2c_tick, seq_count, std_logic_vector(rfreq_current(15 downto 8)), SEND_BYTE, scl_out_fsm, sda_out_fsm, state, SI_RF4);
 
           when SI_RF4 =>
-            f_i2c_iterate(i2c_tick, seq_count, std_logic_vector(rfreq_current(7 downto 0)), SEND_BYTE, scl_out_fsm, sda_out_fsm, state, SI_STOP);
+            f_i2c_iterate(i2c_tick, seq_count, std_logic_vector(rfreq_current(7 downto 0)), SEND_BYTE, scl_out_fsm, sda_out_fsm, state, SI_STOP1);
 
-          when SI_STOP =>
+          when SI_STOP1 =>
+            f_i2c_iterate(i2c_tick, seq_count, x"00", STOP, scl_out_fsm, sda_out_fsm, state, SI_START2);
+          when SI_START2 =>
+            f_i2c_iterate(i2c_tick, seq_count, x"00", START, scl_out_fsm, sda_out_fsm, state, SI_ADDR2);
+          when SI_ADDR2 =>
+            f_i2c_iterate(i2c_tick, seq_count, x"aa", SEND_BYTE, scl_out_fsm, sda_out_fsm, state, SI_REG2);
+          when SI_REG2 =>
+            f_i2c_iterate(i2c_tick, seq_count, x"87", SEND_BYTE, scl_out_fsm, sda_out_fsm, state, SI_FREEZE2);
+          when SI_FREEZE2 =>
+            f_i2c_iterate(i2c_tick, seq_count, x"00", SEND_BYTE, scl_out_fsm, sda_out_fsm, state, SI_STOP2);
+          when SI_STOP2 =>
             f_i2c_iterate(i2c_tick, seq_count, x"00", STOP, scl_out_fsm, sda_out_fsm, state, IDLE);
-
-            
             
           when others => null;
         end case;
@@ -263,12 +281,22 @@ begin  -- rtl
         scl_out_host <= '1';
         sda_out_host <= '1';
       else
-        if(regs_out.gpsr_scl_load_o = '1') then
-          scl_out_host <= regs_out.gpsr_scl_o;
+        if(regs_out.gpsr_scl_load_o = '1' and regs_out.gpsr_scl_o = '1') then
+          scl_out_host <= '1';
         end if;
-        if(regs_out.gpsr_sda_load_o = '1') then
-          sda_out_host <= regs_out.gpsr_sda_o;
+
+        if(regs_out.gpsr_sda_load_o = '1' and regs_out.gpsr_sda_o = '1') then
+          sda_out_host <= '1';
         end if;
+
+        if(regs_out.gpcr_scl_o = '1') then
+          scl_out_host <= '0';
+        end if;
+
+        if(regs_out.gpcr_sda_o = '1') then
+          sda_out_host <= '0';
+        end if;
+        
       end if;
     end if;
   end process;

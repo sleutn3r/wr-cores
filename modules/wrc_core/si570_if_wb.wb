@@ -58,4 +58,26 @@ peripheral {
          load = LOAD_EXT;
       };
    };
+
+reg {
+      name = "GPIO Clear Register";
+      prefix = "GPCR";
+
+   
+      field {
+         name = "SILabs I2C bitbanged SCL";
+         prefix = "scl";
+         description = "write 1: Set SCL line to 0\
+                        read : returns the current status of the SCL line.";
+         type = MONOSTABLE;
+      };
+
+      field {
+         name = "SIlabs I2C bitbanged SDA";
+         prefix = "sda";
+         description = "write 1: Set SDA line to 0\
+                        read : returns the current status of the SCL line.";
+         type = MONOSTABLE;
+      };
+   };
 };
