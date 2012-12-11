@@ -42,8 +42,8 @@ package softpll_pkg is
   constant c_softpll_channel_aux_100mhz : t_softpll_channel_config :=
     (channel_mode    => CH_BANGBANG,
       ref_input      => 0,
-      bb_div_ref     => 5,
-      bb_div_fb      => 8,
+      bb_div_ref     => 50,
+      bb_div_fb      => 20,
       bb_log2_gating => 15);
 
   constant c_softpll_default_channel_config : t_softpll_channel_config_array :=
