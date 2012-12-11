@@ -6,7 +6,7 @@
 -- Author     : Tomasz Włostowski
 -- Company    : CERN BE-CO-HT
 -- Created    : 2011-01-29
--- Last update: 2012-12-04
+-- Last update: 2012-12-11
 -- Platform   : FPGA-generic
 -- Standard   : VHDL'93
 -------------------------------------------------------------------------------
@@ -154,7 +154,7 @@ architecture rtl of wr_softpll_ng is
 
   constant c_DBG_FIFO_THRESHOLD : integer := 8180;
   constant c_DBG_FIFO_COALESCE  : integer := 100;
-  constant c_BB_ERROR_BITS      : integer := 16;
+  constant c_BB_ERROR_BITS      : integer := 18;
 
   component spll_bangbang_pd
     generic (
@@ -529,8 +529,8 @@ begin  -- rtl
           rst_n_refclk_i => rst_n_bb_ref(i),
           rst_n_fbck_i   => rst_n_bb_fb(i),
           rst_n_sysclk_i => rst_n_i,
-          sync_p_i       => sync_p_i,
-          sync_en_i      => '1',
+          sync_p_i       => '0',--sync_p_i,
+          sync_en_i      => '0',--'1',
           sync_done_o    => open,
           err_o          => bb_chx_phase_err(i),
           err_wrap_o     => bb_chx_phase_err_wrap(i),
