@@ -738,7 +738,7 @@ begin
       pps_p_o              => pps,
       pps_led_o            => pps_led,
 
-      dio_o       => dio_out(4 downto 1),
+--      dio_o       => dio_out(4 downto 1),
       rst_aux_n_o => open
       );
 
@@ -900,9 +900,15 @@ begin
 
   dio_out(0)             <= pps;
   dio_oe_n_o(0)          <= '0';
+
+  dio_out(1) <=clk_si570;
+  dio_out(2) <=clk_125m_pllref;
+  dio_out(3) <=clk_si570;
+  dio_out(4) <=clk_si570;
+
   dio_oe_n_o(2 downto 1) <= (others => '0');
-  dio_oe_n_o(3)          <= '1';        -- for external 1-PPS
-  dio_oe_n_o(4)          <= '1';        -- for external 10MHz clock
+  dio_oe_n_o(3)          <= '0';        -- for external 1-PPS
+  dio_oe_n_o(4)          <= '0';        -- for external 10MHz clock
 
   dio_onewire_b <= '0' when owr_en(1) = '1' else 'Z';
   owr_i(1)      <= dio_onewire_b;
