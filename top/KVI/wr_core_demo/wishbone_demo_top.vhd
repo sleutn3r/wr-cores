@@ -33,7 +33,7 @@ end wishbone_demo_top;
 
 architecture rtl of wishbone_demo_top is
 
-  component sys_pll -- Altera megafunction
+  component sys_pll_quad -- Altera megafunction
     port(
       inclk0 : in  std_logic;
       areset : in  std_logic;
@@ -319,7 +319,7 @@ end component;
 
    begin
   -- Obtain core clocking
-  sys_pll_inst : sys_pll -- Altera megafunction
+  sys_pll_inst : sys_pll_quad -- Altera megafunction
     port map (
       inclk0 => clk125_i,    -- 125Mhz oscillator from board
       areset => '0',
@@ -361,7 +361,7 @@ end component;
     port map(
       clk125_i      => clk_sys,       -- Free running clock
       cal_clk50_i   => clk_cal,       -- Transceiver global calibration clock
-      wb_rstn_i        => rstn,          -- Reset for the PCIe decoder logic
+      rstn_i        => rstn,          -- Reset for the PCIe decoder logic
       pcie_refclk_i => pcie_refclk_i, -- External PCIe 100MHz bus clock
       pcie_rstn_i   => pcie_rstn_i,   -- External PCIe system reset pin
       pcie_rx_i     => pcie_rx_i,
@@ -508,7 +508,7 @@ BuTis_T0_in_s <= HPLA1(2);
 
 HPLA1(0) <= 'Z';
 HPLA1(1) <= 'Z';
-HPLA1(2) <= '1';
+HPLA1(2) <= 'Z';
 
 HPLA1(3) <= pulse_s;
 HPLA1(4) <= BuTis_T0_out_s;
