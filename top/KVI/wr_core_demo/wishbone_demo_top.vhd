@@ -361,7 +361,7 @@ end component;
     port map(
       clk125_i      => clk_sys,       -- Free running clock
       cal_clk50_i   => clk_cal,       -- Transceiver global calibration clock
-      rstn_i        => rstn,          -- Reset for the PCIe decoder logic
+      wb_rstn_i        => rstn,          -- Reset for the PCIe decoder logic
       pcie_refclk_i => pcie_refclk_i, -- External PCIe 100MHz bus clock
       pcie_rstn_i   => pcie_rstn_i,   -- External PCIe system reset pin
       pcie_rx_i     => pcie_rx_i,
