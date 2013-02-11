@@ -15,6 +15,17 @@ package wr_altera_pkg is
      );
   end component;
 
+  component flash_loader_asmi 
+     port (
+        asdo_in              : in std_logic;
+        asmi_access_granted  : in std_logic;
+        dclk_in              : in std_logic;
+        ncso_in              : in std_logic;
+        noe_in               : in std_logic;
+        asmi_access_request  : out std_logic;
+        data0_out            : out std_logic);
+  end component;
+
   component pow_reset is
     port (
       clk    : in     std_logic;        -- 125Mhz
@@ -31,6 +42,16 @@ package wr_altera_pkg is
   end component;
 
   component sys_pll
+    port
+      (
+        inclk0 : in  std_logic := '0';
+        c0     : out std_logic;
+        c1     : out std_logic;
+        locked : out std_logic
+        );
+  end component;
+  
+  component vme_pll
     port
       (
         inclk0 : in  std_logic := '0';
