@@ -1,17 +1,17 @@
 # -------------------------------------------------------------------------- #
 #
 # Copyright (C) 1991-2011 Altera Corporation
-# Your use of Altera Corporation's design tools, logic functions 
-# and other software and tools, and its AMPP partner logic 
-# functions, and any output files from any of the foregoing 
-# (including device programming or simulation files), and any 
-# associated documentation or information are expressly subject 
-# to the terms and conditions of the Altera Program License 
-# Subscription Agreement, Altera MegaCore Function License 
-# Agreement, or other applicable license agreement, including, 
-# without limitation, that your use is for the sole purpose of 
-# programming logic devices manufactured by Altera and sold by 
-# Altera or its authorized distributors.  Please refer to the 
+# Your use of Altera Corporation's design tools, logic functions
+# and other software and tools, and its AMPP partner logic
+# functions, and any output files from any of the foregoing
+# (including device programming or simulation files), and any
+# associated documentation or information are expressly subject
+# to the terms and conditions of the Altera Program License
+# Subscription Agreement, Altera MegaCore Function License
+# Agreement, or other applicable license agreement, including,
+# without limitation, that your use is for the sole purpose of
+# programming logic devices manufactured by Altera and sold by
+# Altera or its authorized distributors.  Please refer to the
 # applicable agreement for further details.
 #
 # -------------------------------------------------------------------------- #
@@ -34,14 +34,12 @@
 #    and any changes you make may be lost or overwritten.
 #
 # -------------------------------------------------------------------------- #
-
-
 set_global_assignment -name FAMILY "Arria II GX"
 set_global_assignment -name DEVICE EP2AGX125DF25C5
 set_global_assignment -name TOP_LEVEL_ENTITY exploder_top
 set_global_assignment -name ORIGINAL_QUARTUS_VERSION 11.1
 set_global_assignment -name PROJECT_CREATION_TIME_DATE "11:45:41  FEBRUARY 14, 2012"
-set_global_assignment -name LAST_QUARTUS_VERSION "11.1 SP1"
+set_global_assignment -name LAST_QUARTUS_VERSION 12.1
 set_global_assignment -name MIN_CORE_JUNCTION_TEMP 0
 set_global_assignment -name MAX_CORE_JUNCTION_TEMP 85
 set_global_assignment -name DEVICE_FILTER_PACKAGE FBGA
@@ -66,17 +64,6 @@ set_instance_assignment -name IO_STANDARD LVDS -to clk_125m_pllref_p
 set_location_assignment PIN_F11 -to "clk_125m_pllref_p(n)"
 set_location_assignment PIN_R4 -to dac_din
 set_location_assignment PIN_R3 -to dac_sclk
-set_location_assignment PIN_AD9 -to hpv[7]
-set_location_assignment PIN_AD10 -to hpv[6]
-set_location_assignment PIN_Y12 -to hpv[5]
-set_location_assignment PIN_AA12 -to hpv[4]
-set_location_assignment PIN_AD11 -to hpv[3]
-set_location_assignment PIN_AD12 -to hpv[2]
-set_location_assignment PIN_AB12 -to hpv[1]
-set_location_assignment PIN_AC12 -to hpv[0]
-set_location_assignment PIN_D11 -to L_CLKp
-set_instance_assignment -name IO_STANDARD LVDS -to L_CLKp
-set_location_assignment PIN_C11 -to "L_CLKp(n)"
 set_location_assignment PIN_T3 -to ndac_cs[2]
 set_location_assignment PIN_T2 -to ndac_cs[1]
 set_location_assignment PIN_E3 -to nres
@@ -101,12 +88,18 @@ set_global_assignment -name OUTPUT_IO_TIMING_FAR_END_VMEAS "HALF SIGNAL SWING" -
 set_global_assignment -name ACTIVE_SERIAL_CLOCK FREQ_40MHZ
 set_location_assignment PIN_AC1 -to usb_reset
 set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to usb_reset
-
 set_location_assignment PIN_AB2 -to OneWire_CB
 set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to OneWire_CB
 set_location_assignment PIN_L1 -to sfp_mod1
 set_location_assignment PIN_L7 -to sfp_mod0
 set_location_assignment PIN_K1 -to sfp_mod2
+set_location_assignment PIN_F3 -to uart_pwr
+set_location_assignment PIN_H4 -to uart_tx
+set_location_assignment PIN_G3 -to uart_rx
+############################
+set_global_assignment -name VHDL_FILE "../../../ip_cores/general-cores/modules/wishbone/wb_vme_gsi/vmelogic.vhd"
+set_global_assignment -name VHDL_FILE ../../../platform/altera/vme_pll/vme_pll.vhd
+set_global_assignment -name VHDL_FILE "../../../ip_cores/general-cores/modules/wishbone/wb_vme_gsi/vme_pkg.vhd"
 set_global_assignment -name VHDL_FILE "../../../ip_cores/general-cores/modules/common/gc_reset.vhd"
 set_global_assignment -name VHDL_FILE "../../../ip_cores/etherbone-core/hdl/EB_SPEC_Test/etherbone_pkg.vhd"
 set_global_assignment -name VHDL_FILE ../../../modules/wr_softpll_ng/spll_bangbang_pd.vhd
@@ -164,9 +157,6 @@ set_global_assignment -name VHDL_FILE "../../../ip_cores/general-cores/modules/w
 set_global_assignment -name VHDL_FILE ../../../modules/wr_mini_nic/minic_wbgen2_pkg.vhd
 set_global_assignment -name VHDL_FILE ../../../modules/wrc_core/wrc_syscon_pkg.vhd
 set_global_assignment -name VHDL_FILE ../../../modules/wr_mini_nic/xwr_mini_nic.vhd
-set_global_assignment -name VHDL_FILE ../../../modules/wr_softpll/softpll_wb.vhd
-set_global_assignment -name VHDL_FILE ../../../modules/wr_softpll/wr_softpll.vhd
-set_global_assignment -name VHDL_FILE ../../../modules/wr_softpll/xwr_softpll.vhd
 set_global_assignment -name VHDL_FILE ../../../modules/wr_endpoint/ep_registers_pkg.vhd
 set_global_assignment -name VHDL_FILE ../../../modules/wr_endpoint/endpoint_private_pkg.vhd
 set_global_assignment -name VHDL_FILE ../../../modules/wr_endpoint/ep_tx_pcs_8bit.vhd
@@ -308,7 +298,15 @@ set_global_assignment -name VHDL_FILE ../../../top/gsi_exploder/wr_core_demo/exp
 set_global_assignment -name VHDL_FILE ../../../platform/altera/sys_pll/sys_pll.vhd
 set_global_assignment -name VHDL_FILE ../../../platform/altera/dmtd_clk_pll/dmtd_clk_pll.vhd
 set_global_assignment -name QIP_FILE ../../../platform/altera/sys_pll/sys_pll.qip
-set_location_assignment PIN_F3 -to uart_pwr
-set_location_assignment PIN_H4 -to uart_tx
-set_location_assignment PIN_G3 -to uart_rx
+set_global_assignment -name VHDL_FILE "../../../../wrpc-sw/wrc.vhd"
+
+set_global_assignment -name USER_START_UP_CLOCK OFF
+
+set_location_assignment PIN_G13 -to lemo_en_o[0]
+set_location_assignment PIN_F13 -to lemo_en_o[1]
+set_location_assignment PIN_G14 -to lemo_o[0]
+set_location_assignment PIN_F14 -to lemo_o[1]
+set_location_assignment PIN_D8 -to leds_o[0]
+set_location_assignment PIN_C7 -to leds_o[1]
+set_location_assignment PIN_AC6 -to lemo_i[0]
 set_instance_assignment -name PARTITION_HIERARCHY root_partition -to | -section_id Top
