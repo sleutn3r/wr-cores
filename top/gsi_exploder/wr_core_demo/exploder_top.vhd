@@ -12,20 +12,21 @@ use work.wb_cores_pkg_gsi.all;
 use work.xwr_eca_pkg.all;
 use work.wr_altera_pkg.all;
 use work.etherbone_pkg.all;
+use work.wrc_bin_pkg.all;
+use work.vme_pkg.all;
 
 entity exploder_top is
   port(
-    clk_20m_vcxo_i    : in std_logic;  -- 20MHz VCXO clock
-    clk_125m_pllref_p : in std_logic;  -- 125 MHz PLL reference
-    
-    L_CLKp : in std_logic;            -- local clk from 125Mhz oszillator
-    nres   : in std_logic;            -- powerup reset
-        
-    -----------------------------------------------------------------------
+    clk_20m_vcxo_i    : in std_logic;                    -- 20MHz VCXO clock
+    clk_125m_pllref_p : in std_logic;                    -- 125 MHz PLL reference
+	 -----------------------------------------------------------------------
+	 -- Reset
+	 -----------------------------------------------------------------------
+    nres              : in std_logic;                    -- powerup reset
+    -------------------------------------------------------------
     -- OneWire
     -----------------------------------------------------------------------
-    OneWire_CB     : inout std_logic;
-    
+    OneWire_CB     : inout std_logic; 
     -----------------------------------------
     -- Timing SFP
     -----------------------------------------
@@ -43,21 +44,34 @@ entity exploder_top is
     dac_sclk         : out std_logic;
     dac_din          : out std_logic;
     ndac_cs          : out std_logic_vector(2 downto 1);
-    
-    -- HPLA1 pins
+	 
+    -------------------------------------------------------------------------
+    -- HPLW_1 pins
+	 -------------------------------------------------------------------------
     uart_pwr : out std_logic;
     uart_tx  : out std_logic;
     uart_rx  : in  std_logic;
-    
+	 
     -----------------------------------------
     -- LED on baseboard
-    -- hpv0: red
-    -- hpv1: green
-    -- hpv2: orange
-    -- hpv3: blue
     -----------------------------------------
-    hpv       : out std_logic_vector(7 downto 0);
-    usb_reset : out std_logic);
+    led_bas    : out std_logic_vector(7 downto 0);
+   
+    -----------------------------------------
+    -- LED on Exploder DB2
+    -----------------------------------------
+    leds_o  : out std_logic_vector(8 downto 0);
+
+    -----------------------------------------
+    -- I/O on Exploder DB2
+    -----------------------------------------
+    --TTLOUT
+    lemo_o       : out std_logic_vector(7 downto 0); 
+    lemo_en_o    : out std_logic_vector(1 downto 0); 
+    --TTLIN
+    lemo_i        : in std_logic_vector(7 downto 0); 
+    lemo_en_i    : out std_logic_vector(1 downto 0));
+
 end exploder_top;
 
 architecture rtl of exploder_top is
@@ -100,6 +114,9 @@ architecture rtl of exploder_top is
   signal clk_sys          : std_logic;
   signal clk_dmtd         : std_logic;
   signal clk_reconf       : std_logic;
+  signal vme_clk_100      : std_logic;
+  signal vme_clk_50       : std_logic;
+  signal vme_locked		  : std_logic;
   
   signal pllout_clk_sys_rstn    : std_logic;
   signal clk_125m_pllref_p_rstn : std_logic;
@@ -137,7 +154,8 @@ architecture rtl of exploder_top is
   signal tm_utc    : std_logic_vector(39 downto 0);
   signal tm_cycles : std_logic_vector(27 downto 0);
 
-  signal eca_toggle: std_logic_vector(31 downto 0);
+  signal eca_toggle  : std_logic_vector(31 downto 0);
+  signal triger_latch: std_logic_vector(0 downto 0);
   
   signal owr_pwren_o : std_logic_vector(1 downto 0);
   signal owr_en_o: std_logic_vector(1 downto 0);
@@ -156,8 +174,24 @@ architecture rtl of exploder_top is
   
   signal led_green : std_logic;
   signal led_red   : std_logic;
+-- vme
+  signal add_strb_sync    : std_logic;            -- synchronized  VME !AS 
+  signal data_strb_sync   : std_logic;            -- synchronized  VME (!DS0 and !DS1)
+  signal add_reg          : std_logic_vector (31 downto 0);   -- internal address register for VME address
+  signal data_bus         : std_logic_vector (31 downto 0);   -- internal data bus
+  signal ckcsr            : std_logic;            -- clock data into csr
+  signal oecsr            : std_logic;            -- output data from csr to VME
+  signal oecsro           : std_logic;
+
+  signal u_add_reg        : std_logic_vector(21 downto 2);
+  signal u_data_rx        : std_logic_vector(31 downto 0);
+  signal u_data_tx        : std_logic_vector(31 downto 0); -- from ulogic in VULOM here our input????
+
 
 begin
+  Inst_flash_loader_v01 : flash_loader
+    port map(
+      noe_in   => '0');
 
   -- open drain buffer for one wire
   owr_i(0) <= OneWire_CB;
@@ -171,11 +205,8 @@ begin
   sfp_mod1 <= '0' when sfp_scl_o = '0' else 'Z';
   sfp_mod2 <= '0' when sfp_sda_o = '0' else 'Z';
   
-  Inst_flash_loader_v01 : flash_loader
-    port map(
-      noe_in   => '0');
   
-  dmtd_clk_pll_inst : dmtd_clk_pll port map (
+  dmtd_clk_inst : dmtd_clk_pll port map (
     inclk0 => clk_20m_vcxo_i,           -- 20Mhz 
     c0     => pllout_clk_dmtd);         -- 62.5Mhz
 
@@ -185,6 +216,7 @@ begin
     c1     => clk_reconf,               -- 50Mhz for reconfig block
     locked => locked);
   
+ 
   reset : gc_reset
     generic map(
       g_clocks => 2)
@@ -207,6 +239,7 @@ begin
       g_aux_clks                  => 1,
       g_ep_rxbuf_size             => 1024,
       g_dpram_initf               => "",
+      --g_dpram_initv               => wrc_bin_init,
       g_dpram_size                => 90112/4,
       g_interface_mode            => PIPELINED,
       g_address_granularity       => BYTE)
@@ -356,7 +389,7 @@ begin
       ref_clk_i       => clk_125m_pllref_p,
       sys_clk_i       => clk_125m_pllref_p,
       nRSt_i          => clk_125m_pllref_p_rstn,
-      triggers_i      => (others => '0'),
+      triggers_i      => triger_latch,
       tm_time_valid_i => '0',
       tm_utc_i        => tm_utc,
       tm_cycles_i     => tm_cycles,
@@ -419,15 +452,16 @@ begin
      -- Slave connections (INTERCON is a master)
      master_i      => cbar_master_i,
      master_o      => cbar_master_o);
-  
-  hpv(7) <= eca_toggle(1);
-  hpv(6 downto 4) <= (others => '1');
-  hpv(3) <= not ext_pps;
-  hpv(2) <=  not '1';
-  hpv(1) <= not led_green;
-  hpv(0) <= not led_red;
-  
-  sfp_tx_disable_o <= '0';
-  usb_reset <= '0';
-  uart_pwr <= '1';
+
+-- leds 
+	leds_o(0)	<=	ext_pps;
+	leds_o(1)	<=	eca_toggle(0);
+	  
+-- lemo I/O	  
+   lemo_en_o 	<= "01";	-- lemo output enable
+   
+	lemo_o(0)			<=	ext_pps;
+	lemo_o(1)			<= eca_toggle(0);
+	triger_latch(0)	<=	lemo_i(0);
+
 end rtl;
