@@ -1041,7 +1041,6 @@ begin
   rmon.rx_invalid_code <= pcs_rmon.rx_invalid_code;
   rmon.rx_sync_lost    <= pcs_rmon.rx_sync_lost;
 
-  f_pack_rmon_triggers(rmon, rmon_events_o(c_epevents_sz-3 downto 0));
 
   rmon_event_tx : gc_sync_ffs
     generic map(
@@ -1052,7 +1051,7 @@ begin
       data_i   => txpcs_timestamp_trigger_p_a,
       synced_o => open,
       npulse_o => open,
-      ppulse_o => rmon_events_o(c_epevents_sz-2));
+      ppulse_o => rmon.tx_frame);
 
   rmon_event_rx : gc_sync_ffs
     generic map(
@@ -1063,7 +1062,10 @@ begin
       data_i   => rxpcs_timestamp_trigger_p_a,
       synced_o => open,
       npulse_o => open,
-      ppulse_o => rmon_events_o(c_epevents_sz-1));
+      ppulse_o => rmon.rx_frame);
+
+  f_pack_rmon_triggers(rmon, rmon_events_o(c_epevents_sz-1 downto 0));
+
 
 end syn;
 
