@@ -36,6 +36,7 @@ library work;
 
 use work.gencores_pkg.all;
 use work.endpoint_private_pkg.all;
+use work.endpoint_pkg.all;
 use work.ep_wbgen2_pkg.all;
 use work.wr_fabric_pkg.all;
 use work.wishbone_pkg.all;
@@ -213,6 +214,7 @@ entity wr_endpoint is
 -------------------------------------------------------------------------------
 -- Misc stuff
 -------------------------------------------------------------------------------
+    rmon_events_o : out std_logic_vector(c_epevents_sz-1 downto 0);
 
     led_link_o : out std_logic;
     led_act_o  : out std_logic
@@ -935,6 +937,42 @@ begin
         led_link_o  => led_link_o,
         led_act_o   => led_act_o);
   end generate gen_leds;
+
+  -------------------------- RMON events -----------------------------------
+  rmon.rx_pcs_err      <= rx_path_rmon.rx_pcs_err;  --from ep_rx_path
+  rmon.rx_giant        <= rx_path_rmon.rx_giant;
+  rmon.rx_runt         <= rx_path_rmon.rx_runt;
+  rmon.rx_crc_err      <= rx_path_rmon.rx_crc_err;
+  rmon.rx_pause        <= rx_path_rmon.rx_pause;
+  rmon.rx_pfilter_drop <= rx_path_rmon.rx_pfilter_drop;
+  rmon.tx_underrun     <= pcs_rmon.tx_underrun;
+  rmon.rx_overrun      <= pcs_rmon.rx_overrun;
+  rmon.rx_invalid_code <= pcs_rmon.rx_invalid_code;
+  rmon.rx_sync_lost    <= pcs_rmon.rx_sync_lost;
+
+  f_pack_rmon_triggers(rmon, rmon_events_o(c_epevents_sz-3 downto 0));
+
+  rmon_event_tx : gc_sync_ffs
+    generic map(
+      g_sync_edge => "negative")
+    port map (
+      clk_i    => clk_sys_i,
+      rst_n_i  => rst_n_i,
+      data_i   => txpcs_timestamp_trigger_p_a,
+      synced_o => open,
+      npulse_o => open,
+      ppulse_o => rmon_events_o(c_epevents_sz-2));
+
+  rmon_event_rx : gc_sync_ffs
+    generic map(
+      g_sync_edge => "negative")
+    port map (
+      clk_i    => clk_sys_i,
+      rst_n_i  => rst_n_i,
+      data_i   => rxpcs_timestamp_trigger_p_a,
+      synced_o => open,
+      npulse_o => open,
+      ppulse_o => rmon_events_o(c_epevents_sz-1));
 
 end syn;
 

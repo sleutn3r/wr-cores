@@ -44,6 +44,7 @@ use ieee.numeric_std.all;
 
 use work.ep_wbgen2_pkg.all;
 use work.wr_fabric_pkg.all;
+use work.endpoint_pkg.all;
 
 package endpoint_private_pkg is
 
@@ -422,8 +423,24 @@ package body endpoint_private_pkg is
     end if;
   end f_unpack_fifo_contents;
 
-
-
+ procedure f_pack_rmon_triggers
+    (
+      signal trig_in  : in t_rmon_triggers;
+      signal trig_out : out std_logic_vector(c_epevents_sz-3 downto 0)) is
+  begin
+    --from 1000base pcs
+    trig_out(0) <= trig_in.tx_underrun;
+    trig_out(1) <= trig_in.rx_overrun;
+    trig_out(2) <= trig_in.rx_invalid_code;
+    trig_out(3) <= trig_in.rx_sync_lost;
+    trig_out(4) <= trig_in.rx_pause;
+    trig_out(5) <= trig_in.rx_pfilter_drop;
+    trig_out(6) <= trig_in.rx_pcs_err;
+    trig_out(7) <= trig_in.rx_giant;
+    trig_out(8) <= trig_in.rx_runt;
+    trig_out(9) <= trig_in.rx_crc_err;
+    trig_out(17 downto 10) <= trig_in.rx_pclass(7 downto 0);
+  end f_pack_rmon_triggers;
 
 end endpoint_private_pkg;
 
