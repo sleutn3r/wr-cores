@@ -13,6 +13,8 @@
 --! 0x014 n..0 channel(n) trigger edge status  (ro)
 --! 0x018 n..0 channel(n) trigger edge set pos (wo)
 --! 0x01C n..0 channel(n) trigger edge set neg (wo)
+--! 0x100 UTC				HiReg
+--! 0x104 Cycle Count	LoReg
 --! 0x400 start of FIFO addresses
 --!
 --! FIFO 0 area is at 0x400, FIFO n is at 0x400 + n*0x020
@@ -156,7 +158,6 @@ architecture behavioral of wb_timestamp_latch is
   -- LATCH UNIT(s)
   -----------------------------------------------------------------------------
   -- trigger sync chain
-  signal triggers_synced          : channel;
   signal triggers_pos_edge_synced : channel;
   signal triggers_neg_edge_synced : channel;
   -- tm latch registers
@@ -165,13 +166,15 @@ architecture behavioral of wb_timestamp_latch is
   signal tm_word0                 : t_word_array;
   signal tm_word1                 : t_word_array;
   signal tm_word2                 : t_word_array;
+  
+  signal cur_tm_word1				 : t_word;
+  signal cur_tm_word2				 : t_word;
+  
   -- fifo signals
   signal nRst_fifo                : channel;
   signal rd                       : channel;
   signal we                       : channel;
   signal rd_empty                 : channel;
-  signal wr_empty                 : channel;
-  signal wr_full                  : channel;
   signal rd_count                 : t_cnt_array;
   signal wr_count                 : t_cnt_array;
 
@@ -246,10 +249,8 @@ begin  -- behavioral
     nRst_fifo(i)  <= nRst_i and not fifo_clear(i);
     
 	 
-	 
-    tm_fifo_in(i) <= sub_cap_delay(tm_utc_i, tm_cycles_i);
     tm_word0(i)   <= std_logic_vector(to_unsigned(0, 32-8)) & tm_fifo_out(i)(67 downto 60);
-	 tm_word1(i)   <= tm_fifo_out(i)(59 downto 28);
+    tm_word1(i)   <= tm_fifo_out(i)(59 downto 28);
     tm_word2(i)   <= std_logic_vector(to_unsigned(0, 32-28)) & tm_fifo_out(i)(27 downto 0);
 
     sync_trig_edge_reg : gc_sync_ffs
@@ -281,7 +282,7 @@ begin  -- behavioral
         clk_i    => ref_clk_i,
         rst_n_i  => nRst_i,
         data_i   => triggers_i(i),
-        synced_o => triggers_synced(i),
+        synced_o => open,
         npulse_o => triggers_neg_edge_synced(i),
         ppulse_o => triggers_pos_edge_synced(i));
 
@@ -311,8 +312,8 @@ begin  -- behavioral
         clk_wr_i          => ref_clk_i,
         d_i               => tm_fifo_in(i),
         we_i              => we(i),
-        wr_empty_o        => wr_empty(i),
-        wr_full_o         => wr_full(i),
+        wr_empty_o        => open,
+        wr_full_o         => open,
         wr_almost_empty_o => open,
         wr_almost_full_o  => open,
         wr_count_o        => open,
@@ -339,6 +340,7 @@ begin  -- behavioral
             if((trigger_edge_ref_clk(i) = '0' and triggers_neg_edge_synced(i) = '1')
                or ((trigger_edge_ref_clk(i) = '1') and (triggers_pos_edge_synced(i) = '1'))) then
               we(i) <= '1';
+              tm_fifo_in(i) <= sub_cap_delay(tm_utc_i, tm_cycles_i);
             end if;
           end if;
           ---------------------------------------------------------------------
@@ -362,6 +364,9 @@ begin  -- behavioral
   data          <= wb_slave_i.dat(g_num_triggers-1 downto 0);
 
 
+  wb_slave_o.int <= '0';
+  wb_slave_o.rty <= '0';
+  
   wb_if : process (sys_clk_i)
     variable i : natural range 0 to g_num_triggers-1 := 0;
 
@@ -391,18 +396,18 @@ begin  -- behavioral
             ---------------------------------------------------------------------
  
             case address is
-              when x"000" => null;
+              when x"000" => wb_slave_o.ack <= '1';
               when x"004" => fifo_clear <= data; wb_slave_o.ack <= '1'; -- clear fifo
               -- trigger channel status (armed/inactive)
-              when x"008" => null;
+              when x"008" => wb_slave_o.ack <= '1';
               when x"00C" => trigger_active <= trigger_active or data; wb_slave_o.ack <= '1'; --armed
               when x"010" => trigger_active <= trigger_active and not data; wb_slave_o.ack <= '1'; --inactive
               -- trigger channel edge select (pos/neg)               
-              when x"014" => null;    
+              when x"014" => wb_slave_o.ack <= '1';   
               when x"018"  => trigger_edge <= trigger_edge or data; wb_slave_o.ack <= '1'; --pos
               when x"01C"  => trigger_edge <= trigger_edge and not data; wb_slave_o.ack <= '1'; --neg               
 
-              when others => wb_slave_o.err <= '1';
+              when others => wb_slave_o.err <= '1';  
             end case;
           else
             -------------------------------------------------------------------
@@ -410,18 +415,24 @@ begin  -- behavioral
             -------------------------------------------------------------------
                case address is
 
-                when x"000" => wb_slave_o.dat <= pad_4_WB(fifo_data_rdy);  wb_slave_o.ack <= '1';
-                when x"004" => null;
+                when x"000" => wb_slave_o.dat <= pad_4_WB(fifo_data_rdy); wb_slave_o.ack <= '1'; 
+                when x"004" => wb_slave_o.ack <= '1';
            
                 when x"008" => wb_slave_o.dat <= pad_4_WB(trigger_active); wb_slave_o.ack <= '1';
-                when x"00C" => null;
-                when x"010" => null;
+                when x"00C" => wb_slave_o.ack <= '1';
+                when x"010" => wb_slave_o.ack <= '1';
                                
                 when x"014"  => wb_slave_o.dat <= pad_4_WB(trigger_edge); wb_slave_o.ack <= '1';
-                when x"018" => null;
-                when x"01C" => null;
-                               
-                when others => wb_slave_o.err <= '1';
+                when x"018" => wb_slave_o.ack <= '1';
+                when x"01C" => wb_slave_o.ack <= '1';
+                when x"100" => wb_slave_o.dat <= std_logic_vector(to_unsigned(0, 32-8)) & tm_fifo_in(0)(67 downto 60);
+										 cur_tm_word1   <= tm_fifo_in(0)(59 downto 28);
+										 cur_tm_word2   <= std_logic_vector(to_unsigned(0, 32-28)) & tm_fifo_in(0)(27 downto 0);
+										 wb_slave_o.ack <= '1';
+					 when x"104" => wb_slave_o.dat <= cur_tm_word1; wb_slave_o.ack <= '1';
+					 when x"108" => wb_slave_o.dat <= cur_tm_word2; wb_slave_o.ack <= '1';
+					 
+                when others => wb_slave_o.err <= '1';  
               end case;
             end if;
           else
@@ -451,7 +462,7 @@ begin  -- behavioral
                 -- timestamp cycles word
                 when "100" => wb_slave_o.dat <= tm_word2(i); wb_slave_o.ack <= '1';
 
-                when others => wb_slave_o.err <= '1';
+                when others => wb_slave_o.ack <= '1';  
               end case;
             end if; -- if address < map_end
         end if; -- if address > fifo_offset
