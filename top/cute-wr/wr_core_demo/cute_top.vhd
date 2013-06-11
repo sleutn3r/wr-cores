@@ -33,43 +33,6 @@ entity cute_top is
       fpga_pll_ref_clk_101_p_i : in std_logic;  -- Dedicated clock for Xilinx GTP transceiver
       fpga_pll_ref_clk_101_n_i : in std_logic;
 
-      -- From GN4124 Local bus
-      L_CLKp : in std_logic;  -- Local bus clock (frequency set in GN4124 config registers)
-      L_CLKn : in std_logic;  -- Local bus clock (frequency set in GN4124 config registers)
-
-      L_RST_N : in std_logic;           -- Reset from GN4124 (RSTOUT18_N)
-
-      -- General Purpose Interface
-      GPIO : inout std_logic_vector(1 downto 0);  -- GPIO[0] -> GN4124 GPIO8
-                                                  -- GPIO[1] -> GN4124 GPIO9
-
-      -- PCIe to Local [Inbound Data] - RX
-      P2L_RDY    : out std_logic;       -- Rx Buffer Full Flag
-      P2L_CLKn   : in  std_logic;       -- Receiver Source Synchronous Clock-
-      P2L_CLKp   : in  std_logic;       -- Receiver Source Synchronous Clock+
-      P2L_DATA   : in  std_logic_vector(15 downto 0);  -- Parallel receive data
-      P2L_DFRAME : in  std_logic;       -- Receive Frame
-      P2L_VALID  : in  std_logic;       -- Receive Data Valid
-
-      -- Inbound Buffer Request/Status
-      P_WR_REQ : in  std_logic_vector(1 downto 0);  -- PCIe Write Request
-      P_WR_RDY : out std_logic_vector(1 downto 0);  -- PCIe Write Ready
-      RX_ERROR : out std_logic;                     -- Receive Error
-
-      -- Local to Parallel [Outbound Data] - TX
-      L2P_DATA   : out std_logic_vector(15 downto 0);  -- Parallel transmit data
-      L2P_DFRAME : out std_logic;       -- Transmit Data Frame
-      L2P_VALID  : out std_logic;       -- Transmit Data Valid
-      L2P_CLKn   : out std_logic;  -- Transmitter Source Synchronous Clock-
-      L2P_CLKp   : out std_logic;  -- Transmitter Source Synchronous Clock+
-      L2P_EDB    : out std_logic;       -- Packet termination and discard
-
-      -- Outbound Buffer Status
-      L2P_RDY    : in std_logic;        -- Tx Buffer Full Flag
-      L_WR_RDY   : in std_logic_vector(1 downto 0);  -- Local-to-PCIe Write
-      P_RD_D_RDY : in std_logic_vector(1 downto 0);  -- PCIe-to-Local Read Response Data Ready
-      TX_ERROR   : in std_logic;        -- Transmit Error
-      VC_RDY     : in std_logic_vector(1 downto 0);  -- Channel ready
 
       -- Font panel LEDs
       LED_RED   : out std_logic;
@@ -85,8 +48,6 @@ entity cute_top is
       fpga_scl_b : inout std_logic;
       fpga_sda_b : inout std_logic;
 
-      button1_i : in std_logic;
-      button2_i : in std_logic;
 
       thermo_id : inout std_logic;      -- 1-Wire interface to DS18B20
 
@@ -109,29 +70,6 @@ entity cute_top is
       sfp_los_i         : in    std_logic;
 
 
-      -------------------------------------------------------------------------
-      -- Digital I/O FMC Pins
-      -------------------------------------------------------------------------
-
-      dio_clk_p_i : in std_logic;
-      dio_clk_n_i : in std_logic;
-
-      dio_n_i : in std_logic_vector(4 downto 0);
-      dio_p_i : in std_logic_vector(4 downto 0);
-
-      dio_n_o : out std_logic_vector(4 downto 0);
-      dio_p_o : out std_logic_vector(4 downto 0);
-
-      dio_oe_n_o    : out std_logic_vector(4 downto 0);
-      dio_term_en_o : out std_logic_vector(4 downto 0);
-
-      dio_onewire_b  : inout std_logic;
-      dio_sdn_n_o    : out   std_logic;
-      dio_sdn_ck_n_o : out   std_logic;
-
-      dio_led_top_o : out std_logic;
-      dio_led_bot_o : out std_logic;
-
       -----------------------------------------
       --UART
       -----------------------------------------
@@ -152,91 +90,13 @@ architecture rtl of cute_top is
   -- Components declaration
   ------------------------------------------------------------------------------
 
-  component gn4124_core is
-    port(
-      ---------------------------------------------------------
-      -- Control and status
-      rst_n_a_i : in  std_logic;        -- Asynchronous reset from GN4124
-      status_o  : out std_logic_vector(31 downto 0);  -- Core status output
-
-      ---------------------------------------------------------
-      -- P2L Direction
-      --
-      -- Source Sync DDR related signals
-      p2l_clk_p_i  : in  std_logic;     -- Receiver Source Synchronous Clock+
-      p2l_clk_n_i  : in  std_logic;     -- Receiver Source Synchronous Clock-
-      p2l_data_i   : in  std_logic_vector(15 downto 0);  -- Parallel receive data
-      p2l_dframe_i : in  std_logic;     -- Receive Frame
-      p2l_valid_i  : in  std_logic;     -- Receive Data Valid
-      -- P2L Control
-      p2l_rdy_o    : out std_logic;     -- Rx Buffer Full Flag
-      p_wr_req_i   : in  std_logic_vector(1 downto 0);  -- PCIe Write Request
-      p_wr_rdy_o   : out std_logic_vector(1 downto 0);  -- PCIe Write Ready
-      rx_error_o   : out std_logic;     -- Receive Error
-      vc_rdy_i     : in  std_logic_vector(1 downto 0);  -- Virtual channel ready
-
-      ---------------------------------------------------------
-      -- L2P Direction
-      --
-      -- Source Sync DDR related signals
-      l2p_clk_p_o  : out std_logic;  -- Transmitter Source Synchronous Clock+
-      l2p_clk_n_o  : out std_logic;  -- Transmitter Source Synchronous Clock-
-      l2p_data_o   : out std_logic_vector(15 downto 0);  -- Parallel transmit data
-      l2p_dframe_o : out std_logic;     -- Transmit Data Frame
-      l2p_valid_o  : out std_logic;     -- Transmit Data Valid
-      -- L2P Control
-      l2p_edb_o    : out std_logic;     -- Packet termination and discard
-      l2p_rdy_i    : in  std_logic;     -- Tx Buffer Full Flag
-      l_wr_rdy_i   : in  std_logic_vector(1 downto 0);  -- Local-to-PCIe Write
-      p_rd_d_rdy_i : in  std_logic_vector(1 downto 0);  -- PCIe-to-Local Read Response Data Ready
-      tx_error_i   : in  std_logic;     -- Transmit Error
-
-      ---------------------------------------------------------
-      -- Interrupt interface
-      dma_irq_o : out std_logic_vector(1 downto 0);  -- Interrupts sources to IRQ manager
-      irq_p_i   : in  std_logic;  -- Interrupt request pulse from IRQ manager
-      irq_p_o   : out std_logic;  -- Interrupt request pulse to GN4124 GPIO
-
-      ---------------------------------------------------------
-      -- DMA registers wishbone interface (slave classic)
-      dma_reg_clk_i   : in  std_logic;
-      dma_reg_adr_i   : in  std_logic_vector(31 downto 0) := x"00000000";
-      dma_reg_dat_i   : in  std_logic_vector(31 downto 0) := x"00000000";
-      dma_reg_sel_i   : in  std_logic_vector(3 downto 0)  := x"0";
-      dma_reg_stb_i   : in  std_logic                     := '0';
-      dma_reg_we_i    : in  std_logic                     := '0';
-      dma_reg_cyc_i   : in  std_logic                     := '0';
-      dma_reg_dat_o   : out std_logic_vector(31 downto 0);
-      dma_reg_ack_o   : out std_logic;
-      dma_reg_stall_o : out std_logic;
-
-      ---------------------------------------------------------
-      -- CSR wishbone interface (master pipelined)
-      csr_clk_i   : in  std_logic;
-      csr_adr_o   : out std_logic_vector(31 downto 0);
-      csr_dat_o   : out std_logic_vector(31 downto 0);
-      csr_sel_o   : out std_logic_vector(3 downto 0);
-      csr_stb_o   : out std_logic;
-      csr_we_o    : out std_logic;
-      csr_cyc_o   : out std_logic;
-      csr_dat_i   : in  std_logic_vector(31 downto 0);
-      csr_ack_i   : in  std_logic;
-      csr_stall_i : in  std_logic;
-
-      ---------------------------------------------------------
-      -- DMA wishbone interface (master pipelined)
-      dma_clk_i   : in  std_logic;
-      dma_adr_o   : out std_logic_vector(31 downto 0);
-      dma_dat_o   : out std_logic_vector(31 downto 0);
-      dma_sel_o   : out std_logic_vector(3 downto 0);
-      dma_stb_o   : out std_logic;
-      dma_we_o    : out std_logic;
-      dma_cyc_o   : out std_logic;
-      dma_dat_i   : in  std_logic_vector(31 downto 0) := x"00000000";
-      dma_ack_i   : in  std_logic                     := '0';
-      dma_stall_i : in  std_logic                     := '0'
-      );
-  end component;  --  gn4124_core
+  component spec_reset_gen
+    port (
+      clk_sys_i        : in  std_logic;
+      rst_pcie_n_a_i   : in  std_logic;
+      rst_button_n_a_i : in  std_logic;
+      rst_n_o          : out std_logic);
+  end component;
 
   --component chipscope_ila
   --  port (
@@ -272,14 +132,10 @@ architecture rtl of cute_top is
   -- Signals declaration
   ------------------------------------------------------------------------------
 
-  -- LCLK from GN4124 used as system clock
-  signal l_clk : std_logic;
 
   -- Dedicated clock for GTP transceiver
   signal gtp_dedicated_clk : std_logic;
 
-  -- P2L colck PLL status
-  signal p2l_pll_locked : std_logic;
 
   -- Reset
   signal rst_a : std_logic;
@@ -298,7 +154,6 @@ architecture rtl of cute_top is
   signal ram_we      : std_logic_vector(0 downto 0);
   signal ddr_dma_adr : std_logic_vector(29 downto 0);
 
-  signal irq_to_gn4124 : std_logic;
 
   -- SPI
   signal spi_slave_select : std_logic_vector(7 downto 0);
@@ -314,7 +169,7 @@ architecture rtl of cute_top is
   signal clk_sys          : std_logic;
   signal clk_dmtd         : std_logic;
   signal dac_rst_n        : std_logic;
-  signal led_divider      : unsigned(23 downto 0);
+  signal led_divider      : unsigned(23 downto 0) := (others => '0');
 
   signal wrc_scl_o : std_logic;
   signal wrc_scl_i : std_logic;
@@ -331,8 +186,8 @@ architecture rtl of cute_top is
   signal dac_hpll_data    : std_logic_vector(15 downto 0);
   signal dac_dpll_data    : std_logic_vector(15 downto 0);
 
-  signal pps 		 : std_logic;
-	signal pps_led : std_logic;
+  signal pps     : std_logic;
+  signal pps_led : std_logic;
 
   signal phy_tx_data      : std_logic_vector(7 downto 0);
   signal phy_tx_k         : std_logic;
@@ -353,10 +208,10 @@ architecture rtl of cute_top is
   signal local_reset_n  : std_logic;
   signal button1_synced : std_logic_vector(2 downto 0);
 
-  signal genum_wb_out : t_wishbone_master_out;
-  signal genum_wb_in  : t_wishbone_master_in;
+  signal genum_wb_out    : t_wishbone_master_out;
+  signal genum_wb_in     : t_wishbone_master_in;
   signal genum_csr_ack_i : std_logic;
-  
+
   signal wrc_slave_i : t_wishbone_slave_in;
   signal wrc_slave_o : t_wishbone_slave_out;
 
@@ -365,17 +220,16 @@ architecture rtl of cute_top is
 
   signal wb_adr : std_logic_vector(31 downto 0);  --c_BAR0_APERTURE-priv_log2_ceil(c_CSR_WB_SLAVES_NB+1)-1 downto 0);
 
-  signal etherbone_rst_n     : std_logic;
-  signal etherbone_src_out   : t_wrf_source_out;
-  signal etherbone_src_in    : t_wrf_source_in;
-  signal etherbone_snk_out   : t_wrf_sink_out;
-  signal etherbone_snk_in    : t_wrf_sink_in;
-  signal etherbone_wb_out    : t_wishbone_master_out;
-  signal etherbone_wb_in     : t_wishbone_master_in;
-  signal etherbone_cfg_in    : t_wishbone_slave_in;
-  signal etherbone_cfg_out   : t_wishbone_slave_out;
-
-  signal rst_cnt :unsigned(15 downto 0) := (others =>'0');
+  signal etherbone_rst_n   : std_logic;
+  signal etherbone_src_out : t_wrf_source_out;
+  signal etherbone_src_in  : t_wrf_source_in;
+  signal etherbone_snk_out : t_wrf_sink_out;
+  signal etherbone_snk_in  : t_wrf_sink_in;
+  signal etherbone_wb_out  : t_wishbone_master_out;
+  signal etherbone_wb_in   : t_wishbone_master_in;
+  signal etherbone_cfg_in  : t_wishbone_slave_in;
+  signal etherbone_cfg_out : t_wishbone_slave_out;
+  
 begin
 
   cmp_sys_clk_pll : PLL_BASE
@@ -418,10 +272,10 @@ begin
       DIVCLK_DIVIDE      => 1,
       CLKFBOUT_MULT      => 50,
       CLKFBOUT_PHASE     => 0.000,
-      CLKOUT0_DIVIDE     => 16,          -- 62.5 MHz
+      CLKOUT0_DIVIDE     => 16,         -- 62.5 MHz
       CLKOUT0_PHASE      => 0.000,
       CLKOUT0_DUTY_CYCLE => 0.500,
-      CLKOUT1_DIVIDE     => 16,          -- 62.5 MHz
+      CLKOUT1_DIVIDE     => 16,         -- 62.5 MHz
       CLKOUT1_PHASE      => 0.000,
       CLKOUT1_DUTY_CYCLE => 0.500,
       CLKOUT2_DIVIDE     => 8,
@@ -442,37 +296,12 @@ begin
       CLKFBIN  => pllout_clk_fb_dmtd,
       CLKIN    => clk_20m_vcxo_buf);
 
-
-  --p_gen_reset : process(clk_sys)
-  --begin
-  --  if rising_edge(clk_sys) then
-  --    button1_synced(0) <= button1_i;
-  --    button1_synced(1) <= button1_synced(0);
-  --    button1_synced(2) <= button1_synced(1);
-
-  --    if(L_RST_N = '0') then
-  --      local_reset_n <= '0';
-  --    elsif (button1_synced(2) = '0') then
-  --      local_reset_n <= '0';
-  --    else
-  --      local_reset_n <= '1';
-  --    end if;
-  --  end if;
-  --end process;
-
-  p_gen_reset : process(clk_sys)
-  begin
-    if rising_edge(clk_sys) then
-      if rst_cnt <= X"FF00" then
-         rst_cnt <= rst_cnt +1;
-         local_reset_n <= '0';
-      else
-         local_reset_n <= '1';
-      end if;
-    end if;
-  end process;
-
- -- local_reset_n <= L_RST_N;
+  U_Reset_Gen : spec_reset_gen
+    port map (
+      clk_sys_i        => clk_sys,
+      rst_pcie_n_a_i   => '1',
+      rst_button_n_a_i => '1',
+      rst_n_o          => local_reset_n);
 
   cmp_clk_sys_buf : BUFG
     port map (
@@ -492,16 +321,6 @@ begin
   ------------------------------------------------------------------------------
   -- Local clock from gennum LCLK
   ------------------------------------------------------------------------------
-  cmp_l_clk_buf : IBUFDS
-    generic map (
-      DIFF_TERM    => false,            -- Differential Termination
-      IBUF_LOW_PWR => true,  -- Low power (TRUE) vs. performance (FALSE) setting for referenced I/O standards
-      IOSTANDARD   => "DEFAULT")
-    port map (
-      O  => l_clk,                      -- Buffer output
-      I  => L_CLKp,  -- Diff_p buffer input (connect directly to top-level port)
-      IB => L_CLKn  -- Diff_n buffer input (connect directly to top-level port)
-      );
 
   cmp_pllrefclk_buf : IBUFGDS
     generic map (
@@ -527,100 +346,15 @@ begin
       O  => gtp_dedicated_clk,
       I  => fpga_pll_ref_clk_101_p_i,
       IB => fpga_pll_ref_clk_101_n_i
-    );
-
-
-  ------------------------------------------------------------------------------
-  -- Active high reset
-  ------------------------------------------------------------------------------
- -- rst <= not(L_RST_N);
-  rst <= not local_reset_n;
-  ------------------------------------------------------------------------------
-  -- GN4124 interface
-  ------------------------------------------------------------------------------
-  cmp_gn4124_core : gn4124_core
-    port map
-    (
-      ---------------------------------------------------------
-      -- Control and status
-      rst_n_a_i => L_RST_N,
-      status_o  => open,
-
-      ---------------------------------------------------------
-      -- P2L Direction
-      --
-      -- Source Sync DDR related signals
-      p2l_clk_p_i  => P2L_CLKp,
-      p2l_clk_n_i  => P2L_CLKn,
-      p2l_data_i   => P2L_DATA,
-      p2l_dframe_i => P2L_DFRAME,
-      p2l_valid_i  => P2L_VALID,
-      -- P2L Control
-      p2l_rdy_o    => P2L_RDY,
-      p_wr_req_i   => P_WR_REQ,
-      p_wr_rdy_o   => P_WR_RDY,
-      rx_error_o   => RX_ERROR,
-      vc_rdy_i     => VC_RDY,
-
-      ---------------------------------------------------------
-      -- L2P Direction
-      --
-      -- Source Sync DDR related signals
-      l2p_clk_p_o  => L2P_CLKp,
-      l2p_clk_n_o  => L2P_CLKn,
-      l2p_data_o   => L2P_DATA,
-      l2p_dframe_o => L2P_DFRAME,
-      l2p_valid_o  => L2P_VALID,
-      -- L2P Control
-      l2p_edb_o    => L2P_EDB,
-      l2p_rdy_i    => L2P_RDY,
-      l_wr_rdy_i   => L_WR_RDY,
-      p_rd_d_rdy_i => P_RD_D_RDY,
-      tx_error_i   => TX_ERROR,
-
-      ---------------------------------------------------------
-      -- Interrupt interface
-      dma_irq_o => open,
-      irq_p_i   => '0',
-      irq_p_o   => GPIO(0),
-
-      ---------------------------------------------------------
-      -- DMA registers wishbone interface (slave classic)
-      dma_reg_clk_i => clk_sys,
-
-      ---------------------------------------------------------
-      -- CSR wishbone interface (master pipelined)
-      csr_clk_i   => clk_sys,
-      csr_adr_o   => wb_adr,
-      csr_dat_o   => genum_wb_out.dat,
-      csr_sel_o   => genum_wb_out.sel,
-      csr_stb_o   => genum_wb_out.stb,
-      csr_we_o    => genum_wb_out.we,
-      csr_cyc_o   => genum_wb_out.cyc,
-      csr_dat_i   => genum_wb_in.dat,
-      csr_ack_i   => genum_csr_ack_i,
-      csr_stall_i => genum_wb_in.stall,
-
-      ---------------------------------------------------------
-      -- L2P DMA Interface (Pipelined Wishbone master)
-      dma_clk_i => clk_sys
-      --dma_adr_o   => dma_adr,
-      --dma_dat_o   => dma_dat_o,
-      --dma_sel_o   => dma_sel,
-      --dma_stb_o   => dma_stb,
-      --dma_we_o    => dma_we,
-      --dma_cyc_o   => dma_cyc,
-      --dma_dat_i   => dma_dat_i,
-      --dma_ack_i   => dma_ack,
-      --dma_stall_i => dma_stall
       );
 
-  genum_csr_ack_i <= genum_wb_in.ack or genum_wb_in.err;
-  genum_wb_out.adr( 1 downto  0) <= (others => '0');
-  genum_wb_out.adr(18 downto  2) <= wb_adr(16 downto 0);
+
+  genum_csr_ack_i                <= genum_wb_in.ack or genum_wb_in.err;
+  genum_wb_out.adr(1 downto 0)   <= (others => '0');
+  genum_wb_out.adr(18 downto 2)  <= wb_adr(16 downto 0);
   genum_wb_out.adr(31 downto 19) <= (others => '0');
 
-  process(clk_sys, rst)
+  process(clk_sys)
   begin
     if rising_edge(clk_sys) then
       led_divider <= led_divider + 1;
@@ -659,8 +393,8 @@ begin
       clk_dmtd_i => clk_dmtd,
       clk_ref_i  => clk_125m_pllref,
       clk_aux_i  => (others => '0'),
-      clk_ext_i  => dio_clk,
-      pps_ext_i  => dio_in(3),
+      clk_ext_i  => '0',
+      pps_ext_i  => '0',
       rst_n_i    => local_reset_n,
 
       dac_hpll_load_p1_o => dac_hpll_load_p1,
@@ -681,8 +415,9 @@ begin
       phy_rst_o          => phy_rst,
       phy_loopen_o       => phy_loopen,
 
-      led_red_o   => LED_RED,
-      led_green_o => LED_GREEN,
+      led_act_o   => LED_RED,
+      led_link_o  => LED_GREEN,
+      
       scl_o       => wrc_scl_o,
       scl_i       => wrc_scl_i,
       sda_o       => wrc_sda_o,
@@ -692,8 +427,8 @@ begin
       sfp_sda_o   => sfp_sda_o,
       sfp_sda_i   => sfp_sda_i,
       sfp_det_i   => sfp_mod_def0_b,
-      btn1_i      => button1_i,
-      btn2_i      => button2_i,
+      btn1_i      => '1',
+      btn2_i      => '1',
 
       uart_rxd_i => uart_rxd_i,
       uart_txd_o => uart_txd_o,
@@ -717,18 +452,18 @@ begin
       tm_clk_aux_lock_en_i => '0',
       tm_clk_aux_locked_o  => open,
       tm_time_valid_o      => open,
-      tm_utc_o             => open,
+      tm_tai_o             => open,
       tm_cycles_o          => open,
       pps_p_o              => pps,
-      pps_led_o		   => pps_led,
+      pps_led_o            => pps_led,
 
-      dio_o       => dio_out(4 downto 1),
+      dio_o       => open,
       rst_aux_n_o => etherbone_rst_n
       );
 
-  Etherbone : EB_SLAVE_CORE
+  Etherbone : eb_slave_core
     generic map (
-	   g_sdb_address => x"0000000000030000")
+      g_sdb_address => x"0000000000030000")
     port map (
       clk_i       => clk_sys,
       nRst_i      => etherbone_rst_n,
@@ -758,11 +493,12 @@ begin
       slave_o(1)  => etherbone_wb_in,
       master_i(0) => wrc_slave_o,
       master_o(0) => wrc_slave_i);
-      
   ---------------------
 
   U_GTP : wr_gtp_phy_spartan6
     generic map (
+      g_enable_ch0 => 0,
+      g_enable_ch1 => 1,
       g_simulation => 0)
     port map (
       gtp_clk_i => gtp_dedicated_clk,
@@ -802,8 +538,6 @@ begin
       pad_rxp1_i         => sfp_rxp_i);
 
   
-
-  
   U_DAC_ARB : cutewr_serial_dac_arb
     generic map (
       g_invert_sclk    => false,
@@ -824,82 +558,11 @@ begin
       dac_clr_n_o   => dac_clr_n_o,
       dac_sclk_o    => dac_sclk_o,
       dac_din_o     => dac_din_o);
-
-
-  U_Extend_PPS : gc_extend_pulse
-    generic map (
-      g_width => 10000000)
-    port map (
-      clk_i      => clk_125m_pllref,
-      rst_n_i    => local_reset_n,
-      pulse_i    => pps_led,
-      extended_o => dio_led_top_o);
-
-
-  gen_dio_iobufs : for i in 0 to 4 generate
-    U_ibuf : IBUFDS
-      generic map (
-        DIFF_TERM => true)
-      port map (
-        O  => dio_in(i),
-        I  => dio_p_i(i),
-        IB => dio_n_i(i)
-        );
-
-    U_obuf : OBUFDS
-      port map (
-        I  => dio_out(i),
-        O  => dio_p_o(i),
-        OB => dio_n_o(i)
-        );
-  end generate gen_dio_iobufs;
-  U_input_buffer : IBUFDS
-    generic map (
-      DIFF_TERM => true)
-    port map (
-      O  => dio_clk,
-      I  => dio_clk_p_i,
-      IB => dio_clk_n_i
-      );
-
-  dio_led_bot_o <= '0';
-
+  
   pps_o                  <= pps;
-  dio_out(0)             <= pps;
-  dio_oe_n_o(0)          <= '0';
-  dio_oe_n_o(2 downto 1) <= (others => '0');
-  dio_oe_n_o(3)          <= '1';        -- for external 1-PPS
-  dio_oe_n_o(4)          <= '1';        -- for external 10MHz clock
-
-  dio_onewire_b <= '0' when owr_en(1) = '1' else 'Z';
-  owr_i(1)      <= dio_onewire_b;
-
-  dio_term_en_o <= (others => '0');
-
-  dio_sdn_ck_n_o <= '1';
-  dio_sdn_n_o    <= '1';
 
   sfp_tx_disable_o <= '0';
 
-  --chipscope_ila_1 : chipscope_ila
-  --  port map (
-  --    CONTROL => CONTROL,
-  --    CLK     => clk_125m_pllref,
-  --    TRIG0   => TRIG0,
-  --    TRIG1   => TRIG1,
-  --    TRIG2   => TRIG2,
-  --    TRIG3   => TRIG3);
-
-  --chipscope_icon_1 : chipscope_icon
-  --  port map (
-  --    CONTROL0 => CONTROL
-  --    );
-
-  --TRIG0(7 downto 0)<=phy_tx_data;
-  --TRIG0(8) <= phy_tx_k;
-  --TRIG0(9) <= phy_tx_disparity;
-  --TRIG0(10) <= phy_tx_enc_err;
-  
 end rtl;
 
 
