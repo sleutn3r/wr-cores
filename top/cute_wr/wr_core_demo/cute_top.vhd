@@ -3,7 +3,6 @@ library IEEE;
 use IEEE.STD_LOGIC_1164.all;
 use IEEE.NUMERIC_STD.all;
 
-use work.gn4124_core_pkg.all;
 use work.gencores_pkg.all;
 use work.wrcore_pkg.all;
 use work.wr_fabric_pkg.all;
