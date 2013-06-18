@@ -168,6 +168,9 @@ entity xwr_core is
     aux_master_o : out t_wishbone_master_out;
     aux_master_i : in  t_wishbone_master_in := cc_dummy_master_in;
 
+	 aux_snk_o : out t_wrf_sink_out;
+	 aux_snk_i : in  t_wrf_sink_in   := c_dummy_snk_in;
+ 
     -----------------------------------------
     -- External Fabric I/F
     -----------------------------------------
@@ -314,6 +317,16 @@ architecture struct of xwr_core is
       ext_src_ack_i   : in  std_logic := '1';
       ext_src_err_i   : in  std_logic := '0';
       ext_src_stall_i : in  std_logic := '0';
+		
+		ebm_snk_adr_i   : in  std_logic_vector(1 downto 0)  := "00";
+    ebm_snk_dat_i   : in  std_logic_vector(15 downto 0) := x"0000";
+    ebm_snk_sel_i   : in  std_logic_vector(1 downto 0)  := "00";
+    ebm_snk_cyc_i   : in  std_logic                     := '0';
+    ebm_snk_we_i    : in  std_logic                     := '0';
+    ebm_snk_stb_i   : in  std_logic                     := '0';
+    ebm_snk_ack_o   : out std_logic;
+    ebm_snk_err_o   : out std_logic;
+    ebm_snk_stall_o : out std_logic;
 
       txtsu_port_id_o      : out std_logic_vector(4 downto 0);
       txtsu_frame_id_o     : out std_logic_vector(15 downto 0);
@@ -434,7 +447,7 @@ begin
       ext_snk_err_o   => wrf_snk_o.err,
       ext_snk_stall_o => wrf_snk_o.stall,
 
-      ext_src_adr_o   => wrf_src_o.adr,
+		ext_src_adr_o   => wrf_src_o.adr,
       ext_src_dat_o   => wrf_src_o.dat,
       ext_src_sel_o   => wrf_src_o.sel,
       ext_src_cyc_o   => wrf_src_o.cyc,
@@ -443,6 +456,18 @@ begin
       ext_src_ack_i   => wrf_src_i.ack,
       ext_src_err_i   => wrf_src_i.err,
       ext_src_stall_i => wrf_src_i.stall,
+		
+		ebm_snk_adr_i   => aux_snk_i.adr,
+      ebm_snk_dat_i   => aux_snk_i.dat,
+      ebm_snk_sel_i   => aux_snk_i.sel,
+      ebm_snk_cyc_i   => aux_snk_i.cyc,
+      ebm_snk_we_i    => aux_snk_i.we,
+      ebm_snk_stb_i   => aux_snk_i.stb,
+      ebm_snk_ack_o   => aux_snk_o.ack,
+      ebm_snk_err_o   => aux_snk_o.err,
+      ebm_snk_stall_o => aux_snk_o.stall,
+		
+      
 
       txtsu_port_id_o      => timestamps_o.port_id(4 downto 0),
       txtsu_frame_id_o     => timestamps_o.frame_id,

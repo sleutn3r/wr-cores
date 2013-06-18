@@ -224,6 +224,16 @@ entity wr_core is
     ext_src_err_i   : in  std_logic := '0';
     ext_src_stall_i : in  std_logic := '0';
 
+	 
+	 ebm_snk_adr_i   : in  std_logic_vector(1 downto 0)  := "00";
+    ebm_snk_dat_i   : in  std_logic_vector(15 downto 0) := x"0000";
+    ebm_snk_sel_i   : in  std_logic_vector(1 downto 0)  := "00";
+    ebm_snk_cyc_i   : in  std_logic                     := '0';
+    ebm_snk_we_i    : in  std_logic                     := '0';
+    ebm_snk_stb_i   : in  std_logic                     := '0';
+    ebm_snk_ack_o   : out std_logic;
+    ebm_snk_err_o   : out std_logic;
+    ebm_snk_stall_o : out std_logic;
     ------------------------------------------
     -- External TX Timestamp I/F
     ------------------------------------------
@@ -415,11 +425,11 @@ architecture struct of wr_core is
   signal ep_snk_in  : t_wrf_sink_in;
 
 
-  signal mux_src_out : t_wrf_source_out_array(1 downto 0);
-  signal mux_src_in  : t_wrf_source_in_array(1 downto 0);
-  signal mux_snk_out : t_wrf_sink_out_array(1 downto 0);
-  signal mux_snk_in  : t_wrf_sink_in_array(1 downto 0);
-  signal mux_class   : t_wrf_mux_class(1 downto 0);
+  signal mux_src_out : t_wrf_source_out_array(2 downto 0);
+  signal mux_src_in  : t_wrf_source_in_array(2 downto 0);
+  signal mux_snk_out : t_wrf_sink_out_array(2 downto 0);
+  signal mux_snk_in  : t_wrf_sink_in_array(2 downto 0);
+  signal mux_class   : t_wrf_mux_class(2 downto 0);
 
   signal dummy : std_logic_vector(31 downto 0);
 
@@ -919,7 +929,7 @@ begin
   -----------------------------------------------------------------------------
   U_WBP_Mux : xwrf_mux
     generic map(
-      g_muxed_ports => 2)
+      g_muxed_ports => 3)
     port map (
       clk_sys_i   => clk_sys_i,
       rst_n_i     => rst_n_i,
@@ -935,6 +945,8 @@ begin
 
   mux_class(0)  <= x"0f";
   mux_class(1)  <= x"f0";
+  mux_class(2)  <= x"00";
+  
   ext_src_adr_o <= mux_src_out(1).adr;
   ext_src_dat_o <= mux_src_out(1).dat;
   ext_src_stb_o <= mux_src_out(1).stb;
@@ -945,7 +957,7 @@ begin
   mux_src_in(1).ack   <= ext_src_ack_i;
   mux_src_in(1).stall <= ext_src_stall_i;
   mux_src_in(1).err   <= ext_src_err_i;
-
+  
   mux_snk_in(1).adr <= ext_snk_adr_i;
   mux_snk_in(1).dat <= ext_snk_dat_i;
   mux_snk_in(1).stb <= ext_snk_stb_i;
@@ -956,6 +968,17 @@ begin
   ext_snk_ack_o   <= mux_snk_out(1).ack;
   ext_snk_err_o   <= mux_snk_out(1).err;
   ext_snk_stall_o <= mux_snk_out(1).stall;
+  
+  mux_snk_in(2).adr <= ebm_snk_adr_i;
+  mux_snk_in(2).dat <= ebm_snk_dat_i;
+  mux_snk_in(2).stb <= ebm_snk_stb_i;
+  mux_snk_in(2).cyc <= ebm_snk_cyc_i;
+  mux_snk_in(2).sel <= ebm_snk_sel_i;
+  mux_snk_in(2).we  <= ebm_snk_we_i;
+
+  ebm_snk_ack_o   <= mux_snk_out(2).ack;
+  ebm_snk_err_o   <= mux_snk_out(2).err;
+  ebm_snk_stall_o <= mux_snk_out(2).stall;
 
   -----------------------------------------------------------------------------
   -- External Tx Timestamping I/F

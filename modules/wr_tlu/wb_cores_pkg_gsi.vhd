@@ -8,6 +8,8 @@ use work.wishbone_pkg.all;
 
 package wb_cores_pkg_gsi is
 
+
+
  constant c_xwr_wb_timestamp_latch_sdb : t_sdb_device := (
     abi_class     => x"0000", -- undocumented device
     abi_ver_major => x"01",

@@ -353,6 +353,9 @@ package wrcore_pkg is
       aux_master_o : out t_wishbone_master_out;
       aux_master_i : in  t_wishbone_master_in := cc_unused_master_in;
 
+		aux_snk_o : out t_wrf_sink_out;
+      aux_snk_i : in  t_wrf_sink_in   := c_dummy_snk_in;
+		
       wrf_src_o : out t_wrf_source_out;
       wrf_src_i : in  t_wrf_source_in := c_dummy_src_in;
       wrf_snk_o : out t_wrf_sink_out;
@@ -527,6 +530,16 @@ package wrcore_pkg is
       ext_src_ack_i   : in  std_logic := '1';
       ext_src_err_i   : in  std_logic := '0';
       ext_src_stall_i : in  std_logic := '0';
+		
+		ebm_snk_adr_i   : in  std_logic_vector(1 downto 0)  := "00";
+      ebm_snk_dat_i   : in  std_logic_vector(15 downto 0) := x"0000";
+      ebm_snk_sel_i   : in  std_logic_vector(1 downto 0)  := "00";
+      ebm_snk_cyc_i   : in  std_logic                     := '0';
+      ebm_snk_we_i    : in  std_logic                     := '0';
+      ebm_snk_stb_i   : in  std_logic                     := '0';
+      ebm_snk_ack_o   : out std_logic;
+      ebm_snk_err_o   : out std_logic;
+      ebm_snk_stall_o : out std_logic;
 
       ------------------------------------------
       -- External TX Timestamp I/F
