@@ -945,7 +945,7 @@ begin
 
   mux_class(0)  <= x"0f";
   mux_class(1)  <= x"f0";
-  mux_class(2)  <= x"00";
+  mux_class(2)  <= x"f0";
   
   ext_src_adr_o <= mux_src_out(1).adr;
   ext_src_dat_o <= mux_src_out(1).dat;
