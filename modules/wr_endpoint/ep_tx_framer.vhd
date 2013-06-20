@@ -154,7 +154,7 @@ architecture behavioral of ep_tx_framer is
 
   signal snk_valid : std_logic;
 
-  signal sof_p1, eof_p1, abort_p1, error_p1 : std_logic;
+  signal sof_p1, eof_p1, abort_p1, error_p1, r_sof : std_logic;
   signal snk_cyc_d0                         : std_logic;
 
   signal decoded_status : t_wrf_status_reg;
@@ -268,13 +268,20 @@ begin  -- behavioral
     if rising_edge(clk_sys_i) then
       if rst_n_i = '0' then
         snk_cyc_d0 <= '0';
+		  r_sof 		 <= '0';
       else
         snk_cyc_d0 <= snk_i.cyc;
+		  if((not snk_cyc_d0 and snk_i.cyc) = '1') then
+			r_sof <= '1';
+		  end if;
+		  if(state = TXF_IDLE) then
+		    r_sof <= '0'; 	
+		  end if; 
       end if;
     end if;
   end process;
 
-  sof_p1    <= not snk_cyc_d0 and snk_i.cyc;
+  sof_p1    <= (not snk_cyc_d0 and snk_i.cyc) or r_sof;
   eof_p1    <= snk_cyc_d0 and not snk_i.cyc;
   snk_valid <= (snk_i.cyc and snk_i.stb and snk_i.we) and not stall_int;
 
@@ -680,7 +687,7 @@ begin  -- behavioral
               q_bytesel   <= '0';
 
               if(counter = 0 or g_force_gap_length = 0) then
-
+					 
                 -- Submit the TX timestamp to the TXTSU queue
                 if(oob.valid = '1' and oob.oob_type = c_WRF_OOB_TYPE_TX and got_error = '0') then
                   if(pcs_busy_i = '0') then
@@ -692,10 +699,11 @@ begin  -- behavioral
                     state <= TXF_STORE_TSTAMP;
                   end if;
                 else
-                  state <= TXF_IDLE;
+						if(pcs_busy_i = '0') then	
+							state <= TXF_IDLE;
+						end if;
                 end if;
-
-              else
+				  else
                 counter <= counter - 1;
               end if;
 
