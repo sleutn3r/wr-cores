@@ -70,7 +70,9 @@ entity wr_endpoint is
     g_with_rtu              : boolean                        := true;
     g_with_leds             : boolean                        := true;
     g_with_dmtd             : boolean                        := false;
-    g_with_packet_injection : boolean                        := false
+    g_with_packet_injection : boolean                        := false;
+		g_use_new_rxcrc         : boolean                        := false;
+		g_use_new_txcrc         : boolean                        := false
     );
   port (
 
@@ -325,7 +327,8 @@ architecture syn of wr_endpoint is
       g_with_vlans            : boolean;
       g_with_timestamper      : boolean;
       g_with_packet_injection : boolean;
-      g_force_gap_length      : integer);
+      g_force_gap_length      : integer;
+			g_use_new_crc						:	boolean := false);
     port (
       clk_sys_i              : in  std_logic;
       rst_n_i                : in  std_logic;
@@ -361,7 +364,8 @@ architecture syn of wr_endpoint is
       g_with_dpi_classifier : boolean;
       g_with_rtu            : boolean;
       g_with_rx_buffer      : boolean;
-      g_rx_buffer_size      : integer);
+      g_rx_buffer_size      : integer;
+			g_use_new_crc					:	boolean);
     port (
       clk_sys_i              : in  std_logic;
       clk_rx_i               : in  std_logic;
@@ -679,7 +683,8 @@ begin
       g_with_packet_injection => g_with_packet_injection,
       g_with_vlans            => g_with_vlans,
       g_with_timestamper      => g_with_timestamper,
-      g_force_gap_length      => g_tx_force_gap_length)
+      g_force_gap_length      => g_tx_force_gap_length,
+			g_use_new_crc						=> g_use_new_txcrc)
     port map (
       clk_sys_i        => clk_sys_i,
       rst_n_i          => rst_n_i,
@@ -738,7 +743,8 @@ begin
       g_with_dpi_classifier => g_with_dpi_classifier,
       g_with_rtu            => g_with_rtu,
       g_with_rx_buffer      => g_with_rx_buffer,
-      g_rx_buffer_size      => g_rx_buffer_size)
+      g_rx_buffer_size      => g_rx_buffer_size,
+			g_use_new_crc					=> g_use_new_rxcrc)
     port map (
       clk_sys_i => clk_sys_i,
       clk_rx_i  => phy_rx_clk_i,

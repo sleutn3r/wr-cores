@@ -50,7 +50,8 @@ entity ep_tx_path is
     g_with_vlans            : boolean;
     g_with_timestamper      : boolean;
     g_with_packet_injection : boolean;
-    g_force_gap_length      : integer
+    g_force_gap_length      : integer;
+		g_use_new_crc						:	boolean
     );
 
   port (
@@ -224,6 +225,8 @@ begin  -- rtl
   end generate gen_without_injection;
 
   U_Insert_CRC : ep_tx_crc_inserter
+		generic map(
+			g_use_new_crc	=> g_use_new_crc)
     port map (
       clk_sys_i  => clk_sys_i,
       rst_n_i    => rst_n_i,
