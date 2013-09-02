@@ -41,7 +41,8 @@ architecture behavioral of ep_rx_crc_size_check is
   component ep_rx_bypass_queue
     generic (
       g_size  : integer;
-      g_width : integer);
+      g_width : integer;
+      g_xilinx_fifo : boolean := false);
     port (
       rst_n_i : in  std_logic;
       clk_i   : in  std_logic;
@@ -139,7 +140,8 @@ begin  -- behavioral
   U_bypass_queue : ep_rx_bypass_queue
     generic map (
       g_size  => 3,
-      g_width => 18)
+      g_width => 18,
+      g_xilinx_fifo => false)
     port map (
       rst_n_i => rst_n_i,
       clk_i   => clk_sys_i,

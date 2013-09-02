@@ -36,11 +36,13 @@
 
 library ieee;
 use ieee.std_logic_1164.all;
+use work.genram_pkg.all;
 
 entity ep_rx_bypass_queue is
   generic(
     g_size  : integer := 3;
-    g_width : integer := 18);
+    g_width : integer := 18;
+    g_xilinx_fifo : boolean := false);
 
   port(
     rst_n_i : in std_logic;
@@ -90,7 +92,7 @@ architecture behavioral of ep_rx_bypass_queue is
   signal q_valid : std_logic_vector(g_size-1 downto 0);
 
 
-  signal qempty, qfull : std_logic;
+  signal qempty, qfull, q_almost_full : std_logic;
   signal flushing      : std_logic;
   signal valid_mask    : std_logic;
   signal valid_int     : std_logic;
@@ -99,54 +101,105 @@ architecture behavioral of ep_rx_bypass_queue is
   
 begin  -- behavioral
 
-  qempty <= f_queue_occupation(q_valid, '1');
-  qfull  <= f_queue_occupation(q_valid, '0');
+  GEN_ORIG: if g_xilinx_fifo = false generate
+    qempty <= f_queue_occupation(q_valid, '1');
+    qfull  <= f_queue_occupation(q_valid, '0');
 
-  empty_o <= qempty;
+    empty_o <= qempty;
 
-  gen_sreg : for i in 0 to g_width-1 generate
+    gen_sreg : for i in 0 to g_width-1 generate
 
-    U_sreg : ep_shift_reg
-      generic map (
-        g_size => g_size)
-      port map (
-        clk_i => clk_i,
-        ce_i  => sreg_enable,
-        d_i   => d_i(i),
-        q_o   => q_o(i));
+      U_sreg : ep_shift_reg
+        generic map (
+          g_size => g_size)
+        port map (
+          clk_i => clk_i,
+          ce_i  => sreg_enable,
+          d_i   => d_i(i),
+          q_o   => q_o(i));
 
-  end generate gen_sreg;
+    end generate gen_sreg;
 
 
-  sreg_enable <= '1' when ((valid_i = '1') or (qempty = '0' and (flushing = '1') and valid_int = '1')) else '0';
+    sreg_enable <= '1' when ((valid_i = '1') or (qempty = '0' and (flushing = '1') and valid_int = '1')) else '0';
 
-  p_queue : process(clk_i)
-  begin
-    if rising_edge(clk_i) then
-      if rst_n_i = '0' or purge_i = '1' then
-        flushing   <= '0';
-        valid_mask <= '0';
-        q_valid    <= (others => '0');
-      else
-        if(flushing = '1' and qempty = '1') then
-          flushing <= '0';
-        elsif(flush_i = '1' and qempty = '0') then
-          flushing <= '1';
-        end if;
+    p_queue : process(clk_i)
+    begin
+      if rising_edge(clk_i) then
+        if rst_n_i = '0' or purge_i = '1' then
+          flushing   <= '0';
+          valid_mask <= '0';
+          q_valid    <= (others => '0');
+        else
+          if(flushing = '1' and qempty = '1') then
+            flushing <= '0';
+          elsif(flush_i = '1' and qempty = '0') then
+            flushing <= '1';
+          end if;
 
-        valid_mask <= dreq_i;
+          valid_mask <= dreq_i;
 
-        if sreg_enable = '1' then
-          q_valid(0)                         <= valid_i;
-          q_valid(q_valid'length-1 downto 1) <= q_valid(q_valid'length-2 downto 0);
+          if sreg_enable = '1' then
+            q_valid(0)                         <= valid_i;
+            q_valid(q_valid'length-1 downto 1) <= q_valid(q_valid'length-2 downto 0);
+          end if;
         end if;
       end if;
-    end if;
-  end process;
+    end process;
 
-  dreq_o    <= dreq_i and not (flush_i or flushing);
-  valid_int <= (qfull and valid_i) or (not qempty and flushing and valid_mask);
-  valid_o   <= valid_int;
+    dreq_o    <= dreq_i and not (flush_i or flushing);
+    valid_int <= (qfull and valid_i) or (not qempty and flushing and valid_mask);
+    valid_o   <= valid_int;
+  end generate;
+
+  GEN_XIL: if g_xilinx_fifo = true generate
+    U_FIFO: generic_sync_fifo
+      generic map(
+        g_data_width => g_width,
+        g_size       => g_size+1,
+        g_show_ahead => true,
+        g_with_empty => true,
+        g_with_full  => true,
+        g_with_almost_empty => false,
+        g_with_almost_full  => true,
+        g_with_count        => false,
+        g_almost_full_threshold => 3)
+      port map(
+        rst_n_i => rst_n_i,
+        clk_i   => clk_i,
+        d_i     => d_i,
+        we_i    => valid_i,
+        q_o     => q_o,
+        rd_i    => valid_int, --read when fifo is full or when flushing requested
+        empty_o => qempty,
+        full_o  => open,
+        almost_full_o => qfull
+      );
+
+    dreq_o    <= dreq_i and not (flush_i or flushing);
+    valid_int <= (qfull and valid_i) or (not qempty and flushing and valid_mask);
+    valid_o   <= valid_int;
+    empty_o   <= qempty;
+
+    --flushing process
+    process(clk_i)
+    begin
+      if rising_edge(clk_i) then
+        if rst_n_i = '0' or purge_i = '1' then
+          flushing   <= '0';
+          valid_mask <= '0';
+        else
+          if(flushing = '1' and qempty = '1') then
+            flushing <= '0';
+          elsif(flush_i = '1' and qempty = '0') then
+            flushing <= '1';
+          end if;
+          valid_mask <= dreq_i;
+        end if;
+      end if;
+    end process;
+
+  end generate;
   
 end behavioral;
 
