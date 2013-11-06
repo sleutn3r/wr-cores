@@ -7,6 +7,7 @@
 -- Company    : CERN BE-CO-HT
 -- Created    : 2010-11-18
 -- Last update: 2013-03-15
+-- Last update: 2012-11-15
 -- Platform   : FPGA-generic
 -- Standard   : VHDL'93
 -------------------------------------------------------------------------------
@@ -44,6 +45,7 @@ use ieee.numeric_std.all;
 
 use work.ep_wbgen2_pkg.all;
 use work.wr_fabric_pkg.all;
+use work.endpoint_pkg.all;
 
 package endpoint_private_pkg is
 
@@ -102,9 +104,11 @@ package endpoint_private_pkg is
     rx_buffer_overrun      : std_logic;
     rx_rtu_overrun         : std_logic;
     rx_path_timing_failure : std_logic;
-
-    tx_pause    : std_logic;
-    tx_underrun : std_logic;
+    tx_pause               : std_logic;
+    tx_underrun            : std_logic;
+    rx_pclass              : std_logic_vector(7 downto 0);
+    tx_frame               : std_logic;
+    rx_frame               : std_logic;
   end record;
 
   -- Endpoint's internal fabric used to connect the submodules with each other.
@@ -152,7 +156,7 @@ package endpoint_private_pkg is
       serdes_rx_k_i           : in    std_logic;
       serdes_rx_enc_err_i     : in    std_logic;
       serdes_rx_bitslide_i    : in    std_logic_vector(3 downto 0);
-      rmon_o                  : inout t_rmon_triggers;
+      rmon_o                  : out t_rmon_triggers;
       mdio_addr_i             : in    std_logic_vector(15 downto 0);
       mdio_data_i             : in    std_logic_vector(15 downto 0);
       mdio_data_o             : out   std_logic_vector(15 downto 0);
@@ -177,29 +181,49 @@ package endpoint_private_pkg is
       cntr_overflow_o : out std_logic);
   end component;
 
-  component ep_tx_framer
+  component ep_tx_header_processor
     generic (
-      g_with_vlans       : boolean;
-      g_with_timestamper : boolean);
+      g_with_packet_injection : boolean;
+      g_with_timestamper      : boolean;
+      g_force_gap_length      : integer);
     port (
-      clk_sys_i        : in  std_logic;
-      rst_n_i          : in  std_logic;
-      pcs_fab_o        : out t_ep_internal_fabric;
-      pcs_error_i      : in  std_logic;
-      pcs_busy_i       : in  std_logic;
-      pcs_dreq_i       : in  std_logic;
-      snk_i            : in  t_wrf_sink_in;
-      snk_o            : out t_wrf_sink_out;
-      fc_pause_p_i     : in  std_logic;
-      fc_pause_delay_i : in  std_logic_vector(15 downto 0);
-      fc_pause_ack_o   : out std_logic;
-      fc_flow_enable_i : in  std_logic;
-      oob_fid_value_o  : out std_logic_vector(15 downto 0);
-      oob_fid_stb_o    : out std_logic;
-      regs_i           : in  t_ep_out_registers;
-      regs_o           : out t_ep_in_registers);
+      clk_sys_i              : in  std_logic;
+      rst_n_i                : in  std_logic;
+      src_fab_o              : out t_ep_internal_fabric;
+      src_dreq_i             : in  std_logic;
+      pcs_busy_i             : in  std_logic;
+      pcs_error_i            : in  std_logic;
+      wb_snk_i               : in  t_wrf_sink_in;
+      wb_snk_o               : out t_wrf_sink_out;
+      fc_pause_req_i         : in  std_logic;
+      fc_pause_delay_i       : in  std_logic_vector(15 downto 0);
+      fc_pause_ready_o       : out std_logic;
+      fc_flow_enable_i       : in  std_logic;
+      txtsu_port_id_o        : out std_logic_vector(4 downto 0);
+      txtsu_fid_o            : out std_logic_vector(16 -1 downto 0);
+      txtsu_ts_value_o       : out std_logic_vector(28 + 4 - 1 downto 0);
+      txtsu_ts_incorrect_o   : out std_logic;
+      txtsu_stb_o            : out std_logic;
+      txtsu_ack_i            : in  std_logic;
+      txts_timestamp_i       : in  std_logic_vector(31 downto 0);
+      txts_timestamp_valid_i : in  std_logic;
+      ep_ctrl_i              : in std_logic;
+      regs_i                 : in  t_ep_out_registers);
   end component;
 
+  component ep_tx_vlan_unit
+    port (
+      clk_sys_i         : in  std_logic;
+      rst_n_i           : in  std_logic;
+      snk_fab_i         : in  t_ep_internal_fabric;
+      snk_dreq_o        : out std_logic;
+      src_fab_o         : out t_ep_internal_fabric;
+      src_dreq_i        : in  std_logic;
+      inject_mem_addr_i : in  std_logic_vector(9 downto 0);
+      inject_mem_data_o : out std_logic_vector(17 downto 0);
+      regs_i            : in  t_ep_out_registers);
+  end component;
+  
   component ep_timestamping_unit
     generic (
       g_timestamp_bits_r : natural;
@@ -302,6 +326,62 @@ package endpoint_private_pkg is
       led_act_o   : out std_logic);
   end component;
 
+  component ep_tx_packet_injection
+    port (
+      clk_sys_i           : in  std_logic;
+      rst_n_i             : in  std_logic;
+      snk_fab_i           : in  t_ep_internal_fabric;
+      snk_dreq_o          : out std_logic;
+      src_fab_o           : out t_ep_internal_fabric;
+      src_dreq_i          : in  std_logic;
+      inject_req_i        : in  std_logic;
+      inject_ready_o      : out std_logic;
+      inject_packet_sel_i : in  std_logic_vector(2 downto 0);
+      inject_user_value_i : in  std_logic_vector(15 downto 0);
+      mem_addr_o          : out std_logic_vector(9 downto 0);
+      mem_data_i          : in  std_logic_vector(17 downto 0));
+  end component;
+
+  component ep_tx_framer
+    generic (
+      g_with_vlans            : boolean;
+      g_with_packet_injection : boolean;
+      g_with_timestamper      : boolean;
+      g_force_gap_length      : integer);
+    port (
+      clk_sys_i              : in  std_logic;
+      rst_n_i                : in  std_logic;
+      src_fab_o              : out t_ep_internal_fabric;
+      src_dreq_i             : in  std_logic;
+      pcs_busy_i             : in  std_logic;
+      pcs_error_i            : in  std_logic;
+      wb_snk_i               : in  t_wrf_sink_in;
+      wb_snk_o               : out t_wrf_sink_out;
+      fc_pause_req_i         : in  std_logic;
+      fc_pause_delay_i       : in  std_logic_vector(15 downto 0);
+      fc_pause_ready_o       : out std_logic;
+      fc_flow_enable_i       : in  std_logic;
+      txtsu_port_id_o        : out std_logic_vector(4 downto 0);
+      txtsu_fid_o            : out std_logic_vector(16 -1 downto 0);
+      txtsu_ts_value_o       : out std_logic_vector(28 + 4 - 1 downto 0);
+      txtsu_ts_incorrect_o   : out std_logic;
+      txtsu_stb_o            : out std_logic;
+      txtsu_ack_i            : in  std_logic;
+      txts_timestamp_i       : in  std_logic_vector(31 downto 0);
+      txts_timestamp_valid_i : in  std_logic;
+      regs_i                 : in  t_ep_out_registers);
+  end component;
+
+  component ep_tx_crc_inserter
+    port (
+      clk_sys_i  : in  std_logic;
+      rst_n_i    : in  std_logic;
+      snk_fab_i  : in  t_ep_internal_fabric;
+      snk_dreq_o : out std_logic;
+      src_fab_o  : out t_ep_internal_fabric;
+      src_dreq_i : in  std_logic);
+  end component;
+  
   procedure f_pack_fifo_contents (
     signal fab        : in  t_ep_internal_fabric;
     signal dout       : out std_logic_vector;
@@ -314,6 +394,11 @@ package endpoint_private_pkg is
     signal din_valid : in  std_logic;
     signal fab       : out t_ep_internal_fabric;
     early_eof        :     boolean := false);
+
+
+  procedure f_pack_rmon_triggers (
+      signal trig_in  : in t_rmon_triggers;
+      signal trig_out : out std_logic_vector(9 downto 0));
 
 end endpoint_private_pkg;
 
@@ -423,6 +508,26 @@ package body endpoint_private_pkg is
   end f_unpack_fifo_contents;
 
 
+  procedure f_pack_rmon_triggers
+    (
+      signal trig_in  : in t_rmon_triggers;
+      signal trig_out : out std_logic_vector(c_epevents_sz-1 downto 0)) is
+  begin
+    --from 1000base pcs
+    trig_out(0) <= trig_in.tx_underrun;
+    trig_out(1) <= trig_in.rx_overrun;
+    trig_out(2) <= trig_in.rx_invalid_code;
+    trig_out(3) <= trig_in.rx_sync_lost;
+    trig_out(4) <= trig_in.rx_pause;
+    trig_out(5) <= trig_in.rx_pfilter_drop;
+    trig_out(6) <= trig_in.rx_pcs_err;
+    trig_out(7) <= trig_in.rx_giant;
+    trig_out(8) <= trig_in.rx_runt;
+    trig_out(9) <= trig_in.rx_crc_err;
+    trig_out(17 downto 10) <= trig_in.rx_pclass(7 downto 0);
+    trig_out(18)<= trig_in.tx_frame;
+    trig_out(19)<= trig_in.rx_frame;
+  end f_pack_rmon_triggers;
 
 
 end endpoint_private_pkg;

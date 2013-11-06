@@ -223,6 +223,8 @@ begin  -- behavioral
   insn_predecoded <= f_decode_insn(mm_rdata);
   
   src_fab_o <= snk_fab_i;
+  
+  insn_predecoded <= f_decode_insn(mm_rdata);
 
   p_pc_counter : process(clk_rx_i)
   begin

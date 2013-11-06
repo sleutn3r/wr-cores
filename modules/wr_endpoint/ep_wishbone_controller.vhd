@@ -13,7 +13,6 @@
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
-use work.wbgen2_pkg.all;
 
 use work.ep_wbgen2_pkg.all;
 
@@ -22,7 +21,7 @@ entity ep_wishbone_controller is
   port (
     rst_n_i                                  : in     std_logic;
     clk_sys_i                                : in     std_logic;
-    wb_adr_i                                 : in     std_logic_vector(5 downto 0);
+    wb_adr_i                                 : in     std_logic_vector(4 downto 0);
     wb_dat_i                                 : in     std_logic_vector(31 downto 0);
     wb_dat_o                                 : out    std_logic_vector(31 downto 0);
     wb_cyc_i                                 : in     std_logic;
@@ -80,19 +79,22 @@ signal ep_vcr0_fix_prio_int                     : std_logic      ;
 signal ep_vcr0_prio_val_int                     : std_logic_vector(2 downto 0);
 signal ep_vcr0_pvid_int                         : std_logic_vector(11 downto 0);
 signal ep_pfcr0_enable_int                      : std_logic      ;
+signal ep_fcr_rxpause_802_3_int                 : std_logic      ;
+signal ep_fcr_txpause_802_3_int                 : std_logic      ;
+signal ep_fcr_rxpause_802_1q_int                : std_logic      ;
+signal ep_fcr_txpause_802_1q_int                : std_logic      ;
+signal ep_fcr_tx_thr_int                        : std_logic_vector(7 downto 0);
+signal ep_fcr_tx_quanta_int                     : std_logic_vector(15 downto 0);
 signal ep_mach_int                              : std_logic_vector(15 downto 0);
 signal ep_macl_int                              : std_logic_vector(31 downto 0);
 signal ep_mdio_cr_addr_int                      : std_logic_vector(7 downto 0);
 signal ep_mdio_cr_rw_int                        : std_logic      ;
 signal ep_mdio_asr_phyad_int                    : std_logic_vector(7 downto 0);
-signal ep_rmon_ram_rddata_int                   : std_logic_vector(31 downto 0);
-signal ep_rmon_ram_rd_int                       : std_logic      ;
-signal ep_rmon_ram_wr_int                       : std_logic      ;
 signal ack_sreg                                 : std_logic_vector(9 downto 0);
 signal rddata_reg                               : std_logic_vector(31 downto 0);
 signal wrdata_reg                               : std_logic_vector(31 downto 0);
 signal bwsel_reg                                : std_logic_vector(3 downto 0);
-signal rwaddr_reg                               : std_logic_vector(5 downto 0);
+signal rwaddr_reg                               : std_logic_vector(4 downto 0);
 signal ack_in_progress                          : std_logic      ;
 signal wr_int                                   : std_logic      ;
 signal rd_int                                   : std_logic      ;
@@ -135,18 +137,20 @@ begin
       ep_vcr0_fix_prio_int <= '0';
       ep_vcr0_prio_val_int <= "000";
       ep_vcr0_pvid_int <= "000000000000";
-      regs_o.vcr1_vid_wr_o <= '0';
-      regs_o.vcr1_value_wr_o <= '0';
+      regs_o.vcr1_offset_wr_o <= '0';
+      regs_o.vcr1_data_wr_o <= '0';
       regs_o.pfcr0_mm_addr_wr_o <= '0';
       regs_o.pfcr0_mm_write_wr_o <= '0';
       ep_pfcr0_enable_int <= '0';
       regs_o.pfcr0_mm_data_msb_wr_o <= '0';
       regs_o.pfcr1_mm_data_lsb_wr_o <= '0';
       regs_o.tcar_pcp_map_load_o <= '0';
-      regs_o.fcr_rxpause_load_o <= '0';
-      regs_o.fcr_txpause_load_o <= '0';
-      regs_o.fcr_tx_thr_load_o <= '0';
-      regs_o.fcr_tx_quanta_load_o <= '0';
+      ep_fcr_rxpause_802_3_int <= '0';
+      ep_fcr_txpause_802_3_int <= '0';
+      ep_fcr_rxpause_802_1q_int <= '0';
+      ep_fcr_txpause_802_1q_int <= '0';
+      ep_fcr_tx_thr_int <= "00000000";
+      ep_fcr_tx_quanta_int <= "0000000000000000";
       ep_mach_int <= "0000000000000000";
       ep_macl_int <= "00000000000000000000000000000000";
       regs_o.mdio_cr_data_wr_o <= '0';
@@ -164,17 +168,13 @@ begin
       if (ack_in_progress = '1') then
         if (ack_sreg(0) = '1') then
           ep_ecr_rst_cnt_int <= '0';
-          regs_o.vcr1_vid_wr_o <= '0';
-          regs_o.vcr1_value_wr_o <= '0';
+          regs_o.vcr1_offset_wr_o <= '0';
+          regs_o.vcr1_data_wr_o <= '0';
           regs_o.pfcr0_mm_addr_wr_o <= '0';
           regs_o.pfcr0_mm_write_wr_o <= '0';
           regs_o.pfcr0_mm_data_msb_wr_o <= '0';
           regs_o.pfcr1_mm_data_lsb_wr_o <= '0';
           regs_o.tcar_pcp_map_load_o <= '0';
-          regs_o.fcr_rxpause_load_o <= '0';
-          regs_o.fcr_txpause_load_o <= '0';
-          regs_o.fcr_tx_thr_load_o <= '0';
-          regs_o.fcr_tx_quanta_load_o <= '0';
           regs_o.mdio_cr_data_wr_o <= '0';
           regs_o.dsr_lact_load_o <= '0';
           regs_o.dmcr_en_load_o <= '0';
@@ -188,15 +188,13 @@ begin
           ep_tscr_rx_cal_start_int_delay <= '0';
           regs_o.vcr1_vid_wr_o <= '0';
           regs_o.vcr1_value_wr_o <= '0';
+          regs_o.vcr1_offset_wr_o <= '0';
+          regs_o.vcr1_data_wr_o <= '0';
           regs_o.pfcr0_mm_addr_wr_o <= '0';
           regs_o.pfcr0_mm_write_wr_o <= '0';
           regs_o.pfcr0_mm_data_msb_wr_o <= '0';
           regs_o.pfcr1_mm_data_lsb_wr_o <= '0';
           regs_o.tcar_pcp_map_load_o <= '0';
-          regs_o.fcr_rxpause_load_o <= '0';
-          regs_o.fcr_txpause_load_o <= '0';
-          regs_o.fcr_tx_thr_load_o <= '0';
-          regs_o.fcr_tx_quanta_load_o <= '0';
           regs_o.mdio_cr_data_wr_o <= '0';
           regs_o.dsr_lact_load_o <= '0';
           regs_o.dmcr_en_load_o <= '0';
@@ -666,7 +664,145 @@ begin
               ack_sreg(0) <= '1';
             else
               ack_sreg(0) <= '1';
+           end if;
+            rddata_reg(31 downto 0) <= ep_macl_int;
+            ack_sreg(0) <= '1';
+            ack_in_progress <= '1';
+          when "01011" => 
+            if (wb_we_i = '1') then
+              regs_o.mdio_cr_data_wr_o <= '1';
+              ep_mdio_cr_addr_int <= wrdata_reg(23 downto 16);
+              ep_mdio_cr_rw_int <= wrdata_reg(31);
             end if;
+            rddata_reg(23 downto 16) <= ep_mdio_cr_addr_int;
+            rddata_reg(31) <= ep_mdio_cr_rw_int;
+            rddata_reg(0) <= 'X';
+            rddata_reg(1) <= 'X';
+            rddata_reg(2) <= 'X';
+            rddata_reg(3) <= 'X';
+            rddata_reg(4) <= 'X';
+            rddata_reg(5) <= 'X';
+            rddata_reg(6) <= 'X';
+            rddata_reg(7) <= 'X';
+            rddata_reg(8) <= 'X';
+            rddata_reg(9) <= 'X';
+            rddata_reg(10) <= 'X';
+            rddata_reg(11) <= 'X';
+            rddata_reg(12) <= 'X';
+            rddata_reg(13) <= 'X';
+            rddata_reg(14) <= 'X';
+            rddata_reg(15) <= 'X';
+            rddata_reg(24) <= 'X';
+            rddata_reg(25) <= 'X';
+            rddata_reg(26) <= 'X';
+            rddata_reg(27) <= 'X';
+            rddata_reg(28) <= 'X';
+            rddata_reg(29) <= 'X';
+            rddata_reg(30) <= 'X';
+            ack_sreg(0) <= '1';
+            ack_in_progress <= '1';
+          when "01100" => 
+            if (wb_we_i = '1') then
+              ep_mdio_asr_phyad_int <= wrdata_reg(23 downto 16);
+            end if;
+            rddata_reg(15 downto 0) <= regs_i.mdio_asr_rdata_i;
+            rddata_reg(23 downto 16) <= ep_mdio_asr_phyad_int;
+            rddata_reg(31) <= regs_i.mdio_asr_ready_i;
+            rddata_reg(24) <= 'X';
+            rddata_reg(25) <= 'X';
+            rddata_reg(26) <= 'X';
+            rddata_reg(27) <= 'X';
+            rddata_reg(28) <= 'X';
+            rddata_reg(29) <= 'X';
+            rddata_reg(30) <= 'X';
+            ack_sreg(0) <= '1';
+            ack_in_progress <= '1';
+          when "01101" => 
+            if (wb_we_i = '1') then
+            end if;
+            rddata_reg(31 downto 0) <= "11001010111111101011101010111110";
+            ack_sreg(0) <= '1';
+            ack_in_progress <= '1';
+          when "01110" => 
+            if (wb_we_i = '1') then
+              regs_o.dsr_lact_load_o <= '1';
+            end if;
+            rddata_reg(0) <= regs_i.dsr_lstatus_i;
+            rddata_reg(1) <= regs_i.dsr_lact_i;
+            rddata_reg(2) <= 'X';
+            rddata_reg(3) <= 'X';
+            rddata_reg(4) <= 'X';
+            rddata_reg(5) <= 'X';
+            rddata_reg(6) <= 'X';
+            rddata_reg(7) <= 'X';
+            rddata_reg(8) <= 'X';
+            rddata_reg(9) <= 'X';
+            rddata_reg(10) <= 'X';
+            rddata_reg(11) <= 'X';
+            rddata_reg(12) <= 'X';
+            rddata_reg(13) <= 'X';
+            rddata_reg(14) <= 'X';
+            rddata_reg(15) <= 'X';
+            rddata_reg(16) <= 'X';
+            rddata_reg(17) <= 'X';
+            rddata_reg(18) <= 'X';
+            rddata_reg(19) <= 'X';
+            rddata_reg(20) <= 'X';
+            rddata_reg(21) <= 'X';
+            rddata_reg(22) <= 'X';
+            rddata_reg(23) <= 'X';
+            rddata_reg(24) <= 'X';
+            rddata_reg(25) <= 'X';
+            rddata_reg(26) <= 'X';
+            rddata_reg(27) <= 'X';
+            rddata_reg(28) <= 'X';
+            rddata_reg(29) <= 'X';
+            rddata_reg(30) <= 'X';
+            rddata_reg(31) <= 'X';
+            ack_sreg(0) <= '1';
+            ack_in_progress <= '1';
+          when "01111" => 
+            if (wb_we_i = '1') then
+              regs_o.dmcr_en_load_o <= '1';
+              regs_o.dmcr_n_avg_load_o <= '1';
+            end if;
+            rddata_reg(0) <= regs_i.dmcr_en_i;
+            rddata_reg(27 downto 16) <= regs_i.dmcr_n_avg_i;
+            rddata_reg(1) <= 'X';
+            rddata_reg(2) <= 'X';
+            rddata_reg(3) <= 'X';
+            rddata_reg(4) <= 'X';
+            rddata_reg(5) <= 'X';
+            rddata_reg(6) <= 'X';
+            rddata_reg(7) <= 'X';
+            rddata_reg(8) <= 'X';
+            rddata_reg(9) <= 'X';
+            rddata_reg(10) <= 'X';
+            rddata_reg(11) <= 'X';
+            rddata_reg(12) <= 'X';
+            rddata_reg(13) <= 'X';
+            rddata_reg(14) <= 'X';
+            rddata_reg(15) <= 'X';
+            rddata_reg(28) <= 'X';
+            rddata_reg(29) <= 'X';
+            rddata_reg(30) <= 'X';
+            rddata_reg(31) <= 'X';
+            ack_sreg(0) <= '1';
+            ack_in_progress <= '1';
+          when "10000" => 
+            if (wb_we_i = '1') then
+              regs_o.dmsr_ps_rdy_load_o <= '1';
+            end if;
+            rddata_reg(23 downto 0) <= regs_i.dmsr_ps_val_i;
+            rddata_reg(24) <= regs_i.dmsr_ps_rdy_i;
+            rddata_reg(25) <= 'X';
+            rddata_reg(26) <= 'X';
+            rddata_reg(27) <= 'X';
+            rddata_reg(28) <= 'X';
+            rddata_reg(29) <= 'X';
+            rddata_reg(30) <= 'X';
+            rddata_reg(31) <= 'X';
+            ack_sreg(0) <= '1';
             ack_in_progress <= '1';
           when others =>
 -- prevent the slave from hanging the bus on invalid address
@@ -679,31 +815,8 @@ begin
   end process;
   
   
--- Data output multiplexer process
-  process (rddata_reg, rwaddr_reg, ep_rmon_ram_rddata_int, wb_adr_i  )
-  begin
-    case rwaddr_reg(5) is
-    when '1' => 
-      wb_dat_o(31 downto 0) <= ep_rmon_ram_rddata_int;
-    when others =>
-      wb_dat_o <= rddata_reg;
-    end case;
-  end process;
-  
-  
--- Read & write lines decoder for RAMs
-  process (wb_adr_i, rd_int, wr_int  )
-  begin
-    if (wb_adr_i(5) = '1') then
-      ep_rmon_ram_rd_int <= rd_int;
-      ep_rmon_ram_wr_int <= wr_int;
-    else
-      ep_rmon_ram_wr_int <= '0';
-      ep_rmon_ram_rd_int <= '0';
-    end if;
-  end process;
-  
-  
+-- Drive the data output bus
+  wb_dat_o <= rddata_reg;
 -- Port identifier
   regs_o.ecr_portid_o <= ep_ecr_portid_int;
 -- Reset event counters
@@ -800,12 +913,12 @@ begin
   regs_o.vcr0_prio_val_o <= ep_vcr0_prio_val_int;
 -- Port-assigned VID
   regs_o.vcr0_pvid_o <= ep_vcr0_pvid_int;
--- Egress untagged set bitmap VID
--- pass-through field: Egress untagged set bitmap VID in register: VLAN Control Register 1
-  regs_o.vcr1_vid_o <= wrdata_reg(11 downto 0);
--- Egress untagged set bitmap value
--- pass-through field: Egress untagged set bitmap value in register: VLAN Control Register 1
-  regs_o.vcr1_value_o <= wrdata_reg(12);
+-- VLAN Untagged Set/Injection Buffer offset
+-- pass-through field: VLAN Untagged Set/Injection Buffer offset in register: VLAN Control Register 1
+  regs_o.vcr1_offset_o <= wrdata_reg(9 downto 0);
+-- VLAN Untagged Set/Injection Buffer value
+-- pass-through field: VLAN Untagged Set/Injection Buffer value in register: VLAN Control Register 1
+  regs_o.vcr1_data_o <= wrdata_reg(27 downto 10);
 -- Microcode Memory Address
 -- pass-through field: Microcode Memory Address in register: Packet Filter Control Register 0
   regs_o.pfcr0_mm_addr_o <= wrdata_reg(5 downto 0);
@@ -822,14 +935,18 @@ begin
   regs_o.pfcr1_mm_data_lsb_o <= wrdata_reg(11 downto 0);
 -- 802.1Q priority tag to Traffic Class map
   regs_o.tcar_pcp_map_o <= wrdata_reg(23 downto 0);
--- RX Pause enable
-  regs_o.fcr_rxpause_o <= wrdata_reg(0);
--- TX Pause enable
-  regs_o.fcr_txpause_o <= wrdata_reg(1);
+-- RX Pause 802.3 enable
+  regs_o.fcr_rxpause_802_3_o <= ep_fcr_rxpause_802_3_int;
+-- TX Pause 802.3 enable
+  regs_o.fcr_txpause_802_3_o <= ep_fcr_txpause_802_3_int;
+-- Rx Pause 802.1Q enable
+  regs_o.fcr_rxpause_802_1q_o <= ep_fcr_rxpause_802_1q_int;
+-- Tx Pause 802.1Q enable (not implemented)
+  regs_o.fcr_txpause_802_1q_o <= ep_fcr_txpause_802_1q_int;
 -- TX pause threshold
-  regs_o.fcr_tx_thr_o <= wrdata_reg(15 downto 8);
+  regs_o.fcr_tx_thr_o <= ep_fcr_tx_thr_int;
 -- TX pause quanta
-  regs_o.fcr_tx_quanta_o <= wrdata_reg(31 downto 16);
+  regs_o.fcr_tx_quanta_o <= ep_fcr_tx_quanta_int;
 -- MAC Address
   regs_o.mach_o <= ep_mach_int;
 -- MAC Address
@@ -855,33 +972,6 @@ begin
 -- DMTD Phase shift value
 -- DMTD Phase shift value ready
   regs_o.dmsr_ps_rdy_o <= wrdata_reg(24);
--- extra code for reg/fifo/mem: Event counters memory
--- RAM block instantiation for memory: Event counters memory
-  ep_rmon_ram_raminst : wbgen2_dpssram
-    generic map (
-      g_data_width         => 32,
-      g_size               => 32,
-      g_addr_width         => 5,
-      g_dual_clock         => false,
-      g_use_bwsel          => false
-    )
-    port map (
-      clk_a_i              => clk_sys_i,
-      clk_b_i              => clk_sys_i,
-      addr_b_i             => ep_rmon_ram_addr_i,
-      addr_a_i             => rwaddr_reg(4 downto 0),
-      data_b_o             => ep_rmon_ram_data_o,
-      rd_b_i               => ep_rmon_ram_rd_i,
-      data_b_i             => ep_rmon_ram_data_i,
-      wr_b_i               => ep_rmon_ram_wr_i,
-      bwsel_b_i            => allones(3 downto 0),
-      data_a_o             => ep_rmon_ram_rddata_int(31 downto 0),
-      rd_a_i               => ep_rmon_ram_rd_int,
-      data_a_i             => wrdata_reg(31 downto 0),
-      wr_a_i               => ep_rmon_ram_wr_int,
-      bwsel_a_i            => allones(3 downto 0)
-    );
-  
   rwaddr_reg <= wb_adr_i;
   wb_stall_o <= (not ack_sreg(0)) and (wb_stb_i and wb_cyc_i);
 -- ACK signal generation. Just pass the LSB of ACK counter.

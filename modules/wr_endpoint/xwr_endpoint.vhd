@@ -1,20 +1,37 @@
 -------------------------------------------------------------------------------
--- Title      : 1000base-X MAC/Endpoint
+-- Title      : 1000base-X MAC/Endpoint - top level
 -- Project    : White Rabbit
 -------------------------------------------------------------------------------
 -- File       : xwr_endpoint.vhd
 -- Author     : Tomasz Wlostowski
--- Company    : CERN BE-Co-HT
+-- Company    : CERN BE-CO-HT
 -- Created    : 2010-04-26
--- Last update: 2012-07-09
--- Platform   : FPGA-generics
--- Standard   : VHDL
+-- Last update: 2012-11-16
+-- Platform   : FPGA-generic
+-- Standard   : VHDL '93
 -------------------------------------------------------------------------------
--- Description: Wrapper for wr_endpoint using strutures in ports.
+-- Description: Struct-ized wrapper for WR Endpoint.
 -------------------------------------------------------------------------------
--- Copyright (c) 2011 Tomasz Wlostowski
+--
+-- Copyright (c) 2011 - 2012 CERN / BE-CO-HT
+--
+-- This source file is free software; you can redistribute it   
+-- and/or modify it under the terms of the GNU Lesser General   
+-- Public License as published by the Free Software Foundation; 
+-- either version 2.1 of the License, or (at your option) any   
+-- later version.                                               
+--
+-- This source is distributed in the hope that it will be       
+-- useful, but WITHOUT ANY WARRANTY; without even the implied   
+-- warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR      
+-- PURPOSE.  See the GNU Lesser General Public License for more 
+-- details.                                                     
+--
+-- You should have received a copy of the GNU Lesser General    
+-- Public License along with this source; if not, download it   
+-- from http://www.gnu.org/licenses/lgpl-2.1.html
+--
 -------------------------------------------------------------------------------
-
 
 library ieee;
 use ieee.std_logic_1164.all;
@@ -29,20 +46,21 @@ use work.wishbone_pkg.all;
 entity xwr_endpoint is
   
   generic (
-    g_interface_mode      : t_wishbone_interface_mode      := CLASSIC;
-    g_address_granularity : t_wishbone_address_granularity := WORD;
-    g_simulation          : boolean                        := false;
-    g_tx_force_gap_length : integer                        := 0;
-    g_pcs_16bit           : boolean                        := false;
-    g_rx_buffer_size      : integer                        := 1024;
-    g_with_rx_buffer      : boolean                        := true;
-    g_with_flow_control   : boolean                        := true;
-    g_with_timestamper    : boolean                        := true;
-    g_with_dpi_classifier : boolean                        := true;
-    g_with_vlans          : boolean                        := true;
-    g_with_rtu            : boolean                        := true;
-    g_with_leds           : boolean                        := true;
-    g_with_dmtd           : boolean                        := true
+    g_interface_mode        : t_wishbone_interface_mode      := CLASSIC;
+    g_address_granularity   : t_wishbone_address_granularity := WORD;
+    g_simulation            : boolean                        := false;
+    g_tx_force_gap_length   : integer                        := 0;
+    g_pcs_16bit             : boolean                        := false;
+    g_rx_buffer_size        : integer                        := 1024;
+    g_with_rx_buffer        : boolean                        := true;
+    g_with_flow_control     : boolean                        := true;
+    g_with_timestamper      : boolean                        := true;
+    g_with_dpi_classifier   : boolean                        := true;
+    g_with_vlans            : boolean                        := true;
+    g_with_rtu              : boolean                        := true;
+    g_with_leds             : boolean                        := true;
+    g_with_dmtd             : boolean                        := true;
+    g_with_packet_injection : boolean                        := false
     );
   port (
 
@@ -56,7 +74,7 @@ entity xwr_endpoint is
 -- reference clock / 2 (62.5 MHz, in-phase with refclk)
     clk_sys_i : in std_logic;
 
-    clk_dmtd_i : in std_logic;
+    clk_dmtd_i : in std_logic := '0';
 
 -- sync reset (clk_sys_i domain), active LO
     rst_n_i : in std_logic;
@@ -77,17 +95,17 @@ entity xwr_endpoint is
     phy_enable_o : out std_logic;
     phy_syncen_o : out std_logic;
 
-    phy_ref_clk_i      : in  std_logic;
+    phy_ref_clk_i      : in  std_logic := '0';
     phy_tx_data_o      : out std_logic_vector(15 downto 0);
     phy_tx_k_o         : out std_logic_vector(1 downto 0);
-    phy_tx_disparity_i : in  std_logic;
-    phy_tx_enc_err_i   : in  std_logic;
+    phy_tx_disparity_i : in  std_logic := '0';
+    phy_tx_enc_err_i   : in  std_logic := '0';
 
-    phy_rx_data_i     : in std_logic_vector(15 downto 0);
-    phy_rx_clk_i      : in std_logic;
-    phy_rx_k_i        : in std_logic_vector(1 downto 0);
-    phy_rx_enc_err_i  : in std_logic;
-    phy_rx_bitslide_i : in std_logic_vector(4 downto 0);
+    phy_rx_data_i     : in std_logic_vector(15 downto 0) := x"0000";
+    phy_rx_clk_i      : in std_logic                     := '0';
+    phy_rx_k_i        : in std_logic_vector(1 downto 0)  := "00";
+    phy_rx_enc_err_i  : in std_logic                     := '0';
+    phy_rx_bitslide_i : in std_logic_vector(4 downto 0)  := "00000";
 
 -------------------------------------------------------------------------------
 -- GMII Interface (8-bit)
@@ -134,7 +152,7 @@ entity xwr_endpoint is
 
 -- TX timestamp acknowledge: HI indicates that TXTSU has successfully received
 -- the timestamp
-    txtsu_ack_i : in std_logic;
+    txtsu_ack_i : in std_logic := '1';
 
 -------------------------------------------------------------------------------
 -- RTU interface
@@ -174,12 +192,58 @@ entity xwr_endpoint is
     wb_o : out t_wishbone_slave_out;
 
 -------------------------------------------------------------------------------
--- Misc stuff
+-- direct output of packet filter  (for TRU/HW-RSTP)
+-------------------------------------------------------------------------------
+   
+   pfilter_pclass_o       : out   std_logic_vector(7 downto 0);
+   pfilter_drop_o         : out   std_logic;
+   pfilter_done_o         : out   std_logic;
+
+-------------------------------------------------------------------------------
+-- control of PAUSE sending (ML: not used and not tested... TRU uses packet injection) -- 
+-------------------------------------------------------------------------------
+   
+   fc_tx_pause_req_i   : in std_logic := '0';
+   fc_tx_pause_delay_i : in std_logic_vector(15 downto 0) := x"0000";
+   fc_tx_pause_ready_o : out std_logic;
+
+-------------------------------------------------------------------------------
+-- information about received PAUSE (for SWcore)
 -------------------------------------------------------------------------------
 
-    led_link_o : out std_logic;
-    led_act_o  : out std_logic
+   fc_rx_pause_start_p_o     : out std_logic;
+   fc_rx_pause_quanta_o      : out std_logic_vector(15 downto 0);
+   fc_rx_pause_prio_mask_o   : out std_logic_vector(7 downto 0);
 
+-------------------------------------------------------------------------------
+-- Packet Injection Interface (for TRU/HW-RSTP)
+-------------------------------------------------------------------------------
+
+-- injection request: triggers transmission of the packet to be injected,
+-- allowed when inject_ready = 1
+    inject_req_i : in std_logic := '0';
+
+-- injection ready flag: when true, user application can request asynchronous
+-- injection of a predefined packet
+    inject_ready_o : out std_logic;
+
+-- injection template selection (8 available)
+    inject_packet_sel_i : in std_logic_vector(2 downto 0) := "000";
+
+-- user-defined value to be embedded in the injected packet at a predefined
+-- location
+    inject_user_value_i : in std_logic_vector(15 downto 0) := x"0000";
+
+-------------------------------------------------------------------------------
+-- Misc stuff
+-------------------------------------------------------------------------------
+    rmon_events_o        : out std_logic_vector(c_epevents_sz-1 downto 0);
+
+    led_link_o : out std_logic;
+    led_act_o  : out std_logic;
+
+    link_kill_i : in  std_logic := '0';
+    link_up_o   : out std_logic
     );
 
 end xwr_endpoint;
@@ -194,17 +258,18 @@ begin
       g_address_granularity => g_address_granularity,
       g_tx_force_gap_length => g_tx_force_gap_length,
 
-      g_simulation          => g_simulation,
-      g_pcs_16bit           => g_pcs_16bit,
-      g_rx_buffer_size      => g_rx_buffer_size,
-      g_with_rx_buffer      => g_with_rx_buffer,
-      g_with_flow_control   => g_with_flow_control,
-      g_with_timestamper    => g_with_timestamper,
-      g_with_dpi_classifier => g_with_dpi_classifier,
-      g_with_vlans          => g_with_vlans,
-      g_with_rtu            => g_with_rtu,
-      g_with_leds           => g_with_leds,
-      g_with_dmtd           => g_with_dmtd)
+      g_simulation            => g_simulation,
+      g_pcs_16bit             => g_pcs_16bit,
+      g_rx_buffer_size        => g_rx_buffer_size,
+      g_with_rx_buffer        => g_with_rx_buffer,
+      g_with_flow_control     => g_with_flow_control,
+      g_with_timestamper      => g_with_timestamper,
+      g_with_dpi_classifier   => g_with_dpi_classifier,
+      g_with_vlans            => g_with_vlans,
+      g_with_rtu              => g_with_rtu,
+      g_with_leds             => g_with_leds,
+      g_with_dmtd             => g_with_dmtd,
+      g_with_packet_injection => g_with_packet_injection)
     port map (
       clk_ref_i            => clk_ref_i,
       clk_sys_i            => clk_sys_i,
@@ -277,8 +342,25 @@ begin
       wb_dat_o             => wb_o.dat,
       wb_ack_o             => wb_o.ack,
       wb_stall_o           => wb_o.stall,
+      rmon_events_o        => rmon_events_o,
       led_link_o           => led_link_o,
-      led_act_o            => led_act_o);
+      led_act_o            => led_act_o,
+      link_up_o            => link_up_o,
+      link_kill_i          => link_kill_i,
+      pfilter_pclass_o     => pfilter_pclass_o,
+      pfilter_drop_o       => pfilter_drop_o,
+      pfilter_done_o       => pfilter_done_o,
+      fc_tx_pause_req_i    => fc_tx_pause_req_i,
+      fc_tx_pause_delay_i  => fc_tx_pause_delay_i,
+      fc_tx_pause_ready_o  => fc_tx_pause_ready_o,
+      fc_rx_pause_start_p_o   => fc_rx_pause_start_p_o,
+      fc_rx_pause_quanta_o    => fc_rx_pause_quanta_o,
+      fc_rx_pause_prio_mask_o => fc_rx_pause_prio_mask_o,
+      inject_req_i         => inject_req_i,
+      inject_user_value_i  => inject_user_value_i,
+      inject_packet_sel_i  => inject_packet_sel_i,
+      inject_ready_o       => inject_ready_o
+      );
 
   wb_o.err <= '0';
   wb_o.rty <= '0';

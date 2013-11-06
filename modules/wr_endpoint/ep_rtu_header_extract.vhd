@@ -16,6 +16,13 @@ entity ep_rtu_header_extract is
     src_fab_o  : out t_ep_internal_fabric;
     src_dreq_i : in  std_logic;
 
+    mbuf_is_pause_i : in std_logic; 
+
+    vlan_class_i   : in std_logic_vector(2 downto 0);
+    vlan_vid_i      : in std_logic_vector(11 downto 0);
+    vlan_tag_done_i : in std_logic;
+    vlan_is_tagged_i: in std_logic;
+
     rtu_rq_o       : out t_ep_internal_rtu_request;
     rtu_full_i     : in  std_logic;
     rtu_rq_valid_o : out std_logic
@@ -27,7 +34,11 @@ architecture rtl of ep_rtu_header_extract is
 
   signal hdr_offset : std_logic_vector(11 downto 0);
   signal in_packet  : std_logic;
+  signal rtu_rq_valid_basic   : std_logic;
+  signal rtu_rq_valid_tagged   : std_logic;
+  signal rtu_rq_valid_out   : std_logic;
   
+
   procedure f_extract_rtu(signal q         : out std_logic_vector;
                           signal fab       :     t_ep_internal_fabric;
                           signal at_offset :     std_logic) is
@@ -40,7 +51,7 @@ architecture rtl of ep_rtu_header_extract is
 begin  -- rtl
 
   gen_with_rtu : if(g_with_rtu) generate
-
+    
     p_hdr_offset_sreg : process(clk_sys_i)
     begin
       if rising_edge(clk_sys_i) then
@@ -59,12 +70,10 @@ begin  -- rtl
         if rst_n_i = '0' then
           rtu_rq_o.smac     <= (others => '0');
           rtu_rq_o.dmac     <= (others => '0');
-          rtu_rq_o.vid      <= (others => '0');
-          rtu_rq_o.has_vid  <= '0';
-          rtu_rq_o.prio     <= (others => '0');
-          rtu_rq_o.has_prio <= '0';
           in_packet         <= '0';
+          rtu_rq_valid_basic<= '0';
         else
+          
           if(snk_fab_i.sof = '1' and rtu_full_i = '0') then
             in_packet <= '1';
           end if;
@@ -79,11 +88,11 @@ begin  -- rtl
           f_extract_rtu(rtu_rq_o.smac(47 downto 32), snk_fab_i, hdr_offset(3));
           f_extract_rtu(rtu_rq_o.smac(31 downto 16), snk_fab_i, hdr_offset(4));
           f_extract_rtu(rtu_rq_o.smac(15 downto 0), snk_fab_i, hdr_offset(5));
-
-          if(hdr_offset(5) = '1' and in_packet = '1') then
-            rtu_rq_valid_o <= '1';
-          else
-            rtu_rq_valid_o <= '0';
+          
+          if(snk_fab_i.dvalid = '1'  and hdr_offset(6) = '1' and in_packet = '1') then
+            rtu_rq_valid_basic <='1';
+          elsif(rtu_rq_valid_out = '1') then
+            rtu_rq_valid_basic     <= '0';
           end if;
           
         end if;
@@ -91,11 +100,20 @@ begin  -- rtl
     end process;
 
     src_fab_o.sof <= snk_fab_i.sof and not rtu_full_i;
+    
+    rtu_rq_valid_tagged <= rtu_rq_valid_basic and vlan_tag_done_i;
+    
+    -- the request is not done for PAUSE frames as they never go outside of Endpoint 
+    -- (they are dropped inside Endpoint)
+    rtu_rq_valid_out <= (rtu_rq_valid_tagged and (not mbuf_is_pause_i))when (vlan_is_tagged_i = '1') else
+                        (rtu_rq_valid_basic  and (not mbuf_is_pause_i));
+                        
 
   end generate gen_with_rtu;
 
   gen_without_rtu : if (not g_with_rtu) generate
     src_fab_o.sof <= snk_fab_i.sof;
+    rtu_rq_valid_out <='0';
   end generate gen_without_rtu;
 
   snk_dreq_o <= src_dreq_i;
@@ -107,5 +125,11 @@ begin  -- rtl
   src_fab_o.data     <= snk_fab_i.data;
   src_fab_o.addr     <= snk_fab_i.addr;
   src_fab_o.has_rx_timestamp <= snk_fab_i.has_rx_timestamp;
+
+  rtu_rq_o.vid       <= vlan_vid_i;
+  rtu_rq_o.has_vid   <= vlan_is_tagged_i;
+  rtu_rq_o.prio      <= vlan_class_i;
+  rtu_rq_o.has_prio  <= vlan_is_tagged_i;
+  rtu_rq_valid_o     <= rtu_rq_valid_out;
   
 end rtl;
