@@ -21,7 +21,7 @@ entity ep_wishbone_controller is
   port (
     rst_n_i                                  : in     std_logic;
     clk_sys_i                                : in     std_logic;
-    wb_adr_i                                 : in     std_logic_vector(4 downto 0);
+    wb_adr_i                                 : in     std_logic_vector(5 downto 0);
     wb_dat_i                                 : in     std_logic_vector(31 downto 0);
     wb_dat_o                                 : out    std_logic_vector(31 downto 0);
     wb_cyc_i                                 : in     std_logic;
@@ -94,7 +94,7 @@ signal ack_sreg                                 : std_logic_vector(9 downto 0);
 signal rddata_reg                               : std_logic_vector(31 downto 0);
 signal wrdata_reg                               : std_logic_vector(31 downto 0);
 signal bwsel_reg                                : std_logic_vector(3 downto 0);
-signal rwaddr_reg                               : std_logic_vector(4 downto 0);
+signal rwaddr_reg                               : std_logic_vector(5 downto 0);--4
 signal ack_in_progress                          : std_logic      ;
 signal wr_int                                   : std_logic      ;
 signal rd_int                                   : std_logic      ;
@@ -659,153 +659,18 @@ begin
               ack_in_progress <= '1';
               ack_sreg(0) <= '1';
             end case;
+
           when '1' => 
             if (rd_int = '1') then
               ack_sreg(0) <= '1';
             else
               ack_sreg(0) <= '1';
            end if;
+
             rddata_reg(31 downto 0) <= ep_macl_int;
-            ack_sreg(0) <= '1';
-            ack_in_progress <= '1';
-          when "01011" => 
-            if (wb_we_i = '1') then
-              regs_o.mdio_cr_data_wr_o <= '1';
-              ep_mdio_cr_addr_int <= wrdata_reg(23 downto 16);
-              ep_mdio_cr_rw_int <= wrdata_reg(31);
-            end if;
-            rddata_reg(23 downto 16) <= ep_mdio_cr_addr_int;
-            rddata_reg(31) <= ep_mdio_cr_rw_int;
-            rddata_reg(0) <= 'X';
-            rddata_reg(1) <= 'X';
-            rddata_reg(2) <= 'X';
-            rddata_reg(3) <= 'X';
-            rddata_reg(4) <= 'X';
-            rddata_reg(5) <= 'X';
-            rddata_reg(6) <= 'X';
-            rddata_reg(7) <= 'X';
-            rddata_reg(8) <= 'X';
-            rddata_reg(9) <= 'X';
-            rddata_reg(10) <= 'X';
-            rddata_reg(11) <= 'X';
-            rddata_reg(12) <= 'X';
-            rddata_reg(13) <= 'X';
-            rddata_reg(14) <= 'X';
-            rddata_reg(15) <= 'X';
-            rddata_reg(24) <= 'X';
-            rddata_reg(25) <= 'X';
-            rddata_reg(26) <= 'X';
-            rddata_reg(27) <= 'X';
-            rddata_reg(28) <= 'X';
-            rddata_reg(29) <= 'X';
-            rddata_reg(30) <= 'X';
-            ack_sreg(0) <= '1';
-            ack_in_progress <= '1';
-          when "01100" => 
-            if (wb_we_i = '1') then
-              ep_mdio_asr_phyad_int <= wrdata_reg(23 downto 16);
-            end if;
-            rddata_reg(15 downto 0) <= regs_i.mdio_asr_rdata_i;
-            rddata_reg(23 downto 16) <= ep_mdio_asr_phyad_int;
-            rddata_reg(31) <= regs_i.mdio_asr_ready_i;
-            rddata_reg(24) <= 'X';
-            rddata_reg(25) <= 'X';
-            rddata_reg(26) <= 'X';
-            rddata_reg(27) <= 'X';
-            rddata_reg(28) <= 'X';
-            rddata_reg(29) <= 'X';
-            rddata_reg(30) <= 'X';
-            ack_sreg(0) <= '1';
-            ack_in_progress <= '1';
-          when "01101" => 
-            if (wb_we_i = '1') then
-            end if;
-            rddata_reg(31 downto 0) <= "11001010111111101011101010111110";
-            ack_sreg(0) <= '1';
-            ack_in_progress <= '1';
-          when "01110" => 
-            if (wb_we_i = '1') then
-              regs_o.dsr_lact_load_o <= '1';
-            end if;
-            rddata_reg(0) <= regs_i.dsr_lstatus_i;
-            rddata_reg(1) <= regs_i.dsr_lact_i;
-            rddata_reg(2) <= 'X';
-            rddata_reg(3) <= 'X';
-            rddata_reg(4) <= 'X';
-            rddata_reg(5) <= 'X';
-            rddata_reg(6) <= 'X';
-            rddata_reg(7) <= 'X';
-            rddata_reg(8) <= 'X';
-            rddata_reg(9) <= 'X';
-            rddata_reg(10) <= 'X';
-            rddata_reg(11) <= 'X';
-            rddata_reg(12) <= 'X';
-            rddata_reg(13) <= 'X';
-            rddata_reg(14) <= 'X';
-            rddata_reg(15) <= 'X';
-            rddata_reg(16) <= 'X';
-            rddata_reg(17) <= 'X';
-            rddata_reg(18) <= 'X';
-            rddata_reg(19) <= 'X';
-            rddata_reg(20) <= 'X';
-            rddata_reg(21) <= 'X';
-            rddata_reg(22) <= 'X';
-            rddata_reg(23) <= 'X';
-            rddata_reg(24) <= 'X';
-            rddata_reg(25) <= 'X';
-            rddata_reg(26) <= 'X';
-            rddata_reg(27) <= 'X';
-            rddata_reg(28) <= 'X';
-            rddata_reg(29) <= 'X';
-            rddata_reg(30) <= 'X';
-            rddata_reg(31) <= 'X';
-            ack_sreg(0) <= '1';
-            ack_in_progress <= '1';
-          when "01111" => 
-            if (wb_we_i = '1') then
-              regs_o.dmcr_en_load_o <= '1';
-              regs_o.dmcr_n_avg_load_o <= '1';
-            end if;
-            rddata_reg(0) <= regs_i.dmcr_en_i;
-            rddata_reg(27 downto 16) <= regs_i.dmcr_n_avg_i;
-            rddata_reg(1) <= 'X';
-            rddata_reg(2) <= 'X';
-            rddata_reg(3) <= 'X';
-            rddata_reg(4) <= 'X';
-            rddata_reg(5) <= 'X';
-            rddata_reg(6) <= 'X';
-            rddata_reg(7) <= 'X';
-            rddata_reg(8) <= 'X';
-            rddata_reg(9) <= 'X';
-            rddata_reg(10) <= 'X';
-            rddata_reg(11) <= 'X';
-            rddata_reg(12) <= 'X';
-            rddata_reg(13) <= 'X';
-            rddata_reg(14) <= 'X';
-            rddata_reg(15) <= 'X';
-            rddata_reg(28) <= 'X';
-            rddata_reg(29) <= 'X';
-            rddata_reg(30) <= 'X';
-            rddata_reg(31) <= 'X';
-            ack_sreg(0) <= '1';
-            ack_in_progress <= '1';
-          when "10000" => 
-            if (wb_we_i = '1') then
-              regs_o.dmsr_ps_rdy_load_o <= '1';
-            end if;
-            rddata_reg(23 downto 0) <= regs_i.dmsr_ps_val_i;
-            rddata_reg(24) <= regs_i.dmsr_ps_rdy_i;
-            rddata_reg(25) <= 'X';
-            rddata_reg(26) <= 'X';
-            rddata_reg(27) <= 'X';
-            rddata_reg(28) <= 'X';
-            rddata_reg(29) <= 'X';
-            rddata_reg(30) <= 'X';
-            rddata_reg(31) <= 'X';
-            ack_sreg(0) <= '1';
-            ack_in_progress <= '1';
-          when others =>
+
 -- prevent the slave from hanging the bus on invalid address
+
             ack_in_progress <= '1';
             ack_sreg(0) <= '1';
           end case;

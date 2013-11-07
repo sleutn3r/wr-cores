@@ -412,11 +412,7 @@ begin
             end if;
             rddata_reg(0) <= mdio_wr_spec_tx_cal_int;
             rddata_reg(1) <= mdio_wr_spec_rx_cal_stat_sync1;
-<<<<<<< HEAD
             rddata_reg(2) <= '0';
-=======
-            rddata_reg(2) <= 'X';
->>>>>>> greg_counters
             if (wb_we_i = '0') then
               mdio_wr_spec_bslide_lwb <= '1';
               mdio_wr_spec_bslide_lwb_delay <= '1';

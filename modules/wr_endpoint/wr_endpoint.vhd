@@ -677,42 +677,38 @@ begin
 
   U_Tx_Path : ep_tx_path
     generic map (
-      g_with_packet_injection => g_with_packet_injection,
       g_with_vlans            => g_with_vlans,
       g_with_timestamper      => g_with_timestamper,
+      g_with_packet_injection => g_with_packet_injection,
       g_force_gap_length      => g_tx_force_gap_length)
     port map (
       clk_sys_i        => clk_sys_i,
       rst_n_i          => rst_n_i,
+      pcs_fab_o        => txpcs_fab,
       pcs_error_i      => txpcs_error,
       pcs_busy_i       => txpcs_busy,
-      pcs_fab_o        => txpcs_fab,
       pcs_dreq_i       => txpcs_dreq,
       snk_i            => sink_in,
       snk_o            => sink_out,
       fc_pause_req_i   => txfra_pause_req,
-      fc_pause_ready_o => txfra_pause_ready,
       fc_pause_delay_i => txfra_pause_delay,
+      fc_pause_ready_o => txfra_pause_ready,
       fc_flow_enable_i => txfra_flow_enable,
-      ep_ctrl_i        => ep_ctrl,
-      regs_i           => regs_fromwb,
-
-      txts_timestamp_i       => txts_timestamp_value,
-      txts_timestamp_valid_i => txts_timestamp_valid,
-
       txtsu_port_id_o      => txtsu_port_id_o,
       txtsu_fid_o          => txtsu_frame_id_o,
       txtsu_ts_value_o     => txtsu_ts_value_o,
       txtsu_ts_incorrect_o => txtsu_ts_incorrect_o,
       txtsu_stb_o          => txtsu_stb_o,
       txtsu_ack_i          => txtsu_ack_i,
-
+      txts_timestamp_i       => txts_timestamp_value,
+      txts_timestamp_valid_i => txts_timestamp_valid,
       inject_req_i        => inject_req_i,
-      inject_user_value_i => inject_user_value_i,
+      inject_ready_o      => inject_ready_o,
       inject_packet_sel_i => inject_packet_sel_i,
-      inject_ready_o      => inject_ready_o
+      inject_user_value_i => inject_user_value_i,
+      ep_ctrl_i        => ep_ctrl,
+      regs_i           => regs_fromwb
       );
-
 
   txfra_flow_enable <= '1';
 
@@ -882,7 +878,7 @@ begin
     port map (
       rst_n_i    => rst_n_sys,
       clk_sys_i  => clk_sys_i,
-      wb_adr_i   => wb_in.adr(4 downto 0),
+      wb_adr_i   => wb_in.adr(5 downto 0), -- from 4 to 5
       wb_dat_i   => wb_in.dat,
       wb_dat_o   => wb_out.dat,
       wb_cyc_i   => wb_in.cyc,

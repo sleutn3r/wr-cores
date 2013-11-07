@@ -578,21 +578,7 @@ begin  -- rtl
       wb_stall_o => open,
       tx_clk_i   => serdes_tx_clk_i,
       rx_clk_i   => serdes_rx_clk_i,
-      clk_sys_i                => clk_sys_i,
-      wb_adr_i               => mdio_addr_i(4 downto 0),
-      wb_dat_i(15 downto 0)  => mdio_data_i,
-      wb_dat_i(31 downto 16) => x"0000",
-      wb_dat_o(15 downto 0)  => mdio_data_o,
-      wb_dat_o(31 downto 16) => dummy(31 downto 16),
-
-      wb_cyc_i => wb_stb,
-      wb_sel_i => "1111",
-      wb_stb_i => wb_stb,
-      wb_we_i  => mdio_rw_i,
-      wb_ack_o => wb_ack,
-      tx_clk_i => serdes_tx_clk_i,
-      rx_clk_i => serdes_rx_clk_i,
-
+      
       mdio_mcr_uni_en_o          => mdio_mcr_uni_en,
       mdio_mcr_anrestart_o       => mdio_mcr_anrestart,
       mdio_mcr_pdown_o           => mdio_mcr_pdown_cpu,

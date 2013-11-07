@@ -287,11 +287,6 @@ package endpoint_private_pkg is
       wb_stall_o         : out std_logic;
       tx_clk_i           : in  std_logic;
       rx_clk_i           : in  std_logic;
-      ep_rmon_ram_addr_i : in  std_logic_vector(4 downto 0);
-      ep_rmon_ram_data_o : out std_logic_vector(31 downto 0);
-      ep_rmon_ram_rd_i   : in  std_logic;
-      ep_rmon_ram_data_i : in  std_logic_vector(31 downto 0);
-      ep_rmon_ram_wr_i   : in  std_logic;
       regs_o             : out t_ep_out_registers;
       regs_i             : in  t_ep_in_registers);
   end component;
