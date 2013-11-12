@@ -106,7 +106,10 @@ package endpoint_pkg is
       wb_ack_o             : out std_logic;
       wb_stall_o           : out std_logic;
       led_link_o           : out std_logic;
-      led_act_o            : out std_logic);
+      led_act_o            : out std_logic;
+			debug_sr_rst_i	:	in std_logic;
+			debug_sr_d_i		:	in std_logic;
+			debug_sr_en_i		:	in std_logic);
   end component;
 
   constant c_xwr_endpoint_sdb : t_sdb_device := (
@@ -191,7 +194,10 @@ package endpoint_pkg is
       wb_i                 : in  t_wishbone_slave_in;
       wb_o                 : out t_wishbone_slave_out;
       led_link_o           : out std_logic;
-      led_act_o            : out std_logic);
+      led_act_o            : out std_logic;
+			debug_sr_rst_i	:	in std_logic;
+			debug_sr_d_i		:	in std_logic;
+			debug_sr_en_i		:	in std_logic);
   end component;
 end endpoint_pkg;
 

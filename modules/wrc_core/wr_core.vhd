@@ -457,6 +457,11 @@ architecture struct of wr_core is
   --signal TRIG1   : std_logic_vector(31 downto 0);
   --signal TRIG2   : std_logic_vector(31 downto 0);
   --signal TRIG3   : std_logic_vector(31 downto 0);
+
+	--TEMP
+	signal debug_sr_rst	:	std_logic;
+	signal debug_sr_d		:	std_logic;
+	signal debug_sr_en	:	std_logic;
 begin
 
   rst_aux_n_o <= rst_net_n;
@@ -627,7 +632,10 @@ begin
       wb_i                 => ep_wb_in,
       wb_o                 => ep_wb_out,
       led_link_o           => ep_led_link,
-      led_act_o            => led_act_o);
+      led_act_o            => led_act_o,
+			debug_sr_rst_i	=> debug_sr_rst,
+    	debug_sr_d_i		=> debug_sr_d,
+    	debug_sr_en_i		=> debug_sr_en);
 
   ep_txtsu_ack <= txtsu_ack_i or mnic_txtsu_ack;
   led_link_o   <= ep_led_link;
@@ -755,7 +763,11 @@ begin
 
       owr_pwren_o => owr_pwren_o,
       owr_en_o    => owr_en_o,
-      owr_i       => owr_i
+      owr_i       => owr_i,
+
+			debug_sr_rst_o	=> debug_sr_rst,
+			debug_sr_d_o		=> debug_sr_d,
+			debug_sr_en_o		=> debug_sr_en
       );
 
   U_Adapter : wb_slave_adapter

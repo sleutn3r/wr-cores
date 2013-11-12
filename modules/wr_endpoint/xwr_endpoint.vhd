@@ -178,8 +178,11 @@ entity xwr_endpoint is
 -------------------------------------------------------------------------------
 
     led_link_o : out std_logic;
-    led_act_o  : out std_logic
+    led_act_o  : out std_logic;
 
+		debug_sr_rst_i	:	in std_logic;
+		debug_sr_d_i		:	in std_logic;
+		debug_sr_en_i		:	in std_logic
     );
 
 end xwr_endpoint;
@@ -278,7 +281,11 @@ begin
       wb_ack_o             => wb_o.ack,
       wb_stall_o           => wb_o.stall,
       led_link_o           => led_link_o,
-      led_act_o            => led_act_o);
+      led_act_o            => led_act_o,
+			debug_sr_rst_i			=> debug_sr_rst_i,
+			debug_sr_d_i				=> debug_sr_d_i,	
+			debug_sr_en_i				=> debug_sr_en_i
+		);
 
   wb_o.err <= '0';
   wb_o.rty <= '0';

@@ -215,7 +215,11 @@ entity wr_endpoint is
 -------------------------------------------------------------------------------
 
     led_link_o : out std_logic;
-    led_act_o  : out std_logic
+    led_act_o  : out std_logic;
+
+		debug_sr_rst_i	:	in std_logic;
+		debug_sr_d_i		:	in std_logic;
+		debug_sr_en_i		:	in std_logic
 
     );
 
@@ -378,7 +382,11 @@ architecture syn of wr_endpoint is
       txts_timestamp_stb_o       : out std_logic;
       txts_timestamp_valid_o     : out std_logic;
       regs_i                     : in  t_ep_out_registers;
-      regs_o                     : out t_ep_in_registers);
+      regs_o                     : out t_ep_in_registers;
+			debug_sr_rst_i	:	in std_logic;
+			debug_sr_d_i		:	in std_logic;
+			debug_sr_en_i		:	in std_logic);
+
   end component;
 
 -------------------------------------------------------------------------------
@@ -774,7 +782,13 @@ begin
       txts_timestamp_valid_o => txts_timestamp_valid,
 
       regs_i => regs_fromwb,
-      regs_o => regs_towb_tsu);
+      regs_o => regs_towb_tsu,
+
+			debug_sr_rst_i	=> debug_sr_rst_i,
+			debug_sr_d_i		=> debug_sr_d_i,
+			debug_sr_en_i		=> debug_sr_en_i
+		
+		);
 
 
 -------------------------------------------------------------------------------

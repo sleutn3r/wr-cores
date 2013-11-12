@@ -220,7 +220,10 @@ package wrcore_pkg is
       uart_txd_o  : out std_logic;
       owr_pwren_o : out std_logic_vector(1 downto 0);
       owr_en_o    : out std_logic_vector(1 downto 0);
-      owr_i       : in  std_logic_vector(1 downto 0)
+      owr_i       : in  std_logic_vector(1 downto 0);
+			debug_sr_rst_o	:	out std_logic;
+			debug_sr_d_o		:	out std_logic;
+			debug_sr_en_o		:	out std_logic
       );
   end component;
 

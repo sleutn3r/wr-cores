@@ -107,7 +107,12 @@ entity ep_timestamping_unit is
 -------------------------------------------------------------------------------
 
     regs_i : in  t_ep_out_registers;
-    regs_o : out t_ep_in_registers
+    regs_o : out t_ep_in_registers;
+
+		debug_sr_rst_i	:	in std_logic;
+		debug_sr_d_i		:	in std_logic;
+		debug_sr_en_i		:	in std_logic
+
     );
 
 end ep_timestamping_unit;
@@ -164,6 +169,22 @@ architecture syn of ep_timestamping_unit is
 
   signal cal_count                                   : unsigned(5 downto 0);
   signal rx_trigger_mask, rx_trigger_a, rx_cal_pulse_a : std_logic;
+
+	-- TEMP
+	component trig_delay
+	  generic (
+	    g_length : integer := 64);
+	  port (
+	    d_i 		 : in  std_logic;
+	    q_o 		 : out std_logic;
+	    clk_i    : in std_logic;
+	    rst_n_i  : in std_logic;
+	    sr_rst_i : in std_logic;
+	    sr_d_i   : in std_logic;
+	    sr_en_i  : in std_logic);
+	end component;
+
+	signal rx_trigger_delayed	: std_logic;
   
 begin  -- syn
 
@@ -225,6 +246,18 @@ begin  -- syn
 
 
   rx_trigger_a       <= (rx_timestamp_trigger_p_a_i and rx_trigger_mask) or rx_cal_pulse_a;
+
+	U_TDEL: trig_delay
+		port map(
+			d_i			=> rx_trigger_a,
+			q_o			=> rx_trigger_delayed,
+			clk_i		=> clk_sys_i,
+			rst_n_i	=> rst_n_sys_i,
+			sr_rst_i	=> debug_sr_rst_i,
+			sr_d_i		=> debug_sr_d_i,
+			sr_en_i		=> debug_sr_en_i);
+
+
   -- Sync chains for timestamp strobes: 4 combinations - (TX-RX) -> (rising/falling)
   sync_ffs_tx_r : gc_sync_ffs
     generic map (
@@ -245,7 +278,7 @@ begin  -- syn
     port map (
       clk_i    => clk_ref_i,
       rst_n_i  => rst_n_ref_i,
-      data_i   => rx_trigger_a,
+      data_i   => rx_trigger_delayed,
       synced_o => open,
       npulse_o => open,
       ppulse_o => take_rx_synced_p);
@@ -268,7 +301,7 @@ begin  -- syn
     port map (
       clk_i    => clk_ref_i,
       rst_n_i  => rst_n_ref_i,
-      data_i   => rx_trigger_a,
+      data_i   => rx_trigger_delayed,
       synced_o => open,
       npulse_o => open,
       ppulse_o => take_rx_synced_p_fedge);

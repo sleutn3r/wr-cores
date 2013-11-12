@@ -69,7 +69,11 @@ entity wrc_periph is
     -- 1-Wire
     owr_pwren_o: out std_logic_vector(1 downto 0);
     owr_en_o : out std_logic_vector(1 downto 0);
-    owr_i    : in  std_logic_vector(1 downto 0)
+    owr_i    : in  std_logic_vector(1 downto 0);
+
+		debug_sr_rst_o	:	out std_logic;
+		debug_sr_d_o		:	out std_logic;
+		debug_sr_en_o		:	out std_logic
     );
 end wrc_periph;
 
@@ -132,6 +136,32 @@ begin
       end if;
     end if;
   end process;
+
+	----------------------
+	-- DEBUG
+	----------------------
+	process(clk_sys_i)
+	begin
+    if rising_edge(clk_sys_i) then
+      if(sysc_regs_o.gpsr_dbg_rst_o = '1') then
+        debug_sr_rst_o <= '1';
+      elsif(sysc_regs_o.gpcr_dbg_rst_o = '1') then
+        debug_sr_rst_o <= '0';
+      end if;
+
+      if(sysc_regs_o.gpsr_dbg_d_o = '1') then
+        debug_sr_d_o <= '1';
+      elsif(sysc_regs_o.gpcr_dbg_d_o = '1') then
+        debug_sr_d_o <= '0';
+      end if;
+
+      if(sysc_regs_o.gpsr_dbg_en_o = '1') then
+        debug_sr_en_o <= '1';
+      elsif(sysc_regs_o.gpcr_dbg_en_o = '1') then
+        debug_sr_en_o <= '0';
+      end if;
+    end if;
+	end process;
 
   -------------------------------------
   -- buttons

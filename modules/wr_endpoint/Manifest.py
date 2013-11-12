@@ -30,6 +30,7 @@ files = [	"endpoint_private_pkg.vhd",
                 "ep_wishbone_controller.vhd",
                 "ep_registers_pkg.vhd",
                 "ep_crc32_pkg.vhd",
+								"trig_delay.vhd",
                 "endpoint_pkg.vhd",
                 "wr_endpoint.vhd",
                 "xwr_endpoint.vhd"
