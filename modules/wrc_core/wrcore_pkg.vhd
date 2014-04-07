@@ -298,7 +298,8 @@ package wrcore_pkg is
       g_aux_sdb                   : t_sdb_device                   := c_wrc_periph3_sdb;
       g_softpll_channels_config   : t_softpll_channel_config_array := c_softpll_default_channel_config;
       g_softpll_enable_debugger   : boolean                        := false;
-      g_vuart_fifo_size           : integer                        := 1024
+      g_vuart_fifo_size           : integer                        := 1024;
+      g_pstats                    : boolean                        := false
       );
     port(
       clk_sys_i  : in std_logic;
@@ -398,7 +399,8 @@ package wrcore_pkg is
       g_aux_sdb                   : t_sdb_device                   := c_wrc_periph3_sdb;
       g_softpll_channels_config   : t_softpll_channel_config_array := c_softpll_default_channel_config;
       g_softpll_enable_debugger   : boolean                        := false;
-      g_vuart_fifo_size           : integer                        := 1024
+      g_vuart_fifo_size           : integer                        := 1024;
+      g_pstats                    : boolean                        := false
       );
     port(
       ---------------------------------------------------------------------------
