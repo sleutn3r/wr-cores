@@ -628,6 +628,7 @@ begin
       g_dpram_initf               => "wrc.ram",
       g_dpram_size                => 90112/4,  --16384,
       g_interface_mode            => PIPELINED,
+      g_pstats                    => true,
       g_address_granularity       => BYTE)
     port map (
       clk_sys_i  => clk_sys,
