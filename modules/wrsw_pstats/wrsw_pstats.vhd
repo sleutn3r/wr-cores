@@ -41,9 +41,9 @@ entity wrsw_pstats is
   generic(
     g_nports    : integer := 2;
     g_cnt_pp    : integer := 16;
-    g_cnt_pw    : integer := 4;
+    g_cnt_pw    : integer := 2;
     --Layer 2
-    g_L2_cnt_pw : integer := 4;
+    g_L2_cnt_pw : integer := 2;
     g_keep_ov   : integer := 1);
   port(
     rst_n_i : in std_logic;

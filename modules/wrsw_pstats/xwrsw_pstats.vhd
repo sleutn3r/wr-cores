@@ -46,9 +46,10 @@ architecture wrapper of xwrsw_pstats is
 
   component wrsw_pstats
     generic(
-      g_nports : integer := 2;
-      g_cnt_pp : integer := 16;
-      g_cnt_pw : integer := 4);
+      g_nports    : integer := 2;
+      g_cnt_pp    : integer := 16;
+      g_cnt_pw    : integer := 2;
+      g_L2_cnt_pw : integer := 2);
     port(
       rst_n_i : in std_logic;
       clk_i   : in std_logic;
@@ -70,7 +71,7 @@ architecture wrapper of xwrsw_pstats is
 
   signal wb_in  : t_wishbone_slave_in;
   signal wb_out : t_wishbone_slave_out;
-
+  constant g_L2_cnt_pw : integer := 2;
 begin
 
   U_Adapter : wb_slave_adapter
@@ -94,9 +95,10 @@ begin
 
   U_Wrapped_PSTATS : wrsw_pstats
     generic map(
-      g_nports => g_nports,
-      g_cnt_pp => g_cnt_pp,
-      g_cnt_pw => g_cnt_pw)
+      g_nports    => g_nports,
+      g_cnt_pp    => g_cnt_pp,
+      g_cnt_pw    => g_cnt_pw,
+      g_L2_cnt_pw => g_L2_cnt_pw)
     port map(
       rst_n_i => rst_n_i,
       clk_i   => clk_i,
