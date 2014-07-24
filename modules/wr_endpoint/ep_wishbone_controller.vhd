@@ -33,16 +33,6 @@ entity ep_wishbone_controller is
     wb_stall_o                               : out    std_logic;
     tx_clk_i                                 : in     std_logic;
     rx_clk_i                                 : in     std_logic;
--- Ports for RAM: Event counters memory
-    ep_rmon_ram_addr_i                       : in     std_logic_vector(4 downto 0);
--- Read data output
-    ep_rmon_ram_data_o                       : out    std_logic_vector(31 downto 0);
--- Read strobe input (active high)
-    ep_rmon_ram_rd_i                         : in     std_logic;
--- Write data input
-    ep_rmon_ram_data_i                       : in     std_logic_vector(31 downto 0);
--- Write strobe (active high)
-    ep_rmon_ram_wr_i                         : in     std_logic;
     regs_i                                   : in     t_ep_in_registers;
     regs_o                                   : out    t_ep_out_registers
   );
@@ -855,32 +845,6 @@ begin
 -- DMTD Phase shift value
 -- DMTD Phase shift value ready
   regs_o.dmsr_ps_rdy_o <= wrdata_reg(24);
--- extra code for reg/fifo/mem: Event counters memory
--- RAM block instantiation for memory: Event counters memory
-  ep_rmon_ram_raminst : wbgen2_dpssram
-    generic map (
-      g_data_width         => 32,
-      g_size               => 32,
-      g_addr_width         => 5,
-      g_dual_clock         => false,
-      g_use_bwsel          => false
-    )
-    port map (
-      clk_a_i              => clk_sys_i,
-      clk_b_i              => clk_sys_i,
-      addr_b_i             => ep_rmon_ram_addr_i,
-      addr_a_i             => rwaddr_reg(4 downto 0),
-      data_b_o             => ep_rmon_ram_data_o,
-      rd_b_i               => ep_rmon_ram_rd_i,
-      data_b_i             => ep_rmon_ram_data_i,
-      wr_b_i               => ep_rmon_ram_wr_i,
-      bwsel_b_i            => allones(3 downto 0),
-      data_a_o             => ep_rmon_ram_rddata_int(31 downto 0),
-      rd_a_i               => ep_rmon_ram_rd_int,
-      data_a_i             => wrdata_reg(31 downto 0),
-      wr_a_i               => ep_rmon_ram_wr_int,
-      bwsel_a_i            => allones(3 downto 0)
-    );
   
   rwaddr_reg <= wb_adr_i;
   wb_stall_o <= (not ack_sreg(0)) and (wb_stb_i and wb_cyc_i);
