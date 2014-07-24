@@ -11,6 +11,7 @@ modules =  {"local" :
 												"modules/wr_dacs",
 												"modules/wr_si57x_interface",
 												"modules/wr_eca",
+                                                                                                "modules/wrsw_pstats",
 												"modules/wr_tlu",
 												"modules/wrc_core",
 												"platform"]
