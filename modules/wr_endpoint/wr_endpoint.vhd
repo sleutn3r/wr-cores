@@ -440,7 +440,6 @@ architecture syn of wr_endpoint is
 -- WB slave signals
 -------------------------------------------------------------------------------
 
-  signal rmon          : t_rmon_triggers;
   signal regs_fromwb   : t_ep_out_registers;
   signal regs_towb     : t_ep_in_registers;
   signal regs_towb_ep  : t_ep_in_registers;
@@ -462,17 +461,12 @@ architecture syn of wr_endpoint is
   signal txfra_pause_delay : std_logic_vector(15 downto 0);
 
 
--------------------------------------------------------------------------------
+------------------------------------------------------------------------------
 -- RMON signals
 -------------------------------------------------------------------------------
-
-  signal ep_rmon_ram_addr   : std_logic_vector(4 downto 0);
-  signal ep_rmon_ram_data_o : std_logic_vector(31 downto 0);
-  signal ep_rmon_ram_rd     : std_logic;
-  signal ep_rmon_ram_data_i : std_logic_vector(31 downto 0);
-  signal ep_rmon_ram_wr     : std_logic;
-
-  signal rmon_counters : std_logic_vector(31 downto 0);
+  signal pcs_rmon     : t_rmon_triggers;
+  signal rx_path_rmon : t_rmon_triggers;
+  signal rmon         : t_rmon_triggers;
 
   --signal rofifo_write, rofifo_full, oob_valid_d0 : std_logic;
 
@@ -579,7 +573,7 @@ begin
       serdes_rx_enc_err_i   => phy_rx_enc_err_i,
       serdes_rx_bitslide_i  => phy_rx_bitslide_i(4 downto 0),
 
-      rmon_o => rmon,
+      rmon_o => pcs_rmon,
 
       mdio_addr_i  => mdio_addr,
       mdio_data_i  => regs_fromwb.mdio_cr_data_o,
@@ -668,7 +662,7 @@ begin
       fc_pause_p_o     => rxfra_pause_p,
       fc_pause_delay_o => rxfra_pause_delay,
 
-      rmon_o => rmon,
+      rmon_o => rx_path_rmon,
       regs_i => regs_fromwb,
       regs_o =>regs_towb_rpath,
 
@@ -825,12 +819,6 @@ begin
       tx_clk_i => clk_ref_i,
       rx_clk_i => phy_rx_clk_i,
 
-      ep_rmon_ram_wr_i   => ep_rmon_ram_wr,
-      ep_rmon_ram_rd_i   => ep_rmon_ram_rd,
-      ep_rmon_ram_data_i => ep_rmon_ram_data_i,
-      ep_rmon_ram_data_o => ep_rmon_ram_data_o,
-      ep_rmon_ram_addr_i => ep_rmon_ram_addr,
-
       regs_o => regs_fromwb,
       regs_i => regs_towb
       );     
@@ -939,19 +927,17 @@ begin
   end generate gen_leds;
 
   -------------------------- RMON events -----------------------------------
-  rmon.rx_pcs_err      <= rx_path_rmon.rx_pcs_err;  --from ep_rx_path
-  rmon.rx_giant        <= rx_path_rmon.rx_giant;
-  rmon.rx_runt         <= rx_path_rmon.rx_runt;
-  rmon.rx_crc_err      <= rx_path_rmon.rx_crc_err;
-  rmon.rx_pause        <= rx_path_rmon.rx_pause;
-  rmon.rx_pfilter_drop <= rx_path_rmon.rx_pfilter_drop;
-  rmon.tx_underrun     <= pcs_rmon.tx_underrun;
-  rmon.rx_overrun      <= pcs_rmon.rx_overrun;
-  rmon.rx_invalid_code <= pcs_rmon.rx_invalid_code;
-  rmon.rx_sync_lost    <= pcs_rmon.rx_sync_lost;
-
-  f_pack_rmon_triggers(rmon, rmon_events_o(c_epevents_sz-3 downto 0));
-
+  rmon.rx_pcs_err      <= rx_path_rmon.rx_pcs_err;       -- ep_rx_crc_size_check
+  rmon.rx_giant        <= rx_path_rmon.rx_giant;         -- ep_rx_crc_size_check
+  rmon.rx_runt         <= rx_path_rmon.rx_runt;          -- ep_rx_crc_size_check
+  rmon.rx_crc_err      <= rx_path_rmon.rx_crc_err;       -- ep_rx_crc_size_check
+  rmon.rx_pause        <= rx_path_rmon.rx_pause;         -- ep_rx_status_reg_insert
+  rmon.rx_pfilter_drop <= rx_path_rmon.rx_pfilter_drop;  -- ep_rx_status_reg_insert
+  rmon.tx_underrun     <= pcs_rmon.tx_underrun;          -- ep_tx_pcs_Xbit
+  rmon.rx_overrun      <= pcs_rmon.rx_overrun;           -- ep_rx_pcs_Xbit
+  rmon.rx_invalid_code <= pcs_rmon.rx_invalid_code;      -- ep_rx_pcs_Xbit
+  rmon.rx_sync_lost    <= pcs_rmon.rx_sync_lost;         -- ep_rx_pcs_Xbit
+ 
   rmon_event_tx : gc_sync_ffs
     generic map(
       g_sync_edge => "negative")
@@ -961,7 +947,7 @@ begin
       data_i   => txpcs_timestamp_trigger_p_a,
       synced_o => open,
       npulse_o => open,
-      ppulse_o => rmon_events_o(c_epevents_sz-2));
+      ppulse_o => rmon.tx_frame);
 
   rmon_event_rx : gc_sync_ffs
     generic map(
@@ -972,7 +958,9 @@ begin
       data_i   => rxpcs_timestamp_trigger_p_a,
       synced_o => open,
       npulse_o => open,
-      ppulse_o => rmon_events_o(c_epevents_sz-1));
+      ppulse_o => rmon.rx_frame);
+
+  f_pack_rmon_triggers(rmon, rmon_events_o(c_epevents_sz-1 downto 0));
 
 end syn;
 

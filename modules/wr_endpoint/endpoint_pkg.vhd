@@ -19,7 +19,7 @@ package endpoint_pkg is
 
   constant c_epevents_sz  : integer := 20;  --how many events the endpoint generates
 
-  component xwr_endpoint
+  component wr_endpoint
     generic (
       g_interface_mode      : t_wishbone_interface_mode      := CLASSIC;
       g_address_granularity : t_wishbone_address_granularity := WORD;

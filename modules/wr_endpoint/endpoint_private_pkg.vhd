@@ -103,9 +103,11 @@ package endpoint_private_pkg is
     rx_buffer_overrun      : std_logic;
     rx_rtu_overrun         : std_logic;
     rx_path_timing_failure : std_logic;
-
-    tx_pause    : std_logic;
-    tx_underrun : std_logic;
+    tx_pause               : std_logic;
+    tx_underrun            : std_logic;
+    rx_pclass              : std_logic_vector(7 downto 0);
+    tx_frame               : std_logic;
+    rx_frame               : std_logic;
   end record;
 
   -- Endpoint's internal fabric used to connect the submodules with each other.
@@ -264,11 +266,6 @@ package endpoint_private_pkg is
       wb_stall_o         : out std_logic;
       tx_clk_i           : in  std_logic;
       rx_clk_i           : in  std_logic;
-      ep_rmon_ram_addr_i : in  std_logic_vector(4 downto 0);
-      ep_rmon_ram_data_o : out std_logic_vector(31 downto 0);
-      ep_rmon_ram_rd_i   : in  std_logic;
-      ep_rmon_ram_data_i : in  std_logic_vector(31 downto 0);
-      ep_rmon_ram_wr_i   : in  std_logic;
       regs_o             : out t_ep_out_registers;
       regs_i             : in  t_ep_in_registers);
   end component;
@@ -315,6 +312,10 @@ package endpoint_private_pkg is
     signal din_valid : in  std_logic;
     signal fab       : out t_ep_internal_fabric;
     early_eof        :     boolean := false);
+
+  procedure f_pack_rmon_triggers (                                   
+      signal trig_in  : in t_rmon_triggers;
+      signal trig_out : out std_logic_vector(c_epevents_sz-1 downto 0));  
 
 end endpoint_private_pkg;
 
@@ -423,10 +424,29 @@ package body endpoint_private_pkg is
     end if;
   end f_unpack_fifo_contents;
 
- procedure f_pack_rmon_triggers
-    (
+--  procedure f_pack_rmon_triggers
+--    (
+--      signal trig_in  : in t_rmon_triggers;
+--      signal trig_out : out std_logic_vector(c_epevents_sz-3 downto 0)) is
+--  begin
+--    --from 1000base pcs
+--    trig_out(0) <= trig_in.tx_underrun;
+--    trig_out(1) <= trig_in.rx_overrun;
+--    trig_out(2) <= trig_in.rx_invalid_code;
+--    trig_out(3) <= trig_in.rx_sync_lost;
+--    trig_out(4) <= trig_in.rx_pause;
+--    trig_out(5) <= trig_in.rx_pfilter_drop;
+--    trig_out(6) <= trig_in.rx_pcs_err;
+--    trig_out(7) <= trig_in.rx_giant;
+--    trig_out(8) <= trig_in.rx_runt;
+--    trig_out(9) <= trig_in.rx_crc_err;
+--    --trig_out(17 downto 10) <= trig_in.rx_pclass(7 downto 0);
+--  end f_pack_rmon_triggers;
+
+  procedure f_pack_rmon_triggers
+    (   
       signal trig_in  : in t_rmon_triggers;
-      signal trig_out : out std_logic_vector(c_epevents_sz-3 downto 0)) is
+      signal trig_out : out std_logic_vector(c_epevents_sz-1 downto 0)) is
   begin
     --from 1000base pcs
     trig_out(0) <= trig_in.tx_underrun;
@@ -439,7 +459,9 @@ package body endpoint_private_pkg is
     trig_out(7) <= trig_in.rx_giant;
     trig_out(8) <= trig_in.rx_runt;
     trig_out(9) <= trig_in.rx_crc_err;
-    trig_out(17 downto 10) <= trig_in.rx_pclass(7 downto 0);
+    trig_out(17 downto 10) <= trig_in.rx_pclass(7 downto 0); 
+    trig_out(18)<= trig_in.tx_frame;
+    trig_out(19)<= trig_in.rx_frame;
   end f_pack_rmon_triggers;
 
 end endpoint_private_pkg;

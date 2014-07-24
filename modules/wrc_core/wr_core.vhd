@@ -76,6 +76,7 @@ use work.endpoint_pkg.all;
 use work.wr_fabric_pkg.all;
 use work.sysc_wbgen2_pkg.all;
 use work.softpll_pkg.all;
+use work.wrsw_pstats_pkg.all;
 
 entity wr_core is
   generic(
@@ -351,23 +352,24 @@ architecture struct of wr_core is
   -----------------------------------------------------------------------------
   --WB Secondary Crossbar
   -----------------------------------------------------------------------------
-  constant c_secbar_layout : t_sdb_record_array(7 downto 0) :=
-    (0 => f_sdb_embed_device(c_xwr_mini_nic_sdb, x"00000000"),
-     1 => f_sdb_embed_device(c_xwr_endpoint_sdb, x"00000100"),
-     2 => f_sdb_embed_device(c_xwr_softpll_ng_sdb, x"00000200"),
-     3 => f_sdb_embed_device(c_xwr_pps_gen_sdb, x"00000300"),
-     4 => f_sdb_embed_device(c_wrc_periph0_sdb, x"00000400"),  -- Syscon
-     5 => f_sdb_embed_device(c_wrc_periph1_sdb, x"00000500"),  -- UART
-     6 => f_sdb_embed_device(c_wrc_periph2_sdb, x"00000600"),  -- 1-Wire
-     7 => f_sdb_embed_device(g_aux_sdb, x"00000700")           -- aux WB bus
+  constant c_secbar_layout : t_sdb_record_array(8 downto 0) :=
+    (0 => f_sdb_embed_device(c_xwr_mini_nic_sdb,    x"00000000"),
+     1 => f_sdb_embed_device(c_xwr_endpoint_sdb,    x"00000100"),
+     2 => f_sdb_embed_device(c_xwr_softpll_ng_sdb,  x"00000200"),
+     3 => f_sdb_embed_device(c_xwr_pps_gen_sdb,     x"00000300"),
+     4 => f_sdb_embed_device(c_wrc_periph0_sdb,     x"00000400"),  -- Syscon
+     5 => f_sdb_embed_device(c_wrc_periph1_sdb,     x"00000500"),  -- UART
+     6 => f_sdb_embed_device(c_wrc_periph2_sdb,     x"00000600"),  -- 1-Wire
+     7 => f_sdb_embed_device(g_aux_sdb,             x"00000700"),  -- aux WB bus
+     8 => f_sdb_embed_device(c_xwr_pstats_sdb,      x"00000800")   -- monitoring sys
      );
 
-  constant c_secbar_sdb_address : t_wishbone_address := x"00000800";
+  constant c_secbar_sdb_address : t_wishbone_address := x"00000C00";
   constant c_secbar_bridge_sdb  : t_sdb_bridge       :=
     f_xwb_bridge_layout_sdb(true, c_secbar_layout, c_secbar_sdb_address);
 
-  signal secbar_master_i : t_wishbone_master_in_array(7 downto 0);
-  signal secbar_master_o : t_wishbone_master_out_array(7 downto 0);
+  signal secbar_master_i : t_wishbone_master_in_array(8 downto 0);
+  signal secbar_master_o : t_wishbone_master_out_array(8 downto 0);
 
   -----------------------------------------------------------------------------
   --WB intercon
@@ -387,6 +389,13 @@ architecture struct of wr_core is
   -----------------------------------------------------------------------------
   signal ext_wb_in  : t_wishbone_slave_in;
   signal ext_wb_out : t_wishbone_slave_out;
+
+  -----------------------------------------------------------------------------
+  --Monitoring Sys
+  -----------------------------------------------------------------------------
+  constant c_all_events : integer := c_epevents_sz;
+  signal ep_events      : std_logic_vector(c_epevents_sz -1 downto 0);
+  signal rmon_events    : std_logic_vector(c_all_events -1 downto 0);
 
   -----------------------------------------------------------------------------
   -- External Tx TSU interface
@@ -414,6 +423,9 @@ architecture struct of wr_core is
 
   signal minic_wb_in  : t_wishbone_slave_in;
   signal minic_wb_out : t_wishbone_slave_out;
+  
+  signal monitor_sys_wb_in  : t_wishbone_slave_in;
+  signal monitor_sys_wb_out : t_wishbone_slave_out;
 
   signal ep_src_out : t_wrf_source_out;
   signal ep_src_in  : t_wrf_source_in;
@@ -628,6 +640,7 @@ begin
       txtsu_ack_i          => ep_txtsu_ack,
       wb_i                 => ep_wb_in,
       wb_o                 => ep_wb_out,
+      rmon_events_o        => ep_events,
       led_link_o           => ep_led_link,
       led_act_o            => led_act_o);
 
@@ -690,6 +703,36 @@ begin
       iwb_i => cbar_slave_o(1)
       );
 
+  -----------------------------------------------------------------------------
+  -- Monitorign Sys
+  -----------------------------------------------------------------------------
+  Y_PSTATS: if g_pstats generate
+      U_PSTATS : xwrsw_pstats
+        generic map(
+          g_interface_mode      => PIPELINED,
+          g_address_granularity => BYTE,
+          g_nports => 1,
+          g_cnt_pp => c_all_events,
+          g_cnt_pw => 2)
+        port map(
+          rst_n_i  => rst_n_i,
+          clk_i    => clk_sys_i,
+          events_i => ep_events,
+          --events_i => rmon_events,
+          wb_i  => monitor_sys_wb_in,
+          wb_o  => monitor_sys_wb_out
+        );
+      --rmon_events(c_all_events-1 downto 0) <= ep_events(c_epevents_sz-1 downto 0);  
+      --monitoring sys
+      secbar_master_i(8)  <= monitor_sys_wb_out;
+      monitor_sys_wb_in   <= secbar_master_o(8);
+  end generate;
+     
+  N_PSTATS: if not g_pstats generate
+    --monitoring sys
+    secbar_master_i(8)  <= cc_dummy_slave_out;
+    -- open             <= secbar_master_o(8);
+  end generate;
   -----------------------------------------------------------------------------
   -- Dual-port RAM
   -----------------------------------------------------------------------------  
@@ -860,7 +903,7 @@ begin
   WB_SECONDARY_CON : xwb_sdb_crossbar
     generic map(
       g_num_masters => 1,
-      g_num_slaves  => 8,
+      g_num_slaves  => 9,
       g_registered  => true,
       g_wraparound  => true,
       g_layout      => c_secbar_layout,

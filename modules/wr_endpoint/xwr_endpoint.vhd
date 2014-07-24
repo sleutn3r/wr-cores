@@ -279,7 +279,8 @@ begin
       wb_ack_o             => wb_o.ack,
       wb_stall_o           => wb_o.stall,
       led_link_o           => led_link_o,
-      led_act_o            => led_act_o);
+      led_act_o            => led_act_o,
+      rmon_events_o        => rmon_events_o);
 
   wb_o.err <= '0';
   wb_o.rty <= '0';
