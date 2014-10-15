@@ -123,7 +123,8 @@ entity xwr_softpll_ng is
 
     slave_i : in  t_wishbone_slave_in;
     slave_o : out t_wishbone_slave_out;
-
+    -- rx clock states (port up/down)
+    clk_rx_status_i  : in  std_logic_vector(g_num_ref_inputs-1 downto 0) :=(others=>'0'); 
     debug_o        : out std_logic_vector(5 downto 0);
     dbg_fifo_irq_o : out std_logic
     );
@@ -174,6 +175,7 @@ architecture wrapper of xwr_softpll_ng is
       wb_stall_o      : out std_logic;
       wb_irq_o        : out std_logic;
       debug_o         : out std_logic_vector(5 downto 0);
+      clk_rx_status_i : in  std_logic_vector(g_num_ref_inputs-1 downto 0) :=(others=>'0'); 
       dbg_fifo_irq_o  : out std_logic);
   end component;
   
@@ -221,6 +223,7 @@ begin  -- behavioral
       wb_stall_o      => slave_o.stall,
       wb_irq_o        => slave_o.int,
       debug_o         => debug_o,
+      clk_rx_status_i => clk_rx_status_i,
       dbg_fifo_irq_o  => dbg_fifo_irq_o);
 
   slave_o.err <= '0';

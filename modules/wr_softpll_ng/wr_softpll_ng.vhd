@@ -148,6 +148,9 @@ entity wr_softpll_ng is
     wb_irq_o   : out std_logic;
     debug_o    : out std_logic_vector(5 downto 0);
 
+    -- rx clock states (port up/down)
+    clk_rx_status_i : in  std_logic_vector(g_num_ref_inputs-1 downto 0) :=(others=>'0'); 
+
 -- Debug FIFO readout interrupt
     dbg_fifo_irq_o : out std_logic
     );
@@ -763,6 +766,9 @@ begin  -- rtl
 
   regs_out.csr_n_ref_i <= std_logic_vector(to_unsigned(g_num_ref_inputs, regs_out.csr_n_ref_i'length));
   regs_out.csr_n_out_i <= std_logic_vector(to_unsigned(g_num_outputs, regs_out.csr_n_out_i'length));
+
+  regs_out.psr_states_i(g_num_ref_inputs-1 downto 0 )<= clk_rx_status_i;
+  regs_out.psr_states_i(regs_out.psr_states_i'length-1 downto g_num_ref_inputs)<= (others =>'0');
 
   dac_dmtd_load_o <= regs_in.dac_hpll_wr_o;
   dac_dmtd_data_o <= regs_in.dac_hpll_o;

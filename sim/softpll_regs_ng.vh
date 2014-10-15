@@ -55,6 +55,9 @@
 `define SPLL_DFR_SPLL_VALUE 32'h7fffffff
 `define SPLL_DFR_SPLL_EOS_OFFSET 31
 `define SPLL_DFR_SPLL_EOS 32'h80000000
+`define ADDR_SPLL_PSR                  8'h50
+`define SPLL_PSR_STATES_OFFSET 0
+`define SPLL_PSR_STATES 32'hffffffff
 `define ADDR_SPLL_EIC_IDR              8'h60
 `define SPLL_EIC_IDR_TAG_OFFSET 0
 `define SPLL_EIC_IDR_TAG 32'h00000001

@@ -388,6 +388,20 @@ peripheral {
 			prefix = "TAG";
 			trigger = LEVEL_1;
 	 };
+   
+   reg {
+      name = "Port state register (direct access)";
+      prefix = "PSR";
+      field {
+         name = "States";
+         prefix = "STATES";
+         size = 32;
+         type = SLV;
+         access_bus = READ_ONLY;
+         access_dev = WRITE_ONLY;
+      };
+
+   };
 };
 
 
