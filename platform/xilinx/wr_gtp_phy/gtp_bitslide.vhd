@@ -6,7 +6,7 @@
 -- Author     : Tomasz Wlostowski
 -- Company    : CERN BE-CO-HT
 -- Created    : 2010-11-18
--- Last update: 2011-09-12
+-- Last update: 2013-12-20
 -- Platform   : FPGA-generic
 -- Standard   : VHDL'93
 -------------------------------------------------------------------------------
@@ -79,10 +79,8 @@ architecture behavioral of gtp_bitslide is
   begin
     if(g_simulation /= 0) then
       return 256;
-    elsif(g_target = "spartan6") then
-      return 8192;
     else
-      return 16384;
+      return 4000000;
     end if;
   end f_eval_sync_detect_threshold;
 
@@ -103,7 +101,7 @@ architecture behavioral of gtp_bitslide is
   type t_bitslide_fsm_state is (S_SYNC_LOST, S_STABILIZE, S_SLIDE, S_PAUSE, S_GOT_SYNC, S_RESET_CDR);
   signal cur_slide : unsigned(4 downto 0);
   signal state     : t_bitslide_fsm_state;
-  signal counter   : unsigned(15 downto 0);
+  signal counter   : unsigned(23 downto 0);
 
   signal commas_missed : unsigned(4 downto 0);
   
@@ -189,7 +187,7 @@ begin  -- behavioral
 
         when S_GOT_SYNC =>
           gtp_rx_slide_o <= '0';
-          bitslide_o     <= std_logic_vector(cur_slide);
+          bitslide_o     <= std_logic_vector(cur_slide(4 downto 0));
           synced_o       <= '1';
           if(gtp_rx_byte_is_aligned_i = '0' or serdes_ready_i = '0') then
             gtp_rx_cdr_rst_o <= '1';

@@ -13,17 +13,20 @@
 --! 0x014 n..0 channel(n) trigger edge status  (ro)
 --! 0x018 n..0 channel(n) trigger edge set pos (wo)
 --! 0x01C n..0 channel(n) trigger edge set neg (wo)
---! 0x100 UTC				HiReg
---! 0x104 Cycle Count	LoReg
+--! 0x020 number channels present              (ro)
+--! 0x024 channel depth                        (ro)
+--! 0x100 Current time (Cycle Count)	HiReg
+--! 0x104 Current time (Cycle Count)	LoReg
+
 --! 0x400 start of FIFO addresses
 --!
 --! FIFO 0 area is at 0x400, FIFO n is at 0x400 + n*0x020
 --! Exemplary layout fo FIFO 0: 
---! 0x400 pop           (wo)
---! 0x404 fill count    (ro)
---! 0x408 utc word0     (ro)
---! 0x40C utc word1     (ro)
---! 0x410 cycle word    (ro)
+--! 0x400 pop                 (wo)
+--! 0x404 fill count          (ro)
+--! 0x408 Cycle Count HiReg   (ro)
+--! 0x40C Cycle Count HiReg   (ro)
+--! 0x410 cycle word          (ro)
 --!----------------------------------------------------------------------------
 --1
 --! @author Mathias Kreider <m.kreider@gsi.de>
@@ -52,6 +55,7 @@ use IEEE.std_logic_1164.all;
 use IEEE.numeric_std.all;
 
 library work;
+use work.eca_pkg.all;
 use work.wishbone_pkg.all;
 use work.genram_pkg.all;
 
@@ -60,12 +64,13 @@ entity wb_timestamp_latch is
           g_fifo_depth   : natural := 10);  
   port (
     ref_clk_i       : in  std_logic;    -- tranceiver clock domain
+    ref_rstn_i      : in  std_logic;
     sys_clk_i       : in  std_logic;    -- local clock domain
-    nRSt_i          : in  std_logic;
+    sys_rstn_i      : in  std_logic;
 
     triggers_i      : in  std_logic_vector(g_num_triggers-1 downto 0);  -- trigger lines for latch
     tm_time_valid_i : in  std_logic;    -- timestamp valid flag
-    tm_utc_i        : in  std_logic_vector(39 downto 0);  -- UTC Timestamp
+    tm_tai_i        : in  std_logic_vector(39 downto 0);  -- TAI Timestamp
     tm_cycles_i     : in  std_logic_vector(27 downto 0);  -- refclock cycle count
 
     wb_slave_i      : in  t_wishbone_slave_in;  -- Wishbone slave interface (sys_clk domain)
@@ -144,7 +149,7 @@ architecture behavioral of wb_timestamp_latch is
 -- stdlv with bit for every trigger channel
   subtype channel is std_logic_vector (g_num_triggers-1 downto 0);  
 -- stdlv to hold utc + cycle counter
-  subtype t_timestamp is std_logic_vector(67 downto 0);
+  subtype t_timestamp is std_logic_vector(95 downto 0);
   type    t_tm_array is array (0 to g_num_triggers-1) of t_timestamp;
 -- stdlv 32b wb bus word
   subtype t_word is std_logic_vector(31 downto 0);
@@ -163,12 +168,10 @@ architecture behavioral of wb_timestamp_latch is
   -- tm latch registers
   signal tm_fifo_in               : t_tm_array;
   signal tm_fifo_out              : t_tm_array;
-  signal tm_word0                 : t_word_array;
-  signal tm_word1                 : t_word_array;
-  signal tm_word2                 : t_word_array;
-  
-  signal cur_tm_word1				 : t_word;
-  signal cur_tm_word2				 : t_word;
+  signal sa_time0, r_sa_time0		 : t_time;
+  signal r_corrected_time_1, r_corrected_time_2, r_corrected_time_3: t_time;	
+  signal sa_time0_reg_LO			 : t_word;	
+  signal subnano						 : t_word_array;
   
   -- fifo signals
   signal nRst_fifo                : channel;
@@ -178,7 +181,7 @@ architecture behavioral of wb_timestamp_latch is
   signal rd_count                 : t_cnt_array;
   signal wr_count                 : t_cnt_array;
 
-
+ 
 -------------------------------------------------------------------------------
 -- WB BUS INTERFACE
 -------------------------------------------------------------------------------
@@ -186,12 +189,32 @@ architecture behavioral of wb_timestamp_latch is
   -- wb interface signals
   signal address : unsigned(11 downto 0);
   alias adr_hi   : unsigned(4 downto 0) is address(9 downto 5);
-  alias adr_lo   : unsigned(2 downto 0) is address(4 downto 2);
+  alias adr_lo   : unsigned(4 downto 0) is address(4 downto 0);
   signal data    : channel;
   signal stall   : std_logic;
 -------------------------------------------------------------------------------
   --wb registers
-
+	constant c_REG_STAT		: natural := 0;                      --ro, fifo n..0 status (0 empty, 1 ne)
+	constant c_REG_CLR      : natural := c_REG_STAT       +4;   --wo, Clear channel n..0
+	constant c_REG_ARM      : natural := c_REG_CLR        +4;   --ro, trigger n..0 armed status
+	constant c_REG_ARM_SET  : natural := c_REG_ARM        +4;   --wo, arm trigger n..0
+	constant c_REG_ARM_CLR  : natural := c_REG_ARM_SET    +4;   --wo, disarm trigger n..0
+	constant c_REG_EDG      : natural := c_REG_ARM_CLR    +4;   --ro, trigger n..0 latch edge (1 pos, 0 neg)
+	constant c_REG_EDG_POS  : natural := c_REG_EDG        +4;   --wo, latch trigger n..0 pos
+	constant c_REG_EDG_NEG  : natural := c_REG_EDG_POS    +4;   --wo, latch trigger n..0 neg
+   constant c_REG_CH_NUM   : natural := c_REG_EDG_NEG    +4;   --ro, number channels present              (ro)
+   constant c_REG_CH_DEPTH : natural := c_REG_CH_NUM     +4;   --ro, channel depth
+	
+   constant c_REG_T_CUR_HI : natural := 256;                	 --ro, 1 bit per queue pop
+	constant c_REG_T_CUR_LO : natural := c_REG_T_CUR_HI    +4;   --ro, 1 bit per queue pop 
+	  
+	constant c_OFFS_1ST_QUE	: natural := 1024;                --
+	constant c_REG_POP      : natural := 0;                  --wo, 1 bit per queue pop
+	constant c_REG_CNT      : natural := c_REG_POP     +4;   --ro, 1 bit per queue pop
+	constant c_REG_T_HI     : natural := c_REG_CNT     +4;   --ro, 1 bit per queue pop
+	constant c_REG_T_LO     : natural := c_REG_T_HI    +4;   --ro, 1 bit per queue pop  
+	constant c_REG_T_SNS    : natural := c_REG_T_LO    +4;   --ro, 1 bit per queue pop
+	  
   --fifo clear is asynchronous
   signal fifo_clear             : channel;
   -- rd_empty signal is already in sys_clk domain
@@ -238,27 +261,44 @@ architecture behavioral of wb_timestamp_latch is
 
 begin  -- behavioral
 
+	   T1 : eca_wr_time
+    port map(
+      clk_i    => ref_clk_i,
+      rst_n_i  => ref_rstn_i,
+      tai_i    => tm_tai_i,
+      cycles_i => tm_cycles_i,
+      time_o   => sa_time0);
+	 
+	 
 
-
+	 sub_time_delay : process (ref_clk_i)
+    begin  -- 
+      if ref_clk_i'event and ref_clk_i = '1' then  -- rising clock edge
+        r_corrected_time_1 <= sa_time0;
+		  r_corrected_time_2 <= r_corrected_time_1;
+		  r_corrected_time_3 <= r_corrected_time_2;
+      end if;
+    end process sub_time_delay;
+	 
+	 
+	 
+	 
 -------------------------------------------------------------------------------
 -- BEGIN TRIGGER CHANNEL GENERATE
 -------------------------------------------------------------------------------
   
   trig_sync : for i in 0 to g_num_triggers-1 generate
 
-    nRst_fifo(i)  <= nRst_i and not fifo_clear(i);
+    nRst_fifo(i)  <= ref_rstn_i and not fifo_clear(i);
     
 	 
-    tm_word0(i)   <= std_logic_vector(to_unsigned(0, 32-8)) & tm_fifo_out(i)(67 downto 60);
-    tm_word1(i)   <= tm_fifo_out(i)(59 downto 28);
-    tm_word2(i)   <= std_logic_vector(to_unsigned(0, 32-28)) & tm_fifo_out(i)(27 downto 0);
 
     sync_trig_edge_reg : gc_sync_ffs
       generic map (
         g_sync_edge => "positive")
       port map (
         clk_i    => ref_clk_i,
-        rst_n_i  => nRst_i,
+        rst_n_i  => ref_rstn_i,
         data_i   => trigger_edge(i),
         synced_o => trigger_edge_ref_clk(i),
         npulse_o => open,
@@ -269,7 +309,7 @@ begin  -- behavioral
         g_sync_edge => "positive")
       port map (
         clk_i    => ref_clk_i,
-        rst_n_i  => nRst_i,
+        rst_n_i  => ref_rstn_i,
         data_i   => trigger_active(i),
         synced_o => trigger_active_ref_clk(i),
         npulse_o => open,
@@ -280,7 +320,7 @@ begin  -- behavioral
         g_sync_edge => "positive")
       port map (
         clk_i    => ref_clk_i,
-        rst_n_i  => nRst_i,
+        rst_n_i  => ref_rstn_i,
         data_i   => triggers_i(i),
         synced_o => open,
         npulse_o => triggers_neg_edge_synced(i),
@@ -326,11 +366,14 @@ begin  -- behavioral
         rd_almost_full_o  => open,
         rd_count_o        => rd_count(i));
 
+		  
+		  
      latch : process (ref_clk_i)
     begin  -- process latch
       if ref_clk_i'event and ref_clk_i = '1' then  -- rising clock edge
-        if nRST_i = '0' then       -- synchronous reset (active low)
+        if ref_rstn_i = '0' then       -- synchronous reset (active low)
           we(i) <= '0';
+			 subnano(i) <= (others=>'0');
         else
           ---------------------------------------------------------------------
           -- Latch timestamp if trigger is active and selected edge is detected
@@ -340,7 +383,8 @@ begin  -- behavioral
             if((trigger_edge_ref_clk(i) = '0' and triggers_neg_edge_synced(i) = '1')
                or ((trigger_edge_ref_clk(i) = '1') and (triggers_pos_edge_synced(i) = '1'))) then
               we(i) <= '1';
-              tm_fifo_in(i) <= sub_cap_delay(tm_utc_i, tm_cycles_i);
+				  
+              tm_fifo_in(i) <= r_corrected_time_3 & subnano(i);
             end if;
           end if;
           ---------------------------------------------------------------------
@@ -366,6 +410,7 @@ begin  -- behavioral
 
   wb_slave_o.int <= '0';
   wb_slave_o.rty <= '0';
+  wb_slave_o.stall <= stall;
   
   wb_if : process (sys_clk_i)
     variable i : natural range 0 to g_num_triggers-1 := 0;
@@ -373,7 +418,7 @@ begin  -- behavioral
   begin  -- process wb_if
     
     if sys_clk_i'event and sys_clk_i = '1' then  -- rising clock edge
-      if nRst_i = '0' then              -- synchronous reset (active low)
+      if sys_rstn_i = '0' then              -- synchronous reset (active low)
         trigger_active <= (others => '0');
         trigger_edge   <= (others => '1');
         rd             <= (others => '1');
@@ -384,28 +429,28 @@ begin  -- behavioral
         wb_slave_o.ack   <= '0';
         wb_slave_o.err   <= '0';
         stall            <= '0';
-        wb_slave_o.stall <= '0';
+        
         
         
         if(wb_slave_i.cyc = '1' and wb_slave_i.stb = '1' and  stall = '0') then
-          if(address <  c_fifo_adr_offset)then
+          if(address <  c_OFFS_1ST_QUE)then
 
             if(wb_slave_i.we = '1') then
             ---------------------------------------------------------------------
             -- Write standard config regs
             ---------------------------------------------------------------------
  
-            case address is
-              when x"000" => wb_slave_o.ack <= '1';
-              when x"004" => fifo_clear <= data; wb_slave_o.ack <= '1'; -- clear fifo
+            case to_integer(address) is
+              when c_REG_STAT => wb_slave_o.ack <= '1';
+              when c_REG_CLR  => fifo_clear <= data; wb_slave_o.ack <= '1'; -- clear fifo
               -- trigger channel status (armed/inactive)
-              when x"008" => wb_slave_o.ack <= '1';
-              when x"00C" => trigger_active <= trigger_active or data; wb_slave_o.ack <= '1'; --armed
-              when x"010" => trigger_active <= trigger_active and not data; wb_slave_o.ack <= '1'; --inactive
+              when c_REG_ARM => wb_slave_o.ack <= '1';
+              when c_REG_ARM_SET => trigger_active <= trigger_active or data; wb_slave_o.ack <= '1'; --armed
+              when c_REG_ARM_CLR => trigger_active <= trigger_active and not data; wb_slave_o.ack <= '1'; --inactive
               -- trigger channel edge select (pos/neg)               
-              when x"014" => wb_slave_o.ack <= '1';   
-              when x"018"  => trigger_edge <= trigger_edge or data; wb_slave_o.ack <= '1'; --pos
-              when x"01C"  => trigger_edge <= trigger_edge and not data; wb_slave_o.ack <= '1'; --neg               
+              when c_REG_EDG => wb_slave_o.ack <= '1';   
+              when c_REG_EDG_POS  => trigger_edge <= trigger_edge or data; wb_slave_o.ack <= '1'; --pos
+              when c_REG_EDG_NEG  => trigger_edge <= trigger_edge and not data; wb_slave_o.ack <= '1'; --neg               
 
               when others => wb_slave_o.err <= '1';  
             end case;
@@ -413,24 +458,25 @@ begin  -- behavioral
             -------------------------------------------------------------------
             -- Read standard config regs
             -------------------------------------------------------------------
-               case address is
+               case to_integer(address) is
 
-                when x"000" => wb_slave_o.dat <= pad_4_WB(fifo_data_rdy); wb_slave_o.ack <= '1'; 
-                when x"004" => wb_slave_o.ack <= '1';
+                when c_REG_STAT     => wb_slave_o.dat <= pad_4_WB(fifo_data_rdy); wb_slave_o.ack <= '1'; 
+                when c_REG_CLR      => wb_slave_o.ack <= '1';
            
-                when x"008" => wb_slave_o.dat <= pad_4_WB(trigger_active); wb_slave_o.ack <= '1';
-                when x"00C" => wb_slave_o.ack <= '1';
-                when x"010" => wb_slave_o.ack <= '1';
+                when c_REG_ARM      => wb_slave_o.dat <= pad_4_WB(trigger_active); wb_slave_o.ack <= '1';
+                when c_REG_ARM_SET  => wb_slave_o.ack <= '1';
+                when c_REG_ARM_CLR  => wb_slave_o.ack <= '1';
                                
-                when x"014"  => wb_slave_o.dat <= pad_4_WB(trigger_edge); wb_slave_o.ack <= '1';
-                when x"018" => wb_slave_o.ack <= '1';
-                when x"01C" => wb_slave_o.ack <= '1';
-                when x"100" => wb_slave_o.dat <= std_logic_vector(to_unsigned(0, 32-8)) & tm_fifo_in(0)(67 downto 60);
-										 cur_tm_word1   <= tm_fifo_in(0)(59 downto 28);
-										 cur_tm_word2   <= std_logic_vector(to_unsigned(0, 32-28)) & tm_fifo_in(0)(27 downto 0);
-										 wb_slave_o.ack <= '1';
-					 when x"104" => wb_slave_o.dat <= cur_tm_word1; wb_slave_o.ack <= '1';
-					 when x"108" => wb_slave_o.dat <= cur_tm_word2; wb_slave_o.ack <= '1';
+                when c_REG_EDG      => wb_slave_o.dat <= pad_4_WB(trigger_edge); wb_slave_o.ack <= '1';
+                when c_REG_EDG_POS  => wb_slave_o.ack <= '1';
+                when c_REG_EDG_NEG  => wb_slave_o.ack <= '1';
+                when c_REG_CH_NUM   => wb_slave_o.dat <= std_logic_vector(to_unsigned(g_num_triggers,32)); wb_slave_o.ack <= '1';
+                when c_REG_CH_DEPTH => wb_slave_o.dat <= std_logic_vector(to_unsigned(g_fifo_depth,32)); wb_slave_o.ack <= '1';
+
+                when c_REG_T_CUR_HI => wb_slave_o.dat <= sa_time0(63 downto 32);
+										sa_time0_reg_LO <= sa_time0(31 downto 0);
+										wb_slave_o.ack  <= '1';
+					 when c_REG_T_CUR_LO => wb_slave_o.dat <= sa_time0_reg_LO; wb_slave_o.ack <= '1';
 					 
                 when others => wb_slave_o.err <= '1';  
               end case;
@@ -444,23 +490,22 @@ begin  -- behavioral
               wb_slave_o.err <= '1';
             else
               i := to_integer(adr_hi);
-              case adr_lo is
-                when "000" => if(wb_slave_i.we = '1') then  -- pop fifo
+              case to_integer(adr_lo) is
+                when c_REG_POP => if((wb_slave_i.we and not rd_empty(i))= '1') then  -- pop fifo
                                rd(i)          <= '1';
                                wb_slave_o.ack <= '1';
-                               wb_slave_o.stall <= '1';
                                stall <= '1';
                              else
                                wb_slave_o.err <= '1';
                              end if;
                 -- fifo fill count
-                when "001" => wb_slave_o.dat <= pad_4_WB(rd_count(i)); wb_slave_o.ack <= '1'; 
-                -- timestamp utc word 0
-                when "010" => wb_slave_o.dat <= tm_word0(i); wb_slave_o.ack <= '1';
-                -- timestamp utc word 1
-                when "011" => wb_slave_o.dat <= tm_word1(i); wb_slave_o.ack <= '1';
-                -- timestamp cycles word
-                when "100" => wb_slave_o.dat <= tm_word2(i); wb_slave_o.ack <= '1';
+                when c_REG_CNT => wb_slave_o.dat <= pad_4_WB(rd_count(i)); wb_slave_o.ack <= '1'; 
+                -- timestamp Hi
+                when c_REG_T_HI => wb_slave_o.dat <= tm_fifo_out(i)(95 downto 64); wb_slave_o.ack <= '1';
+                -- timestamp Lo
+                when c_REG_T_LO => wb_slave_o.dat <= tm_fifo_out(i)(63 downto 32); wb_slave_o.ack <= '1';
+                -- sub nano
+                when c_REG_T_SNS => wb_slave_o.dat <= tm_fifo_out(i)(31 downto 0); wb_slave_o.ack <= '1';
 
                 when others => wb_slave_o.ack <= '1';  
               end case;

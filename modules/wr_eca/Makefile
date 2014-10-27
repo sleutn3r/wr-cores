@@ -1,21 +1,41 @@
-CXX      = g++
-CXXFLAGS = -Wall -O2 -I.
+PREFIX   ?= /usr/local
+STAGING  ?= 
+EB       ?= no
+
+ifeq ($(EB),no))
+EB_LIB ?= -letherbone
+EB_INC ?=
+else
+EB_LIB ?= -L$(EB) -letherbone
+EB_INC ?= -I$(EB)
+endif
+
+EXTRA_FLAGS ?=
+CXX         ?= g++
+CXXFLAGS    ?= $(EXTRA_FLAGS) -Wall -O2 -I. $(EB_INC)
+
 TARGETS  = lib/version.h libeca.a eca-ctl eca-table
 
 all:	$(TARGETS)
+
+install:
+	mkdir -p $(STAGING)$(PREFIX)/bin $(STAGING)$(PREFIX)/include $(STAGING)$(PREFIX)/lib
+	cp eca-ctl eca-table $(STAGING)$(PREFIX)/bin
+	cp eca.h $(STAGING)$(PREFIX)/include
+	cp libeca.a $(STAGING)$(PREFIX)/lib
 
 clean:
 	rm -f $(TARGETS) *.o lib/*.o git.*
 
 eca-ctl:	eca-ctl.o libeca.a
-	$(CXX) $(CXXFLAGS) -o $@ $^ -letherbone
+	$(CXX) $(CXXFLAGS) -o $@ $^ -Wl,-rpath,$(PREFIX)/lib $(EB_LIB)
 
 eca-table:	eca-table.o libeca.a
-	$(CXX) $(CXXFLAGS) -o $@ $^ -letherbone
+	$(CXX) $(CXXFLAGS) -o $@ $^ -Wl,-rpath,$(PREFIX)/lib $(EB_LIB) 
 
 libeca.a:	lib/hw-eca.o lib/hw-stream.o lib/hw-channel.o \
-		lib/load-search.o lib/load-walk.o lib/load-queue.o lib/load-eca.o \
-		lib/program-search.o lib/program-walk.o lib/program-table.o
+		lib/load-table.o lib/store-table.o \
+		lib/table.o lib/probe-eca.o
 	rm -f $@
 	ar rcs $@ $^
 	ranlib $@
