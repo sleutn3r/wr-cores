@@ -9,7 +9,9 @@ syn_package = "fgg484"
 syn_top = "cute_top"
 syn_project = "cute_top_wrc.xise"
 
-modules = { "local" : 
-						[ "../../../top/cute_wr/wr_core_demo", 
-							"../../../platform" ] 
+modules = { "local" :
+						[ "../../../top/cute_wr/wr_core_demo",
+							"../../../platform",
+                                                        "../../../ip_cores/general-cores",
+                                                        "../../../ip_cores/etherbone-core"]
 					}
