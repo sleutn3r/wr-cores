@@ -60,6 +60,8 @@ package wr_altera_pkg is
       outclk_0   : out std_logic;        -- 125 MHz
       outclk_1   : out std_logic;        -- 200 MHz
       outclk_2   : out std_logic;        --  25 MHz
+      outclk_3   : out std_logic;        --1000 MHz
+      outclk_4   : out std_logic;        -- 125 MHz, 1/8 duty cycle, -1.5ns phase
       rst        : in  std_logic := 'X';
       locked     : out std_logic;
       scanclk    : in  std_logic;
@@ -74,8 +76,9 @@ package wr_altera_pkg is
       areset : in  std_logic;
       inclk0 : in  std_logic := '0'; -- 125   MHz
       c0     : out std_logic;        --  62.5 MHz
-      c1     : out std_logic;        --  50   MHz
-      c2     : out std_logic;        --  20   MHz
+      c1     : out std_logic;        --  50   MHz (flash+reconfig)
+      c2     : out std_logic;        --  20   MHz (display+scubus)
+      c3     : out std_logic;        --  10   MHz (remote update)
       locked : out std_logic);
   end component;
 
@@ -83,9 +86,9 @@ package wr_altera_pkg is
     port(
       refclk   : in  std_logic := 'X'; -- 125   MHz
       outclk_0 : out std_logic;        --  62.5 MHz
-      outclk_1 : out std_logic;        --  20   MHz
-      outclk_2 : out std_logic;        -- 100   MHz
-      outclk_3 : out std_logic;        -- 100   MHz
+      outclk_1 : out std_logic;        -- 100   MHz (flash+reconfig)
+      outclk_2 : out std_logic;        --  20   MHz (display+scubus)
+      outclk_3 : out std_logic;        --  10   MHz (remote update)
       rst      : in  std_logic := 'X';
       locked   : out std_logic);
   end component;

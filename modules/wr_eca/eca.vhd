@@ -289,12 +289,12 @@ architecture rtl of eca is
   end update;
   
   impure function toggle(x : std_logic; i : natural) return std_logic is
-    variable v_set : std_logic := c_slave_i.dat(i+0) and c_slave_i.sel(0);
-    variable v_clr : std_logic := c_slave_i.dat(i+8) and c_slave_i.sel(1);
+    constant c_set : std_logic := c_slave_i.dat(i+0) and c_slave_i.sel(0);
+    constant c_clr : std_logic := c_slave_i.dat(i+8) and c_slave_i.sel(1);
   begin
-    return ((not v_set) and (not v_clr) and (    x)) or -- unmodified
-           ((    v_set) and (    v_clr) and (not x)) or -- toggled
-           ((    v_set) and (not v_clr));               -- set
+    return ((not c_set) and (not c_clr) and (    x)) or -- unmodified
+           ((    c_set) and (    c_clr) and (not x)) or -- toggled
+           ((    c_set) and (not c_clr));               -- set
   end toggle;
   
   function f_all_names return t_all_name_array is
@@ -851,6 +851,7 @@ begin
   channels : for channel_idx in 0 to g_num_channels-1 generate
     channel : eca_channel
       generic map(
+        g_channel_idx     => channel_idx,
         g_log_table_size  => g_log_queue_len,
         g_log_latency     => g_log_queue_len,
         g_log_queue_depth => g_log_queue_len+1)
@@ -859,6 +860,7 @@ begin
         rst_n_i   =>  a_rst_n_i,
         drain_i   => ra0_cq_drain (channel_idx),
         freeze_i  => ra0_cq_freeze(channel_idx),
+        eca_idx_i => rc_ce_idx,   -- crosses clock domains, but held stable
         addr_i    => rc_cq_index, -- crosses clock domains, but held stable
         fill_o    => sa_qc_fill   (channel_idx),
         full_o    => sa_qw_full   (channel_idx),
