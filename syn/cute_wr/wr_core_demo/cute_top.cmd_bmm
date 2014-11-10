@@ -1,0 +1,7 @@
+#xst -intstyle ise -ifn "/home/du/work/wr/wr-cores/syn/cute_wr/wr_core_demo_bmm/cute_top.xst" -ofn "/home/du/work/wr/wr-cores/syn/cute_wr/wr_core_demo_bmm/cute_top.syr" 
+ngdbuild -intstyle ise -bm cute.bmm -dd _ngo -nt timestamp -uc /home/du/work/wr/wr-cores/top/cute_wr/wr_core_demo/cute_top.ucf -p xc6slx45t-fgg484-3 cute_top.ngc cute_top.ngd  
+map -intstyle ise -p xc6slx45t-fgg484-3 -w -logic_opt off -ol high -t 1 -xt 0 -register_duplication off -r 4 -global_opt off -mt 2 -ir off -pr off -lc off -power off -o cute_top_map.ncd cute_top.ngd cute_top.pcf 
+par -w -intstyle ise -ol high -mt off cute_top_map.ncd cute_top.ncd cute_top.pcf 
+#trce -intstyle ise -v 3 -s 3 -n 3 -fastpaths -xml cute_top.twx cute_top.ncd -o cute_top.twr cute_top.pcf 
+bitgen -intstyle ise -f cute_top.ut cute_top.ncd 
+data2mem -bm cute_bd.bmm -bd wrc.elf -bt cute_top.bit -o b cute_top_wrc.bit

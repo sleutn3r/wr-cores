@@ -36,8 +36,8 @@ entity cute_top is
       -- Font panel LEDs
       LED_RED   : out std_logic;
       LED_GREEN : out std_logic;
-      LED_TEST  : out std_logic;    
-  
+      LED_TEST  : out std_logic;
+
       dac_sclk_o  : out std_logic;
       dac_din_o   : out std_logic;
       dac_clr_n_o : out std_logic;
@@ -78,7 +78,7 @@ entity cute_top is
       ----------------------------------------
       -- PPS
       ---------------------------------------
-      pps_o : out std_logic 
+      pps_o : out std_logic
       );
 
 end cute_top;
@@ -359,7 +359,7 @@ begin
       led_divider <= led_divider + 1;
     end if;
   end process;
-  
+
   LED_TEST <= led_divider(23);
 
   fpga_scl_b <= '0' when wrc_scl_o = '0' else 'Z';
@@ -383,8 +383,8 @@ begin
       g_with_external_clock_input => true,
       g_aux_clks                  => 1,
       g_ep_rxbuf_size             => 1024,
-      g_dpram_initf               => "wrc.ram",
-      g_dpram_size                => 94208/4,  --23552,
+      g_dpram_initf               => "",
+      g_dpram_size                => 94208/4,
       g_interface_mode            => PIPELINED,
       g_address_granularity       => BYTE)
     port map (
@@ -416,7 +416,7 @@ begin
 
       led_act_o   => LED_RED,
       led_link_o  => LED_GREEN,
-      
+
       scl_o       => wrc_scl_o,
       scl_i       => wrc_scl_i,
       sda_o       => wrc_sda_o,
@@ -437,7 +437,7 @@ begin
 
       slave_i => wrc_slave_i,
       slave_o => wrc_slave_o,
-      
+
       aux_master_o => etherbone_cfg_in,
       aux_master_i => etherbone_cfg_out,
 
