@@ -4,8 +4,8 @@ use ieee.NUMERIC_STD.all;
 
 use work.gencores_pkg.all;
 
-entity spec_reset_gen is
-  
+entity reset_gen is
+
   port (
     clk_sys_i : in std_logic;
 
@@ -15,9 +15,9 @@ entity spec_reset_gen is
     rst_n_o : out std_logic
     );
 
-end spec_reset_gen;
+end reset_gen;
 
-architecture behavioral of spec_reset_gen is
+architecture behavioral of reset_gen is
 
   signal powerup_cnt     : unsigned(7 downto 0) := x"00";
   signal button_synced_n : std_logic;

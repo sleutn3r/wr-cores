@@ -76,11 +76,18 @@ entity cute_top is
       uart_txd_o : out std_logic;
 
       ----------------------------------------
+      -- Flash memory SPI
+      ---------------------------------------
+      fpga_prom_cclk_o       : out std_logic;
+      fpga_prom_cso_b_n_o    : out std_logic;
+      fpga_prom_mosi_o       : out std_logic;
+      fpga_prom_miso_i       : in  std_logic;
+
+      ----------------------------------------
       -- PPS
       ---------------------------------------
       pps_o : out std_logic
-      );
-
+    );
 end cute_top;
 
 architecture rtl of cute_top is
@@ -89,13 +96,34 @@ architecture rtl of cute_top is
   -- Components declaration
   ------------------------------------------------------------------------------
 
-  component spec_reset_gen
+  component reset_gen
     port (
       clk_sys_i        : in  std_logic;
       rst_pcie_n_a_i   : in  std_logic;
       rst_button_n_a_i : in  std_logic;
       rst_n_o          : out std_logic);
   end component;
+
+  -- MultiBoot component
+  -- use: remotely reprogram the FPGA
+  component wb_xil_multiboot is
+    port
+    (
+      -- Clock and reset input ports
+      clk_i   : in  std_logic;
+      rst_n_i : in  std_logic;
+
+      -- Wishbone ports
+      wbs_i   : in  t_wishbone_slave_in;
+      wbs_o   : out t_wishbone_slave_out;
+
+      -- SPI ports
+      spi_cs_n_o : out std_logic;
+      spi_sclk_o : out std_logic;
+      spi_mosi_o : out std_logic;
+      spi_miso_i : in  std_logic
+    );
+  end component wb_xil_multiboot;
 
   --component chipscope_ila
   --  port (
@@ -127,18 +155,61 @@ architecture rtl of cute_top is
   constant c_DMA_WB_SLAVES_NB  : integer := 1;
   constant c_DMA_WB_ADDR_WIDTH : integer := 26;
 
+  -- Number of Wishbone masters and slaves, for wb_crossbar
+  constant c_nr_masters      : natural :=  1;
+  constant c_nr_slaves       : natural :=  2;
+
+  -----------------------------------------
+  -- Memory map
+  -- * all registers are word-addressable
+  -- * all registers are word-aligned
+  -----------------------------------------
+  -- WRC_SLAVE [0x000-0x004]
+  -- MULTIBOOT [0x300-0x31F]
+  -----------------------------------------
+  -- slave order definitions
+  constant c_slv_wrc_slave : natural := 0;
+  constant c_slv_multiboot : natural := 1;
+  constant c_mst_etherbone : natural := 0;
+
+  -- base address definitions
+  constant c_addr_wrc_slave : t_wishbone_address := x"00000000";
+  constant c_addr_multiboot : t_wishbone_address := x"00000300";
+
+  -- address mask definitions
+  constant c_mask_wrc_slave : t_wishbone_address := x"00000F00";
+  constant c_mask_multiboot : t_wishbone_address := x"00000F00";
+
+  -- addresses constant for Wishbone crossbar
+  constant c_addresses : t_wishbone_address_array(c_nr_slaves-1 downto 0)
+                  := (
+                       c_slv_wrc_slave => c_addr_wrc_slave,
+                       c_slv_multiboot => c_addr_multiboot
+                     );
+
+  -- masks constant for Wishbone crossbar
+  constant c_masks : t_wishbone_address_array(c_nr_slaves-1 downto 0)
+                   := (
+                       c_slv_wrc_slave => c_mask_wrc_slave,
+                       c_slv_multiboot => c_addr_multiboot
+                      );
   ------------------------------------------------------------------------------
   -- Signals declaration
   ------------------------------------------------------------------------------
-
-
   -- Dedicated clock for GTP transceiver
   signal gtp_dedicated_clk : std_logic;
-
 
   -- Reset
   signal rst_a : std_logic;
   signal rst   : std_logic;
+
+  -- Wishbone crossbar signals
+  signal xbar_slave_in     : t_wishbone_slave_in_array  (c_nr_masters - 1 downto 0);
+  signal xbar_slave_out    : t_wishbone_slave_out_array (c_nr_masters - 1 downto 0);
+  signal xbar_master_in    : t_wishbone_master_in_array (c_nr_slaves  - 1 downto 0);
+  signal xbar_master_out   : t_wishbone_master_out_array(c_nr_slaves  - 1 downto 0);
+  signal multiboot_wb_out  : t_wishbone_master_out;
+  signal multiboot_wb_in   : t_wishbone_master_in;
 
   -- DMA wishbone bus
   --signal dma_adr     : std_logic_vector(31 downto 0);
@@ -153,10 +224,8 @@ architecture rtl of cute_top is
   signal ram_we      : std_logic_vector(0 downto 0);
   signal ddr_dma_adr : std_logic_vector(29 downto 0);
 
-
   -- SPI
   signal spi_slave_select : std_logic_vector(7 downto 0);
-
 
   signal pllout_clk_sys       : std_logic;
   signal pllout_clk_dmtd      : std_logic;
@@ -207,13 +276,6 @@ architecture rtl of cute_top is
   signal local_reset_n  : std_logic;
   signal button1_synced : std_logic_vector(2 downto 0);
 
-  signal genum_wb_out    : t_wishbone_master_out;
-  signal genum_wb_in     : t_wishbone_master_in;
-  signal genum_csr_ack_i : std_logic;
-
-  signal wrc_slave_i : t_wishbone_slave_in;
-  signal wrc_slave_o : t_wishbone_slave_out;
-
   signal owr_en : std_logic_vector(1 downto 0);
   signal owr_i  : std_logic_vector(1 downto 0);
 
@@ -224,11 +286,9 @@ architecture rtl of cute_top is
   signal etherbone_src_in  : t_wrf_source_in;
   signal etherbone_snk_out : t_wrf_sink_out;
   signal etherbone_snk_in  : t_wrf_sink_in;
-  signal etherbone_wb_out  : t_wishbone_master_out;
-  signal etherbone_wb_in   : t_wishbone_master_in;
   signal etherbone_cfg_in  : t_wishbone_slave_in;
   signal etherbone_cfg_out : t_wishbone_slave_out;
-  
+
 begin
 
   cmp_sys_clk_pll : PLL_BASE
@@ -295,7 +355,7 @@ begin
       CLKFBIN  => pllout_clk_fb_dmtd,
       CLKIN    => clk_20m_vcxo_buf);
 
-  U_Reset_Gen : spec_reset_gen
+  U_Reset_Gen : reset_gen
     port map (
       clk_sys_i        => clk_sys,
       rst_pcie_n_a_i   => '1',
@@ -348,11 +408,6 @@ begin
       );
 
 
-  genum_csr_ack_i                <= genum_wb_in.ack or genum_wb_in.err;
-  genum_wb_out.adr(1 downto 0)   <= (others => '0');
-  genum_wb_out.adr(18 downto 2)  <= wb_adr(16 downto 0);
-  genum_wb_out.adr(31 downto 19) <= (others => '0');
-
   process(clk_sys)
   begin
     if rising_edge(clk_sys) then
@@ -374,6 +429,9 @@ begin
 
   thermo_id <= '0' when owr_en(0) = '1' else 'Z';
   owr_i(0)  <= thermo_id;
+
+  pps_o                  <= pps;
+  sfp_tx_disable_o       <= '0';
 
   U_WR_CORE : xwr_core
     generic map (
@@ -435,8 +493,8 @@ begin
       owr_en_o => owr_en,
       owr_i    => owr_i,
 
-      slave_i => wrc_slave_i,
-      slave_o => wrc_slave_o,
+      slave_i   => xbar_master_out(c_slv_wrc_slave),
+      slave_o   => xbar_master_in(c_slv_wrc_slave),
 
       aux_master_o => etherbone_cfg_in,
       aux_master_i => etherbone_cfg_out,
@@ -472,27 +530,31 @@ begin
       snk_i       => etherbone_snk_in,
       cfg_slave_o => etherbone_cfg_out,
       cfg_slave_i => etherbone_cfg_in,
-      master_o    => etherbone_wb_out,
-      master_i    => etherbone_wb_in);
+      master_o    => xbar_slave_in(c_mst_etherbone),
+      master_i    => xbar_slave_out(c_mst_etherbone)
+  );
 
-  ---------------------
+  ------------------------------------------------------------------------------
+  -- Master Wishbone crossbar
+  ------------------------------------------------------------------------------
+
   masterbar : xwb_crossbar
     generic map (
-      g_num_masters => 2,
-      g_num_slaves  => 1,
+      g_num_masters => c_nr_masters,
+      g_num_slaves  => c_nr_slaves,
       g_registered  => false,
-      g_address     => (0 => x"00000000"),
-      g_mask        => (0 => x"00000000"))
+      g_address     => c_addresses,
+      g_mask        => c_masks)
     port map (
       clk_sys_i   => clk_sys,
       rst_n_i     => local_reset_n,
-      slave_i(0)  => genum_wb_out,
-      slave_i(1)  => etherbone_wb_out,
-      slave_o(0)  => genum_wb_in,
-      slave_o(1)  => etherbone_wb_in,
-      master_i(0) => wrc_slave_o,
-      master_o(0) => wrc_slave_i);
-  ---------------------
+      slave_i   => xbar_slave_in,
+      slave_o   => xbar_slave_out,
+      master_i  => xbar_master_in,
+      master_o  => xbar_master_out
+  );
+
+  ------------------------------------------------------------------------------
 
   U_GTP : wr_gtp_phy_spartan6
     generic map (
@@ -536,7 +598,7 @@ begin
       pad_rxn1_i         => sfp_rxn_i,
       pad_rxp1_i         => sfp_rxp_i);
 
-  
+
   U_DAC_ARB : cutewr_serial_dac_arb
     generic map (
       g_invert_sclk    => false,
@@ -557,10 +619,41 @@ begin
       dac_clr_n_o   => dac_clr_n_o,
       dac_sclk_o    => dac_sclk_o,
       dac_din_o     => dac_din_o);
-  
-  pps_o                  <= pps;
 
-  sfp_tx_disable_o <= '0';
+  ------------------------------------------------------------------------------
+  -- Cross clock domains
+  ------------------------------------------------------------------------------
+  cmp_clock_crossing: xwb_clock_crossing
+      port map
+      (
+        slave_clk_i     => clk_sys,
+        slave_rst_n_i   => local_reset_n,
+        slave_i         => xbar_master_out(c_slv_multiboot),
+        slave_o         => xbar_master_in(c_slv_multiboot),
+
+        master_clk_i    => clk_20m_vcxo_buf,
+        master_rst_n_i  => local_reset_n,
+        master_i        => multiboot_wb_in,
+        master_o        => multiboot_wb_out
+      );
+
+  ------------------------------------------------------------------------------
+  -- MultiBoot logic
+  ------------------------------------------------------------------------------
+  cmp_multiboot : wb_xil_multiboot
+    port map
+    (
+      clk_i   => clk_20m_vcxo_buf,
+      rst_n_i => local_reset_n,
+
+      wbs_i   => multiboot_wb_out,
+      wbs_o   => multiboot_wb_in,
+
+      spi_cs_n_o => fpga_prom_cso_b_n_o,
+      spi_sclk_o => fpga_prom_cclk_o,
+      spi_mosi_o => fpga_prom_mosi_o,
+      spi_miso_i => fpga_prom_miso_i
+    );
 
 end rtl;
 

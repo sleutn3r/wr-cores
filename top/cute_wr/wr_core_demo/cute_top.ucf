@@ -1,81 +1,56 @@
 CONFIG VCCAUX = 3.3;
 
 #bank 0
-NET "CLK_20M_VCXO_I" LOC = E16;
-NET "CLK_20M_VCXO_I" IOSTANDARD = "LVCMOS33";
+NET "clk_20m_vcxo_i" LOC = E16 | IOSTANDARD = "LVCMOS33";
 
-NET "clk_125m_pllref_n_i" LOC = F15;
-NET "clk_125m_pllref_n_i" IOSTANDARD = "LVDS_33";
+NET "clk_125m_pllref_n_i" LOC = F15 | IOSTANDARD = "LVDS_33";
+NET "clk_125m_pllref_p_i" LOC = F14 | IOSTANDARD = "LVDS_33";
 
-NET "clk_125m_pllref_p_i" LOC = F14;
-NET "clk_125m_pllref_p_i" IOSTANDARD = "LVDS_33";
+NET "fpga_pll_ref_clk_101_n_i" LOC = B10 | IOSTANDARD = "LVDS_33";
 
-NET "fpga_pll_ref_clk_101_n_i" LOC = B10;
-NET "fpga_pll_ref_clk_101_n_i" IOSTANDARD = "LVDS_33";
+NET "fpga_pll_ref_clk_101_p_i" LOC = A10 | IOSTANDARD = "LVDS_33";
 
-NET "fpga_pll_ref_clk_101_p_i" LOC = A10;
-NET "fpga_pll_ref_clk_101_p_i" IOSTANDARD = "LVDS_33";
+NET "dac_clr_n_o" LOC = B22 | IOSTANDARD = "LVCMOS33";
 
+NET "dac_sclk_o" LOC = D22 | IOSTANDARD = "LVCMOS33";
 
-NET "dac_clr_n_o" LOC = B22;
-NET "dac_clr_n_o" IOSTANDARD = "LVCMOS33";
+NET "dac_din_o" LOC = D21 | IOSTANDARD = "LVCMOS33";
 
-NET "dac_sclk_o" LOC = D22;
-NET "dac_sclk_o" IOSTANDARD = "LVCMOS33";
+NET "dac_ldac_n_o" LOC = C22 | IOSTANDARD = "LVCMOS33";
 
-NET "dac_din_o" LOC = D21;
-NET "dac_din_o" IOSTANDARD = "LVCMOS33";
+NET "dac_sync_n_o" LOC = E22 | IOSTANDARD = "LVCMOS33";
 
-NET "dac_ldac_n_o" LOC = C22;
-NET "dac_ldac_n_o" IOSTANDARD = "LVCMOS33";
-
-NET "dac_sync_n_o" LOC = E22;
-NET "dac_sync_n_o" IOSTANDARD = "LVCMOS33";
-
-NET "SFP_MOD_DEF1_b" LOC = D1;
-NET "SFP_MOD_DEF1_b" IOSTANDARD = "LVCMOS33";
-NET "SFP_MOD_DEF0_b" LOC = D2;
-NET "SFP_MOD_DEF0_b" IOSTANDARD = "LVCMOS33";
-NET "SFP_MOD_DEF2_b" LOC = E1;
-NET "SFP_MOD_DEF2_b" IOSTANDARD = "LVCMOS33";
-NET "SFP_RATE_SELECT_b" LOC = C1;
-NET "SFP_RATE_SELECT_b" IOSTANDARD = "LVCMOS33";
-NET "SFP_TX_FAULT_i" LOC = F1;
-NET "SFP_TX_FAULT_i" IOSTANDARD = "LVCMOS33";
-NET "SFP_TX_DISABLE_o" LOC = F2;
-NET "SFP_TX_DISABLE_o" IOSTANDARD = "LVCMOS33";
-NET "SFP_LOS_i" LOC = B1;
-NET "SFP_LOS_i" IOSTANDARD = "LVCMOS33";
+NET "sfp_mod_def1_b" LOC = D1 | IOSTANDARD = "LVCMOS33";
+NET "sfp_mod_def0_b" LOC = D2 | IOSTANDARD = "LVCMOS33";
+NET "sfp_mod_def2_b" LOC = E1 | IOSTANDARD = "LVCMOS33";
+NET "sfp_rate_select_b" LOC = C1 | IOSTANDARD = "LVCMOS33";
+NET "sfp_tx_fault_i" LOC = F1 | IOSTANDARD = "LVCMOS33";
+NET "sfp_tx_disable_o" LOC = F2 | IOSTANDARD = "LVCMOS33";
+NET "sfp_los_i" LOC = B1 | IOSTANDARD = "LVCMOS33";
 
 NET "sfp_rxp_i" LOC= D9;
 NET "sfp_rxn_i" LOC= C9;
 NET "sfp_txp_o" LOC= B8;
 NET "sfp_txn_o" LOC= A8;
 
-NET "pps_o" LOC = A5;
-NET "pps_o" IOSTANDARD = "LVCMOS33";
+NET "pps_o" LOC = A5 | IOSTANDARD = "LVCMOS33";
+
+NET "fpga_scl_b" LOC = G22 | IOSTANDARD = "LVCMOS33";
+NET "fpga_sda_b" LOC = F22 | IOSTANDARD = "LVCMOS33";
+
+NET "thermo_id" LOC = F21 | IOSTANDARD = "LVCMOS33";
+NET "LED_RED" LOC = A4 | IOSTANDARD = "LVCMOS33";
+NET "LED_GREEN" LOC = C5 | IOSTANDARD = "LVCMOS33";
+NET "LED_TEST" LOC = A17 | IOSTANDARD = "LVCMOS33";
 
 
-NET "FPGA_SCL_B" LOC = G22;
-NET "FPGA_SCL_B" IOSTANDARD = "LVCMOS33";
-NET "FPGA_SDA_B" LOC = F22;
-NET "FPGA_SDA_B" IOSTANDARD = "LVCMOS33";
+NET "uart_rxd_i" LOC = B3 | IOSTANDARD= "LVCMOS33";
+NET "uart_txd_o" LOC = A3 | IOSTANDARD= "LVCMOS33";
 
-NET "thermo_id" LOC = F21;
-NET "thermo_id" IOSTANDARD = "LVCMOS33";
- 
-NET "LED_RED" LOC = A4;                 
-NET "LED_RED" IOSTANDARD = "LVCMOS33";  
-NET "LED_GREEN" LOC = C5;               
-NET "LED_GREEN" IOSTANDARD = "LVCMOS33";
-NET "LED_TEST" LOC = A17;               
-NET "LED_TEST" IOSTANDARD = "LVCMOS33";
-
-
-NET "uart_rxd_i" LOC= B3;            
-NET "uart_rxd_i" IOSTANDARD= "LVCMOS33";
-NET "uart_txd_o" LOC= A3;            
-NET "uart_txd_o" IOSTANDARD= "LVCMOS33";
+NET "fpga_prom_mosi_o" LOC = AB20 | IOSTANDARD = "LVCMOS33";
+NET "fpga_prom_miso_i" LOC = AA20 | IOSTANDARD = "LVCMOS33";
+NET "fpga_prom_cclk_o" LOC = Y20 | IOSTANDARD = "LVCMOS33";
+NET "fpga_prom_cso_b_n_o" LOC = AA3 | IOSTANDARD = "LVCMOS33";
 
 #---------------------------------------------------------------------------------------------
 # False Path
@@ -92,11 +67,11 @@ TIMESPEC TS_fpga_pll_ref_clk_101_p_i = PERIOD "fpga_pll_ref_clk_101_p_i" 8 ns HI
 NET "fpga_pll_ref_clk_101_n_i" TNM_NET = fpga_pll_ref_clk_101_n_i;
 TIMESPEC TS_fpga_pll_ref_clk_101_n_i = PERIOD "fpga_pll_ref_clk_101_n_i" 8 ns HIGH 50%;
 
-PIN "clk_125m_pllref_BUFG.O" CLOCK_DEDICATED_ROUTE = FALSE; 
+PIN "clk_125m_pllref_BUFG.O" CLOCK_DEDICATED_ROUTE = FALSE;
 #Created by Constraints Editor (xc6slx45t-fgg484-3) - 2011/06/09
 NET "U_GTP/ch1_gtp_clkout_int<1>" TNM_NET = U_GTP/ch1_gtp_clkout_int<1>;
 TIMESPEC TS_U_GTP_ch1_gtp_clkout_int_1_ = PERIOD "U_GTP/ch1_gtp_clkout_int<1>" 8 ns HIGH 50%;
-# PIN "cmp_clk_dmtd_buf.O" CLOCK_DEDICATED_ROUTE = FALSE; 
+# PIN "cmp_clk_dmtd_buf.O" CLOCK_DEDICATED_ROUTE = FALSE;
 ##Created by Constraints Editor (xc6slx45t-fgg484-3) - 2012/08/07
 INST "*/U_SOFTPLL/U_Wrapped_Softpll/gen_feedback_dmtds*/clk_in" TNM = skew_limit;
 INST "*/U_SOFTPLL/U_Wrapped_Softpll/gen_ref_dmtds*/clk_in" TNM = skew_limit;
