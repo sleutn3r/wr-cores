@@ -296,6 +296,7 @@ package wrcore_pkg is
       g_interface_mode            : t_wishbone_interface_mode      := PIPELINED;
       g_address_granularity       : t_wishbone_address_granularity := BYTE;
       g_aux_sdb                   : t_sdb_device                   := c_wrc_periph3_sdb;
+      g_aux1_sdb                  : t_sdb_device                   := c_wrc_periph3_sdb;
       g_softpll_channels_config   : t_softpll_channel_config_array := c_softpll_default_channel_config;
       g_softpll_enable_debugger   : boolean                        := false;
       g_vuart_fifo_size           : integer                        := 1024
@@ -354,6 +355,9 @@ package wrcore_pkg is
       aux_master_o : out t_wishbone_master_out;
       aux_master_i : in  t_wishbone_master_in := cc_unused_master_in;
 
+      aux1_master_o : out t_wishbone_master_out;
+      aux1_master_i : in  t_wishbone_master_in := cc_unused_master_in;
+
       wrf_src_o : out t_wrf_source_out;
       wrf_src_i : in  t_wrf_source_in := c_dummy_src_in;
       wrf_snk_o : out t_wrf_sink_out;
@@ -396,6 +400,7 @@ package wrcore_pkg is
       g_interface_mode            : t_wishbone_interface_mode      := PIPELINED;
       g_address_granularity       : t_wishbone_address_granularity := WORD;
       g_aux_sdb                   : t_sdb_device                   := c_wrc_periph3_sdb;
+      g_aux1_sdb                  : t_sdb_device                   := c_wrc_periph3_sdb;
       g_softpll_channels_config   : t_softpll_channel_config_array := c_softpll_default_channel_config;
       g_softpll_enable_debugger   : boolean                        := false;
       g_vuart_fifo_size           : integer                        := 1024
@@ -508,6 +513,19 @@ package wrcore_pkg is
       aux_stb_o   : out std_logic;
       aux_ack_i   : in  std_logic                                          := '1';
       aux_stall_i : in  std_logic                                          := '0';
+
+      -----------------------------------------
+      -- Auxillary1 WB master
+      -----------------------------------------
+      aux1_adr_o   : out std_logic_vector(c_wishbone_address_width-1 downto 0);
+      aux1_dat_o   : out std_logic_vector(c_wishbone_data_width-1 downto 0);
+      aux1_dat_i   : in  std_logic_vector(c_wishbone_data_width-1 downto 0) := (others => '0');
+      aux1_sel_o   : out std_logic_vector(c_wishbone_address_width/8-1 downto 0);
+      aux1_we_o    : out std_logic;
+      aux1_cyc_o   : out std_logic;
+      aux1_stb_o   : out std_logic;
+      aux1_ack_i   : in  std_logic                                          := '1';
+      aux1_stall_i : in  std_logic                                          := '0';
 
       -----------------------------------------
       -- External Fabric I/F

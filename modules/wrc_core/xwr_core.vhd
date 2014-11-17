@@ -78,6 +78,7 @@ entity xwr_core is
     g_interface_mode            : t_wishbone_interface_mode      := PIPELINED;
     g_address_granularity       : t_wishbone_address_granularity := WORD;
     g_aux_sdb                   : t_sdb_device                   := c_wrc_periph3_sdb;
+    g_aux1_sdb                  : t_sdb_device                   := c_wrc_periph3_sdb;
     g_softpll_channels_config   : t_softpll_channel_config_array := c_softpll_default_channel_config;
     g_softpll_enable_debugger   : boolean                        := false;
     g_vuart_fifo_size           : integer                        := 1024
@@ -172,6 +173,8 @@ entity xwr_core is
     aux_master_o : out t_wishbone_master_out;
     aux_master_i : in  t_wishbone_master_in := cc_dummy_master_in;
 
+    aux1_master_o : out t_wishbone_master_out;
+    aux1_master_i : in  t_wishbone_master_in := cc_dummy_master_in;
     -----------------------------------------
     -- External Fabric I/F
     -----------------------------------------
@@ -229,6 +232,7 @@ begin
       g_interface_mode            => g_interface_mode,
       g_address_granularity       => g_address_granularity,
       g_aux_sdb                   => g_aux_sdb,
+      g_aux1_sdb                  => g_aux1_sdb,
       g_softpll_channels_config   => g_softpll_channels_config,
       g_softpll_enable_debugger   => g_softpll_enable_debugger,
       g_vuart_fifo_size           => g_vuart_fifo_size)
@@ -300,6 +304,16 @@ begin
       aux_stall_i => aux_master_i.stall,
       aux_ack_i   => aux_master_i.ack,
       aux_dat_i   => aux_master_i.dat,
+
+      aux1_adr_o   => aux1_master_o.adr,
+      aux1_dat_o   => aux1_master_o.dat,
+      aux1_sel_o   => aux1_master_o.sel,
+      aux1_cyc_o   => aux1_master_o.cyc,
+      aux1_stb_o   => aux1_master_o.stb,
+      aux1_we_o    => aux1_master_o.we,
+      aux1_stall_i => aux1_master_i.stall,
+      aux1_ack_i   => aux1_master_i.ack,
+      aux1_dat_i   => aux1_master_i.dat,
 
       ext_snk_adr_i   => wrf_snk_i.adr,
       ext_snk_dat_i   => wrf_snk_i.dat,

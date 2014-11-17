@@ -63,6 +63,7 @@
 --      +0x500: UART
 --      +0x600: OneWire
 --      +0x700: Auxillary space (Etherbone config, etc)
+--      +0x900: Auxillary1 space (SPI FLASH + Multiboot, etc)
 
 library ieee;
 use ieee.std_logic_1164.all;
@@ -79,7 +80,7 @@ use work.softpll_pkg.all;
 
 entity wr_core is
   generic(
-    --if set to 1, then blocks in PCS use smaller calibration counter to speed 
+    --if set to 1, then blocks in PCS use smaller calibration counter to speed
     --up simulation
     g_simulation                : integer                        := 0;
     g_with_external_clock_input : boolean                        := false;
@@ -93,6 +94,7 @@ entity wr_core is
     g_interface_mode            : t_wishbone_interface_mode      := PIPELINED;
     g_address_granularity       : t_wishbone_address_granularity := WORD;
     g_aux_sdb                   : t_sdb_device                   := c_wrc_periph3_sdb;
+    g_aux1_sdb                  : t_sdb_device                   := c_wrc_periph3_sdb;
     g_softpll_channels_config   : t_softpll_channel_config_array := c_softpll_default_channel_config;
     g_softpll_enable_debugger   : boolean                        := false;
     g_vuart_fifo_size           : integer                        := 1024
@@ -205,6 +207,19 @@ entity wr_core is
     aux_stb_o   : out std_logic;
     aux_ack_i   : in  std_logic := '1';
     aux_stall_i : in  std_logic := '0';
+
+    -----------------------------------------
+    -- Auxillary1 WB master
+    -----------------------------------------
+    aux1_adr_o   : out std_logic_vector(c_wishbone_address_width-1 downto 0);
+    aux1_dat_o   : out std_logic_vector(c_wishbone_data_width-1 downto 0);
+    aux1_dat_i   : in  std_logic_vector(c_wishbone_data_width-1 downto 0);
+    aux1_sel_o   : out std_logic_vector(c_wishbone_address_width/8-1 downto 0);
+    aux1_we_o    : out std_logic;
+    aux1_cyc_o   : out std_logic;
+    aux1_stb_o   : out std_logic;
+    aux1_ack_i   : in  std_logic := '1';
+    aux1_stall_i : in  std_logic := '0';
 
     -----------------------------------------
     -- External Fabric I/F
@@ -350,7 +365,8 @@ architecture struct of wr_core is
   -----------------------------------------------------------------------------
   --WB Secondary Crossbar
   -----------------------------------------------------------------------------
-  constant c_secbar_layout : t_sdb_record_array(7 downto 0) :=
+  constant c_nr_slaves_secbar : natural := 9;
+  constant c_secbar_layout : t_sdb_record_array(c_nr_slaves_secbar-1 downto 0) :=
     (0 => f_sdb_embed_device(c_xwr_mini_nic_sdb, x"00000000"),
      1 => f_sdb_embed_device(c_xwr_endpoint_sdb, x"00000100"),
      2 => f_sdb_embed_device(c_xwr_softpll_ng_sdb, x"00000200"),
@@ -358,15 +374,16 @@ architecture struct of wr_core is
      4 => f_sdb_embed_device(c_wrc_periph0_sdb, x"00000400"),  -- Syscon
      5 => f_sdb_embed_device(c_wrc_periph1_sdb, x"00000500"),  -- UART
      6 => f_sdb_embed_device(c_wrc_periph2_sdb, x"00000600"),  -- 1-Wire
-     7 => f_sdb_embed_device(g_aux_sdb, x"00000700")           -- aux WB bus
+     7 => f_sdb_embed_device(g_aux_sdb, x"00000700"),          -- aux WB bus
+     8 => f_sdb_embed_device(g_aux1_sdb, x"00000800")          -- aux1 WB bus
      );
 
-  constant c_secbar_sdb_address : t_wishbone_address := x"00000800";
+  constant c_secbar_sdb_address : t_wishbone_address := x"00001000";
   constant c_secbar_bridge_sdb  : t_sdb_bridge       :=
     f_xwb_bridge_layout_sdb(true, c_secbar_layout, c_secbar_sdb_address);
 
-  signal secbar_master_i : t_wishbone_master_in_array(7 downto 0);
-  signal secbar_master_o : t_wishbone_master_out_array(7 downto 0);
+  signal secbar_master_i : t_wishbone_master_in_array(c_nr_slaves_secbar-1 downto 0);
+  signal secbar_master_o : t_wishbone_master_out_array(c_nr_slaves_secbar-1 downto 0);
 
   -----------------------------------------------------------------------------
   --WB intercon
@@ -859,7 +876,7 @@ begin
   WB_SECONDARY_CON : xwb_sdb_crossbar
     generic map(
       g_num_masters => 1,
-      g_num_slaves  => 8,
+      g_num_slaves  => c_nr_slaves_secbar,
       g_registered  => true,
       g_wraparound  => true,
       g_layout      => c_secbar_layout,
@@ -906,6 +923,18 @@ begin
   secbar_master_i(7).err   <= '0';
   secbar_master_i(7).rty   <= '0';
 
+  aux1_adr_o <= secbar_master_o(8).adr;
+  aux1_dat_o <= secbar_master_o(8).dat;
+  aux1_sel_o <= secbar_master_o(8).sel;
+  aux1_cyc_o <= secbar_master_o(8).cyc;
+  aux1_stb_o <= secbar_master_o(8).stb;
+  aux1_we_o  <= secbar_master_o(8).we;
+
+  secbar_master_i(8).dat   <= aux1_dat_i;
+  secbar_master_i(8).ack   <= aux1_ack_i;
+  secbar_master_i(8).stall <= aux1_stall_i;
+  secbar_master_i(8).err   <= '0';
+  secbar_master_i(8).rty   <= '0';
   --secbar_master_i(6).err <= '0';
   --secbar_master_i(5).err <= '0';
   --secbar_master_i(4).err <= '0';

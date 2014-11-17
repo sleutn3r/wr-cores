@@ -157,7 +157,23 @@ architecture rtl of cute_top is
 
   -- Number of Wishbone masters and slaves, for wb_crossbar
   constant c_nr_masters      : natural :=  1;
-  constant c_nr_slaves       : natural :=  2;
+  constant c_nr_slaves       : natural :=  1;
+
+  constant c_wrc_multiboot_sdb : t_sdb_device := (
+    abi_class     => x"0000",              -- undocumented device
+    abi_ver_major => x"01",
+    abi_ver_minor => x"01",
+    wbd_endian    => c_sdb_endian_big,
+    wbd_width     => x"7",                 -- 8/16/32-bit port granularity
+    sdb_component => (
+      addr_first  => x"0000000000000000",
+      addr_last   => x"00000000000000ff",
+      product     => (
+        vendor_id => x"000000000000CE42",  -- CERN
+        device_id => x"deadbeaf",
+        version   => x"00000001",
+        date      => x"20141115",
+        name      => "SPI-flash+Multiboot")));
 
   -----------------------------------------
   -- Memory map
@@ -174,24 +190,20 @@ architecture rtl of cute_top is
 
   -- base address definitions
   constant c_addr_wrc_slave : t_wishbone_address := x"00000000";
-  constant c_addr_multiboot : t_wishbone_address := x"00000300";
 
   -- address mask definitions
-  constant c_mask_wrc_slave : t_wishbone_address := x"00000F00";
-  constant c_mask_multiboot : t_wishbone_address := x"00000F00";
+  constant c_mask_wrc_slave : t_wishbone_address := x"00000000";
 
   -- addresses constant for Wishbone crossbar
   constant c_addresses : t_wishbone_address_array(c_nr_slaves-1 downto 0)
                   := (
-                       c_slv_wrc_slave => c_addr_wrc_slave,
-                       c_slv_multiboot => c_addr_multiboot
+                       c_slv_wrc_slave => c_addr_wrc_slave
                      );
 
   -- masks constant for Wishbone crossbar
   constant c_masks : t_wishbone_address_array(c_nr_slaves-1 downto 0)
                    := (
-                       c_slv_wrc_slave => c_mask_wrc_slave,
-                       c_slv_multiboot => c_addr_multiboot
+                       c_slv_wrc_slave => c_mask_wrc_slave
                       );
   ------------------------------------------------------------------------------
   -- Signals declaration
@@ -288,6 +300,8 @@ architecture rtl of cute_top is
   signal etherbone_snk_in  : t_wrf_sink_in;
   signal etherbone_cfg_in  : t_wishbone_slave_in;
   signal etherbone_cfg_out : t_wishbone_slave_out;
+  signal multiboot_in  : t_wishbone_slave_in;
+  signal multiboot_out : t_wishbone_slave_out;
 
 begin
 
@@ -429,6 +443,7 @@ begin
 
   thermo_id <= '0' when owr_en(0) = '1' else 'Z';
   owr_i(0)  <= thermo_id;
+  owr_i(1)  <= '0';
 
   pps_o                  <= pps;
   sfp_tx_disable_o       <= '0';
@@ -443,6 +458,8 @@ begin
       g_ep_rxbuf_size             => 1024,
       g_dpram_initf               => "",
       g_dpram_size                => 94208/4,
+      g_aux_sdb                   => c_etherbone_sdb,
+      g_aux1_sdb                  => c_wrc_multiboot_sdb,
       g_interface_mode            => PIPELINED,
       g_address_granularity       => BYTE)
     port map (
@@ -498,6 +515,9 @@ begin
 
       aux_master_o => etherbone_cfg_in,
       aux_master_i => etherbone_cfg_out,
+
+      aux1_master_o => multiboot_in,
+      aux1_master_i => multiboot_out,
 
       wrf_src_o => etherbone_snk_in,
       wrf_src_i => etherbone_snk_out,
@@ -628,8 +648,8 @@ begin
       (
         slave_clk_i     => clk_sys,
         slave_rst_n_i   => local_reset_n,
-        slave_i         => xbar_master_out(c_slv_multiboot),
-        slave_o         => xbar_master_in(c_slv_multiboot),
+        slave_i         => multiboot_in,
+        slave_o         => multiboot_out,
 
         master_clk_i    => clk_20m_vcxo_buf,
         master_rst_n_i  => local_reset_n,
