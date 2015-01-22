@@ -214,20 +214,22 @@ end package;
 package body ep_wbgen2_pkg is
 function f_x_to_zero (x:std_logic) return std_logic is
 begin
-if(x = 'X' or x = 'U') then
-return '0';
+--if(x = 'X' or x = 'U') then  -- 07-Nov-2013 PeterJ: this one doesn't cover all the cases!
+if x = '1' then
+return '1';
 else
-return x;
+return '0';
 end if; 
 end function;
 function f_x_to_zero (x:std_logic_vector) return std_logic_vector is
 variable tmp: std_logic_vector(x'length-1 downto 0);
 begin
 for i in 0 to x'length-1 loop
-if(x(i) = 'X' or x(i) = 'U') then
-tmp(i):= '0';
+--if(x(i) = 'X' or x(i) = 'U') then  -- 07-Nov-2013 PeterJ: this one doesn't cover all the cases!
+if x(i) = '1' then
+tmp(i):= '1';
 else
-tmp(i):=x(i);
+tmp(i):='0';
 end if; 
 end loop; 
 return tmp;
