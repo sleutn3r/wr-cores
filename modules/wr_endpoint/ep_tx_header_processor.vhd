@@ -647,7 +647,7 @@ begin  -- behavioral
 ---------------------------------------------------------------------------------------------
 --     elsif(src_dreq_i = '1' and state /= TXF_GAP and state /= TXF_ABORT and state /= TXF_DELAYED_SOF and state /= TXF_STORE_TSTAMP) then
 ---------------------------------------------------------------------------------------------
-    elsif(src_dreq_i = '1' and state /= TXF_PAD and state /= TXF_GAP  and state /= TXF_DELAYED_SOF and state /= TXF_STORE_TSTAMP) then
+    elsif(src_dreq_i = '1' and state /= TXF_IDLE and state /= TXF_PAD and state /= TXF_GAP  and state /= TXF_DELAYED_SOF and state /= TXF_STORE_TSTAMP) then
       wb_out.stall <= '0';              -- during data/header phase - whenever
                                         -- the sink is ready to accept data
     
