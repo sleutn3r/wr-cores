@@ -108,7 +108,7 @@ entity wr_gtp_phy_spartan6 is
     ch0_rst_i : in std_logic;
 
     -- local loopback enable (Tx->Rx), active hi
-    ch0_loopen_i : in std_logic;
+    ch0_loopen_i : in std_logic_vector(2 downto 0) := "000";
 
 -- Port 1
     ch1_ref_clk_i : in std_logic;
@@ -125,7 +125,7 @@ entity wr_gtp_phy_spartan6 is
     ch1_rx_bitslide_o : out std_logic_vector(3 downto 0);
 
     ch1_rst_i    : in std_logic := '0';
-    ch1_loopen_i : in std_logic := '0';
+    ch1_loopen_i : in std_logic_vector(2 downto 0) := "000";
 
 -- Serial I/O
 
@@ -273,7 +273,6 @@ architecture rtl of wr_gtp_phy_spartan6 is
   end component;
 
   signal ch0_gtp_reset        : std_logic;
-  signal ch0_gtp_loopback     : std_logic_vector(2 downto 0) := "000";
   signal ch0_gtp_reset_done   : std_logic;
   signal ch0_gtp_pll_lockdet  : std_logic;
   signal ch0_tx_pma_set_phase : std_logic                    := '0';
@@ -303,7 +302,6 @@ architecture rtl of wr_gtp_phy_spartan6 is
 
 
   signal ch1_gtp_reset        : std_logic;
-  signal ch1_gtp_loopback     : std_logic_vector(2 downto 0) := "000";
   signal ch1_gtp_reset_done   : std_logic;
   signal ch1_gtp_pll_lockdet  : std_logic;
   signal ch1_tx_pma_set_phase : std_logic                    := '0';
@@ -703,8 +701,8 @@ begin  -- rtl
     port map
     (
       ------------------------ Loopback and Powerdown Ports ----------------------
-      LOOPBACK0_IN => ch0_gtp_loopback,
-      LOOPBACK1_IN => ch1_gtp_loopback,
+      LOOPBACK0_IN => ch0_loopen_i,
+      LOOPBACK1_IN => ch1_loopen_i,
       --------------------------------- PLL Ports --------------------------------
 
       REFCLKOUT0_OUT => open,
