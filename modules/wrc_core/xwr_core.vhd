@@ -122,15 +122,15 @@ entity xwr_core is
     phy_ref_clk_i : in std_logic;
 
     phy_tx_data_o        : out std_logic_vector(f_pcs_data_width(g_pcs_16bit)-1 downto 0);
-    phy_tx_k_o           : out std_logic;
-    phy_tx_k16_o         : out std_logic;
+    phy_tx_k_o           : out std_logic_vector(f_pcs_k_width(g_pcs_16bit)-1 downto 0);
+--    phy_tx_k16_o         : out std_logic;
     phy_tx_disparity_i   : in  std_logic;
     phy_tx_enc_err_i     : in  std_logic;
 
     phy_rx_data_i        : in std_logic_vector(f_pcs_data_width(g_pcs_16bit)-1 downto 0);
     phy_rx_rbclk_i       : in std_logic;
-    phy_rx_k_i           : in std_logic;
-    phy_rx_k16_i         : in std_logic;
+    phy_rx_k_i           : in std_logic_vector(f_pcs_k_width(g_pcs_16bit)-1 downto 0);
+--    phy_rx_k16_i         : in std_logic;
     phy_rx_enc_err_i     : in std_logic;
     phy_rx_bitslide_i    : in std_logic_vector(f_pcs_bts_width(g_pcs_16bit)-1 downto 0);
 
@@ -199,9 +199,15 @@ entity xwr_core is
     timestamps_ack_i : in  std_logic := '1';
 
     -----------------------------------------
+    -- Pause Frame Control
+    -----------------------------------------
+    fc_tx_pause_req_i     : in  std_logic := '0';
+    fc_tx_pause_delay_i   : in  std_logic_vector(15 downto 0) := x"0000";
+    fc_tx_pause_ready_o   : out std_logic;
+
+    -----------------------------------------
     -- Timecode/Servo Control
     -----------------------------------------
-
     tm_link_up_o         : out std_logic;
     -- DAC Control
     tm_dac_value_o       : out std_logic_vector(23 downto 0);
@@ -263,13 +269,11 @@ begin
       phy_ref_clk_i        => phy_ref_clk_i,
       phy_tx_data_o        => phy_tx_data_o,
       phy_tx_k_o           => phy_tx_k_o,
-      phy_tx_k16_o         => phy_tx_k16_o,
       phy_tx_disparity_i   => phy_tx_disparity_i,
       phy_tx_enc_err_i     => phy_tx_enc_err_i,
       phy_rx_data_i        => phy_rx_data_i,
       phy_rx_rbclk_i       => phy_rx_rbclk_i,
       phy_rx_k_i           => phy_rx_k_i,
-      phy_rx_k16_i         => phy_rx_k16_i,
       phy_rx_enc_err_i     => phy_rx_enc_err_i,
       phy_rx_bitslide_i    => phy_rx_bitslide_i,
       phy_rst_o            => phy_rst_o,
@@ -296,6 +300,7 @@ begin
       spi_ncs_o  => spi_ncs_o,
       spi_mosi_o => spi_mosi_o,
       spi_miso_i => spi_miso_i,
+
       uart_rxd_i => uart_rxd_i,
       uart_txd_o => uart_txd_o,
 
@@ -351,6 +356,10 @@ begin
       txtsu_ts_incorrect_o => timestamps_o.incorrect,
       txtsu_stb_o          => timestamps_o.stb,
       txtsu_ack_i          => timestamps_ack_i,
+
+      fc_tx_pause_req_i    => fc_tx_pause_req_i,
+      fc_tx_pause_delay_i  => fc_tx_pause_delay_i,
+      fc_tx_pause_ready_o  => fc_tx_pause_ready_o,
 
       tm_link_up_o         => tm_link_up_o,
       tm_dac_value_o       => tm_dac_value_o,

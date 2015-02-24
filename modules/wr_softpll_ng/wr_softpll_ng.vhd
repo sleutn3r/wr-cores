@@ -531,7 +531,7 @@ begin  -- rtl
   aligner_sample_valid(g_num_outputs-1 downto 0) <= (others => '0');
   
   gen_without_ext_clock_input : if(not g_with_ext_clock_input) generate
-    tags_p(g_num_ref_inputs + g_num_outputs) <= '0';
+--    tags_p(g_num_ref_inputs + g_num_outputs) <= '0';
     regs_out.eccr_ext_supported_i            <= '0';
   end generate gen_without_ext_clock_input;
 
