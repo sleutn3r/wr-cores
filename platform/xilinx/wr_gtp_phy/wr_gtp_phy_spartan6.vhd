@@ -39,6 +39,7 @@
 -- 2010-11-18  0.4      twlostow  Initial release
 -- 2011-02-07  0.5      twlostow  Verified on Spartan6 GTP (single channel only)
 -- 2011-05-15  0.6      twlostow  Added reference clock output
+-- 2015-02-25  0.7      peterj    Added full width loopback and prbs
 -------------------------------------------------------------------------------
 
 library ieee;
@@ -75,7 +76,7 @@ entity wr_gtp_phy_spartan6 is
     ch0_tx_data_i : in std_logic_vector(7 downto 0);
 
     -- 1 when tx_data_i contains a control code, 0 when it's a data byte
-    ch0_tx_k_i : in std_logic;
+    ch0_tx_k_i : in std_logic_vector(0 downto 0);
 
     -- disparity of the currently transmitted 8b10b code (1 = plus, 0 = minus).
     -- Necessary for the PCS to generate proper frame termination sequences.
@@ -95,7 +96,7 @@ entity wr_gtp_phy_spartan6 is
     ch0_rx_data_o : out std_logic_vector(7 downto 0);
 
     -- 1 when the byte on rx_data_o is a control code
-    ch0_rx_k_o : out std_logic;
+    ch0_rx_k_o : out std_logic_vector(0 downto 0);
 
     -- encoding error indication
     ch0_rx_enc_err_o : out std_logic;
@@ -107,25 +108,29 @@ entity wr_gtp_phy_spartan6 is
     -- reset input, active hi
     ch0_rst_i : in std_logic;
 
-    -- local loopback enable (Tx->Rx), active hi
-    ch0_loopen_i : in std_logic_vector(2 downto 0) := "000";
+    -- loopback enable (see Xilinx UG386 Table 2-20; "000" = Normal operation)
+    ch0_loopen_i       : in std_logic_vector(2 downto 0) := "000";
+
+    -- PRBS select (see Xilinx UG386 Table 3-15; "000" = Standard operation, pattern generator off)
+    ch0_tx_prbs_sel_i  : in std_logic_vector(2 downto 0) := "000";
 
 -- Port 1
     ch1_ref_clk_i : in std_logic;
 
     ch1_tx_data_i      : in  std_logic_vector(7 downto 0) := "00000000";
-    ch1_tx_k_i         : in  std_logic                    := '0';
+    ch1_tx_k_i         : in  std_logic_vector(0 downto 0) := "0";
     ch1_tx_disparity_o : out std_logic;
     ch1_tx_enc_err_o   : out std_logic;
 
     ch1_rx_data_o     : out std_logic_vector(7 downto 0);
     ch1_rx_rbclk_o    : out std_logic;
-    ch1_rx_k_o        : out std_logic;
+    ch1_rx_k_o        : out std_logic_vector(0 downto 0);
     ch1_rx_enc_err_o  : out std_logic;
     ch1_rx_bitslide_o : out std_logic_vector(3 downto 0);
 
     ch1_rst_i    : in std_logic := '0';
-    ch1_loopen_i : in std_logic_vector(2 downto 0) := "000";
+    ch1_loopen_i       : in std_logic_vector(2 downto 0) := "000";
+    ch1_tx_prbs_sel_i  : in std_logic_vector(2 downto 0) := "000";
 
 -- Serial I/O
 
@@ -222,7 +227,10 @@ architecture rtl of wr_gtp_phy_spartan6 is
       TXN0_OUT              : out std_logic;
       TXN1_OUT              : out std_logic;
       TXP0_OUT              : out std_logic;
-      TXP1_OUT              : out std_logic);
+      TXP1_OUT              : out std_logic;
+      TXENPRBSTST0_IN       : in  std_logic_vector(2 downto 0);
+      TXENPRBSTST1_IN       : in  std_logic_vector(2 downto 0)
+);
   end component;
 
   component BUFG
@@ -399,7 +407,7 @@ begin  -- rtl
           end if;
           ch0_disp_pipe <= (others => '0');
         else
-          ch0_cur_disp     <= f_next_8b10b_disparity8(ch0_cur_disp, ch0_tx_k_i, ch0_tx_data_i);
+          ch0_cur_disp     <= f_next_8b10b_disparity8(ch0_cur_disp, ch0_tx_k_i(0), ch0_tx_data_i);
           ch0_disp_pipe(0) <= to_std_logic(ch0_cur_disp);
           ch0_disp_pipe(1) <= ch0_disp_pipe(0);
         end if;
@@ -487,7 +495,7 @@ begin  -- rtl
         ch0_tx_chardispval  <= '0';
         ch0_tx_chardispmode <= '0';
       elsif rising_edge(ch0_ref_clk_i) then
-        if(ch0_disparity_set = '0' and ch0_tx_k_i = '1' and ch0_tx_data_i = x"bc" and ch0_align_done = '1') then
+        if(ch0_disparity_set = '0' and ch0_tx_k_i(0) = '1' and ch0_tx_data_i = x"bc" and ch0_align_done = '1') then
           ch0_disparity_set <= '1';
           if(g_force_disparity = 0) then
             ch0_tx_chardispval <= '0';
@@ -506,7 +514,7 @@ begin  -- rtl
     begin
       if(ch0_gtp_reset = '1') then
         ch0_rx_data_o    <= (others => '0');
-        ch0_rx_k_o       <= '0';
+        ch0_rx_k_o(0)    <= '0';
         ch0_rx_enc_err_o <= '0';
         
       elsif rising_edge(ch0_rx_rec_clk) then
@@ -514,11 +522,11 @@ begin  -- rtl
 -- make sure the output data is invalid when the link is down and that it will
 -- trigger the sync loss detection
           ch0_rx_data_o    <= (others => '0');
-          ch0_rx_k_o       <= '1';
+          ch0_rx_k_o(0)    <= '1';
           ch0_rx_enc_err_o <= '1';
         else
           ch0_rx_data_o    <= ch0_rx_data_int;
-          ch0_rx_k_o       <= ch0_rx_k_int;
+          ch0_rx_k_o(0)    <= ch0_rx_k_int;
           ch0_rx_enc_err_o <= ch0_rx_disperr or ch0_rx_invcode;
         end if;
       end if;
@@ -555,7 +563,7 @@ begin  -- rtl
           end if;
           ch1_disp_pipe <= (others => '0');
         else
-          ch1_cur_disp     <= f_next_8b10b_disparity8(ch1_cur_disp, ch1_tx_k_i, ch1_tx_data_i);
+          ch1_cur_disp     <= f_next_8b10b_disparity8(ch1_cur_disp, ch1_tx_k_i(0), ch1_tx_data_i);
           ch1_disp_pipe(0) <= to_std_logic(ch1_cur_disp);
           ch1_disp_pipe(1) <= ch1_disp_pipe(0);
         end if;
@@ -642,7 +650,7 @@ begin  -- rtl
         ch1_tx_chardispmode <= '0';
         
       elsif rising_edge(ch1_ref_clk_i) then
-        if(ch1_disparity_set = '0' and ch1_tx_k_i = '1' and ch1_tx_data_i = x"bc" and ch1_align_done = '1') then
+        if(ch1_disparity_set = '0' and ch1_tx_k_i(0) = '1' and ch1_tx_data_i = x"bc" and ch1_align_done = '1') then
           ch1_disparity_set <= '1';
           if(g_force_disparity = 0) then
             ch1_tx_chardispval <= '0';
@@ -661,7 +669,7 @@ begin  -- rtl
     begin
       if(ch1_rst_i = '1') then
         ch1_rx_data_o    <= (others => '0');
-        ch1_rx_k_o       <= '0';
+        ch1_rx_k_o(0)    <= '0';
         ch1_rx_enc_err_o <= '0';
         
       elsif rising_edge(ch1_rx_rec_clk) then
@@ -669,11 +677,11 @@ begin  -- rtl
 -- make sure the output data is invalid when the link is down and that it will
 -- trigger the sync loss detection
           ch1_rx_data_o    <= (others => '0');
-          ch1_rx_k_o       <= '1';
+          ch1_rx_k_o(0)    <= '1';
           ch1_rx_enc_err_o <= '1';
         else
           ch1_rx_data_o    <= ch1_rx_data_int;
-          ch1_rx_k_o       <= ch1_rx_k_int;
+          ch1_rx_k_o(0)    <= ch1_rx_k_int;
           ch1_rx_enc_err_o <= ch1_rx_disperr or ch1_rx_invcode;
         end if;
       end if;
@@ -756,8 +764,8 @@ begin  -- rtl
       GTPCLKOUT0_OUT   => ch0_gtp_clkout_int,
       GTPCLKOUT1_OUT   => ch1_gtp_clkout_int,
       ------------------- Transmit Ports - 8b10b Encoder Control -----------------
-      TXCHARISK0_IN    => ch0_tx_k_i,
-      TXCHARISK1_IN    => ch1_tx_k_i,
+      TXCHARISK0_IN    => ch0_tx_k_i(0),
+      TXCHARISK1_IN    => ch1_tx_k_i(0),
       TXRUNDISP0_OUT   => ch0_tx_rundisp_vec,
       TXRUNDISP1_OUT   => ch1_tx_rundisp_vec,
 
@@ -782,8 +790,10 @@ begin  -- rtl
       TXN0_OUT              => pad_txn0_o,
       TXN1_OUT              => pad_txn1_o,
       TXP0_OUT              => pad_txp0_o,
-      TXP1_OUT              => pad_txp1_o
-
+      TXP1_OUT              => pad_txp1_o,
+      --------------------- Transmit Ports - TX PRBS Generator -------------------
+      TXENPRBSTST0_IN       => ch1_tx_prbs_sel_i,
+      TXENPRBSTST1_IN       => ch1_tx_prbs_sel_i
       );
 
 
