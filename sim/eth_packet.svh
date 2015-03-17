@@ -32,6 +32,7 @@ class EthPacket;
    
    byte payload[];
    int size;
+   int tx_wr_port;
 
    mac_addr_t src, dst;
    oob_type_t oob_type;
@@ -64,6 +65,7 @@ class EthPacket;
       is_hp     = 0;
       has_crc   = 0;
       oob_type  = NONE;
+      tx_wr_port=-1;
       payload  = new[size](payload);
       
    endfunction // new
@@ -236,7 +238,10 @@ is_hp ? "H" : " ", has_crc ? "C" : " ");
       hexdump(payload);
    endtask // dump
    
-      
+   task set_tx_wr_port(int port);
+      tx_wr_port = port;
+   endtask      
+
 endclass // EthPacket
 
 
@@ -377,8 +382,6 @@ class EthPacketGenerator;
       min_size  = smin;
       max_size  = smax;
    endtask // set_size
-
-   
 
 endclass // EthPacketGenerator
 
