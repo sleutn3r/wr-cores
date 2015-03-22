@@ -400,8 +400,36 @@ peripheral {
          access_bus = READ_ONLY;
          access_dev = WRITE_ONLY;
       };
+   };
+   reg {
+      name = "PTP support unit (direct notification)";
+      prefix = "PSU";
+      field {
+         name = "Holdover State";
+         prefix = "HOLDOVER";
+         type = BIT;
+         access_bus = READ_WRITE;
+         access_dev = READ_ONLY;
+      };
+      field {
+         name = "Received Announce with Holdover clock Class";
+         prefix = "RX_HOLDOVER_MSG";
+         type = BIT;
+         access_bus = READ_ONLY;
+         access_dev = WRITE_ONLY;
+      };
+      field {
+         name = "Mask which indicates which reference input is used (i.e. active slave port)";
+         prefix = "SELECTED_REF_ID";
+         size = 5;
+         align = 8;
+         type = SLV;
+         access_bus = READ_WRITE;
+         access_dev = READ_ONLY;
+      };
 
    };
+
 };
 
 

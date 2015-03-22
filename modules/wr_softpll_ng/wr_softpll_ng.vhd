@@ -44,6 +44,7 @@ use ieee.numeric_std.all;
 
 use work.gencores_pkg.all;
 use work.wishbone_pkg.all;
+
 use work.softpll_pkg.all;
 use work.spll_wbgen2_pkg.all;
 
@@ -150,7 +151,15 @@ entity wr_softpll_ng is
 
     -- rx clock states (port up/down)
     clk_rx_status_i : in  std_logic_vector(g_num_ref_inputs-1 downto 0) :=(others=>'0'); 
-
+    
+    -- mask which indicates which reference is currently used (i.e. active port)
+    -- should be only one at at time
+    selected_ref_clk_o  : out  std_logic_vector(g_num_ref_inputs-1 downto 0);
+    
+    -- 1: SoftPLL is in holdover mode
+    -- 0: not in holdover (either locked or free-running)
+    holdover_on_o       : out  std_logic;
+    rx_holdover_msg_i   : in  std_logic;
 -- Debug FIFO readout interrupt
     dbg_fifo_irq_o : out std_logic
     );
@@ -322,6 +331,7 @@ architecture rtl of wr_softpll_ng is
   signal aligner_sample_valid, aligner_sample_ack : std_logic_vector(g_num_outputs downto 0);
   signal aligner_sample_cref, aligner_sample_cin  : t_aligner_sample_array;
   
+  signal psu_selected_ref_mask : std_logic_vector(31 downto 0);
 begin  -- rtl
 
   U_Adapter : wb_slave_adapter
@@ -779,5 +789,9 @@ begin  -- rtl
 
   wb_irq_o <= wb_irq_out;
 
+  holdover_on_o         <= regs_in.psu_holdover_o;
+  psu_selected_ref_mask <= f_onehot_encode(regs_in.psu_selected_ref_id_o);
+  selected_ref_clk_o    <= psu_selected_ref_mask(g_num_ref_inputs-1 downto 0);
   
+  regs_out.psu_rx_holdover_msg_i <= rx_holdover_msg_i;
 end rtl;
