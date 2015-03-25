@@ -160,6 +160,7 @@ entity wr_softpll_ng is
     -- 0: not in holdover (either locked or free-running)
     holdover_on_o       : out  std_logic;
     rx_holdover_msg_i   : in  std_logic;
+    rx_holdover_clr_o   : out std_logic;
 -- Debug FIFO readout interrupt
     dbg_fifo_irq_o : out std_logic
     );
@@ -794,4 +795,6 @@ begin  -- rtl
   selected_ref_clk_o    <= psu_selected_ref_mask(g_num_ref_inputs-1 downto 0);
   
   regs_out.psu_rx_holdover_msg_i <= rx_holdover_msg_i;
+  
+  rx_holdover_clr_o <= '1' when (regs_in.psu_rx_holdover_msg_o = '1' and regs_in.psu_rx_holdover_msg_load_o ='1') else '0';
 end rtl;
