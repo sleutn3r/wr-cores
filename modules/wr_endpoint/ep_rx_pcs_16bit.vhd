@@ -221,7 +221,7 @@ begin
       g_sync_edge => "positive")
     port map (
       clk_i    => phy_rx_clk_i,
-      rst_n_i  => '1',
+      rst_n_i  => rst_n_i, -- PJ April 23, 2015: reset asynchronous release reset synchronous (phy_rx_clk_i gets de-asserted as soon as phy is reset!)
       data_i   => rst_n_i,
       synced_o => reset_synced_rxclk,
       npulse_o => open,

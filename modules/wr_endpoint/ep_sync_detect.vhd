@@ -92,13 +92,12 @@ begin  -- behavioral
 
   sync_fsm : process (rbclk_i, rst_n_i)
   begin  -- process sync_fsm
-    if rising_edge(rbclk_i) then
-      if(rst_n_i = '0') then
-        state      <= LOSS_OF_SYNC;
-        synced_o   <= '0';
-        rx_even    <= '0';
-        good_cgs   <= (others => '0');
-      else
+    if(rst_n_i = '0') then
+      state      <= LOSS_OF_SYNC;
+      synced_o   <= '0';
+      rx_even    <= '0';
+      good_cgs   <= (others => '0');
+    elsif rising_edge(rbclk_i) then
         if(en_i = '0') then
           state      <= LOSS_OF_SYNC;
           synced_o   <= '0';
@@ -252,7 +251,6 @@ begin  -- behavioral
             end case;
           end if;
         end if;
-      end if;
     end if;
   end process;
   

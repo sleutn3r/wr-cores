@@ -325,11 +325,14 @@ architecture behavioral of ep_rx_path is
   signal mbuf_is_pause, mbuf_full, mbuf_we_d0, mbuf_we_d1       : std_logic;
   signal mbuf_pf_class                                          : std_logic_vector(7 downto 0);
   signal rtu_rq_valid                                           : std_logic;
-  signal stat_reg_mbuf_valid  : std_logic;
+  signal stat_reg_mbuf_valid                                    : std_logic;
+  signal rst_n_rx                                               : std_logic;
 
 begin  -- behavioral
 
   fab_pipe(0) <= pcs_fab_i;
+
+  rst_n_rx <= '0' when rst_n_sys_i = '0' or regs_i.ecr_rx_en_o = '0' else '1';  -- PJ April 23, 2015 reset match_buffer and clock_alignment_fifo while ecr_rx disabled
 
   fc_pause_p_o    <= fc_pause_p;
   gen_with_early_match : if(g_with_early_match) generate
@@ -393,7 +396,7 @@ begin  -- behavioral
         g_data_width => 8 + 1 + 1 + 1,
         g_size       => 16)
       port map (
-        rst_n_i           => rst_n_sys_i,
+        rst_n_i           => rst_n_rx,
         clk_i             => clk_sys_i,
         d_i (0)           => ematch_is_hp,
         d_i (1)           => ematch_is_pause,
@@ -431,7 +434,7 @@ begin  -- behavioral
       g_size                 => 128,
       g_almostfull_threshold => 112)
     port map (
-      rst_n_rd_i       => rst_n_sys_i,
+      rst_n_rd_i       => rst_n_rx,
       clk_wr_i         => clk_rx_i,
       clk_rd_i         => clk_sys_i,
       dreq_i           => dreq_pipe(3),

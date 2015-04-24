@@ -577,7 +577,7 @@ architecture syn of wr_endpoint is
   signal src_in  : t_wrf_source_in;
   signal src_out : t_wrf_source_out;
 
-  signal rst_n_rx, rst_n_sys, rst_n_ref : std_logic;
+  signal rst_n_rx, rst_n_rx_int, rst_n_sys, rst_n_ref : std_logic;
 
   signal wb_in  : t_wishbone_slave_in;
   signal wb_out : t_wishbone_slave_out;
@@ -636,12 +636,13 @@ begin
   -----------------------------------------------------------------------------
   -- Reset signal synchronization
   -----------------------------------------------------------------------------
+  rst_n_rx_int <= '0' when rst_n_i = '0' or regs_fromwb.ecr_rx_en_o = '0' else '1'; -- PJ April 23, 2015
   
   U_Sync_Rst_RX : gc_sync_ffs
     port map (
       clk_i    => phy_rx_clk_i,
       rst_n_i  => '1',
-      data_i   => rst_n_i,
+      data_i   => rst_n_rx_int,
       synced_o => rst_n_rx);
 
   U_Sync_Rst_REF : gc_sync_ffs
