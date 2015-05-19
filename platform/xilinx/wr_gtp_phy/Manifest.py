@@ -5,5 +5,8 @@ files = ["gtp_bitslide.vhd",
 				 "whiterabbitgtx_wrapper_gtx.vhd",
 #				 "whiterabbitgtp_wrapper.vhd",
 				 "whiterabbitgtp_wrapper_tile.vhd",
+				 "whiterabbit_gtp_wrapper_tile_virtex5.vhd",
+				 "v5_gtp_align_detect.vhd",
 				 "wr_gtp_phy_spartan6.vhd",
+				 "wr_gtp_phy_virtex5.vhd",
 				 "wr_gtx_phy_virtex6.vhd"];
