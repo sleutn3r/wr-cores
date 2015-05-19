@@ -1,0 +1,33 @@
+NET  clk_125m_pllref_n_i          LOC="J19";   # Bank 3, Vcco=2.5V, No DCI      
+NET  clk_125m_pllref_p_i          LOC="K18";   # Bank 3, Vcco=2.5V, No DCI   
+NET  clk_125m_pllref_n_i          IOSTANDARD=LVDS_25;
+NET  clk_125m_pllref_p_i          IOSTANDARD=LVDS_25;
+
+NET  button1_n_i           LOC="AJ6";   
+NET  button1_n_i           IOSTANDARD=LVCMOS33;   
+
+NET  uart_rxd_i              LOC="AN34"; # hdr1 62
+NET  uart_txd_o              LOC="AN33";  # hdr2 64
+NET  uart_rxd_i              IOSTANDARD=LVCMOS33;
+NET  uart_txd_o              IOSTANDARD=LVCMOS33;
+
+NET  sfp_rxn_i             LOC="H1";    # Bank 116, MGTRXN0_116, GTP_DUAL_X0Y4
+NET  sfp_rxp_i             LOC="G1";    # Bank 116, MGTRXP0_116, GTP_DUAL_X0Y4
+NET   sfp_tx_disable_o  LOC="K24";   # Bank 19, Vcco=1.8V, DCI using 49.9 ohm resistors      
+NET   sfp_tx_disable_o  IOSTANDARD=LVCMOS18;
+NET  sfp_txn_o             LOC="G2";    # Bank 116, MGTTXN0_116, GTP_DUAL_X0Y4
+NET  sfp_txp_o            LOC="F2";    # Bank 116, MGTTXP0_116, GTP_DUAL_X0Y4
+NET  gtp_clk_n_i          LOC="H3";
+NET  gtp_clk_p_i          LOC="H4";
+#Created by Constraints Editor (xc5vsx50t-ff1136-1) - 2015/05/13
+NET "clk_125m_pllref_n_i" TNM_NET = clk_125m_pllref_n_i;
+TIMESPEC TS_clk_125m_pllref_n_i = PERIOD "clk_125m_pllref_n_i" 8 ns HIGH 50%;
+NET "gtp_clk_n_i" TNM_NET = gtp_clk_n_i;
+TIMESPEC TS_gtp_clk_n_i = PERIOD "gtp_clk_n_i" 8 ns HIGH 50%;
+NET "gtp_clk_p_i" TNM_NET = gtp_clk_p_i;
+TIMESPEC TS_gtp_clk_p_i = PERIOD "gtp_clk_p_i" 8 ns HIGH 50%;
+NET "clk_125m_pllref_p_i" TNM_NET = clk_125m_pllref_p_i;
+TIMESPEC TS_clk_125m_pllref_p_i = PERIOD "clk_125m_pllref_p_i" 8 ns HIGH 50%;
+#Created by Constraints Editor (xc5vsx50t-ff1136-1) - 2015/05/19
+NET "U_GTP_ch0_rx_rec_clk_pad" TNM_NET = U_GTP_ch0_rx_rec_clk_pad;
+TIMESPEC TS_U_GTP_ch0_rx_rec_clk_pad = PERIOD "U_GTP_ch0_rx_rec_clk_pad" 8 ns HIGH 50%;
