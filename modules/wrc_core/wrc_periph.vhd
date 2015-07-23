@@ -6,7 +6,7 @@
 -- Author     : Grzegorz Daniluk
 -- Company    : Elproma
 -- Created    : 2011-04-04
--- Last update: 2012-04-30
+-- Last update: 2015-06-19
 -- Platform   : FPGA-generics
 -- Standard   : VHDL
 -------------------------------------------------------------------------------
@@ -102,7 +102,7 @@ begin
     if rising_edge(clk_sys_i) then
       if(rst_n_i = '0') then
         rst_net_n_o <= '0';
-        rst_wrc_n_o_reg <= '1';
+        rst_wrc_n_o_reg <= '0';
       else
 
         if(sysc_regs_o.rstr_trig_wr_o = '1' and sysc_regs_o.rstr_trig_o = x"deadbee") then

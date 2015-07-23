@@ -412,7 +412,7 @@ endclass // CIWBMasterAccessor
 	     wb_cycle_result_t res;
 
 	     c 	= request_queue.pop_front();
-
+	     
              case(c.ctype)
                PIPELINED:
                  begin
@@ -421,7 +421,7 @@ endclass // CIWBMasterAccessor
                  end
                CLASSIC:
                  begin
-	         //   $display("WBMaster: got classic cycle [%d, rw %d]", c.data.size(), c.rw);
+//	            $display("WBMaster: got classic cycle [%d, rw %d]", c.data.size(), c.rw);
                     classic_cycle(c.data, c.rw, c.data.size, res);
                     
 	            c.result  =res;

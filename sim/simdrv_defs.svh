@@ -16,6 +16,10 @@ typedef byte byte_array_t[];
 virtual class CBusAccessor;
    static int _null  = 0;
    int        m_default_xfer_size;
+
+   function  new();
+      m_default_xfer_size = 4;
+   endfunction // new
    
 
    task set_default_xfer_size(int default_size);

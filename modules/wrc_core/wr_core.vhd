@@ -5,7 +5,7 @@
 -- Author     : Grzegorz Daniluk
 -- Company    : Elproma
 -- Created    : 2011-02-02
--- Last update: 2013-03-20
+-- Last update: 2015-06-19
 -- Platform   : FPGA-generics
 -- Standard   : VHDL
 -------------------------------------------------------------------------------
@@ -437,27 +437,6 @@ architecture struct of wr_core is
   signal clk_fb     : std_logic_vector(g_aux_clks downto 0);
   signal out_enable : std_logic_vector(g_aux_clks downto 0);
 
-  --component chipscope_ila
-  --  port (
-  --    CONTROL : inout std_logic_vector(35 downto 0);
-  --    CLK     : in    std_logic;
-  --    TRIG0   : in    std_logic_vector(31 downto 0);
-  --    TRIG1   : in    std_logic_vector(31 downto 0);
-  --    TRIG2   : in    std_logic_vector(31 downto 0);
-  --    TRIG3   : in    std_logic_vector(31 downto 0));
-  --end component;
-
-  --component chipscope_icon
-  --  port (
-  --    CONTROL0 : inout std_logic_vector (35 downto 0));
-  --end component;
-
-  --signal CONTROL : std_logic_vector(35 downto 0);
-  --signal CLK     : std_logic;
-  --signal TRIG0   : std_logic_vector(31 downto 0);
-  --signal TRIG1   : std_logic_vector(31 downto 0);
-  --signal TRIG2   : std_logic_vector(31 downto 0);
-  --signal TRIG3   : std_logic_vector(31 downto 0);
 begin
 
   rst_aux_n_o <= rst_net_n;
@@ -677,7 +656,7 @@ begin
   -- LM32
   -----------------------------------------------------------------------------  
   LM32_CORE : xwb_lm32
-    generic map(g_profile => "medium_icache_debug")
+    generic map(g_profile => "medium_icache")
     port map(
       clk_sys_i => clk_sys_i,
       rst_n_i   => rst_wrc_n,
@@ -975,6 +954,6 @@ begin
   txtsu_ts_value_o     <= ep_txtsu_ts_value;
   txtsu_ts_incorrect_o <= ep_txtsu_ts_incorrect;
   txtsu_stb_o          <= '1' when (ep_txtsu_stb = '1' and (ep_txtsu_frame_id /= x"0000")) else
-                          '0';
-
+                       '0';
+  
 end struct;

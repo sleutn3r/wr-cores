@@ -9,7 +9,8 @@ virtual class CWishboneAccessor extends CBusAccessor;
    protected wb_cycle_type_t m_cycle_type;
 
    function new();
-      m_cycle_type  = CLASSIC;
+      m_cycle_type  = PIPELINED;
+;
    endfunction // new
 
    virtual task set_mode(wb_cycle_type_t mode);
