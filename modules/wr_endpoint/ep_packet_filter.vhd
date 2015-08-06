@@ -42,6 +42,7 @@ use ieee.numeric_std.all;
 use work.gencores_pkg.all;
 use work.genram_pkg.all;
 use work.endpoint_private_pkg.all;
+use work.endpoint_pkg.all;
 use work.ep_wbgen2_pkg.all;
 
 entity ep_packet_filter is
@@ -162,7 +163,20 @@ architecture behavioral of ep_packet_filter is
   signal stage1, stage2      : std_logic;
   signal r_pfcr1_mm_data_lsb : std_logic_vector(11 downto 0);
   
+  signal pfcr0_enable_rxclk : std_logic;
+  
 begin  -- behavioral
+
+  U_sync_pfcr0_enable : gc_sync_ffs
+    generic map (
+      g_sync_edge => "positive")
+    port map (
+      clk_i    => clk_rx_i,
+      rst_n_i  => '1',
+      data_i   => regs_i.pfcr0_enable_o,
+      synced_o => pfcr0_enable_rxclk,
+      npulse_o => open,
+      ppulse_o => open);
 
   process(clk_sys_i)
   begin
@@ -314,11 +328,12 @@ begin  -- behavioral
         done_int <= '0';
         drop_o   <= '0';
       else
-        if(regs_i.pfcr0_enable_o = '0') then
+        if(pfcr0_enable_rxclk = '0') then
           done_int <= '0';
           drop_o   <= '0';
           pclass_o <= (others => '0');
-        elsif((stage2 = '1' and insn.fin = '1') or snk_fab_i.error = '1' or snk_fab_i.eof = '1') then
+        elsif( (stage2 = '1' and insn.fin = '1') or
+               ((snk_fab_i.error = '1' or snk_fab_i.eof = '1') and done_int = '0') ) then
           done_int <= '1';
           pclass_o <= regs(31 downto 24);
           drop_o   <= regs(23);

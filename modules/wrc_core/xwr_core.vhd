@@ -1,12 +1,12 @@
--------------------------------------------------------------------------------
--- Title      : WhiteRabbit PTP Core
+  -------------------------------------------------------------------------------
+  -- Title      : WhiteRabbit PTP Core
 -- Project    : WhiteRabbit
 -------------------------------------------------------------------------------
 -- File       : wr_core.vhd
 -- Author     : Grzegorz Daniluk
 -- Company    : Elproma
 -- Created    : 2011-02-02
--- Last update: 2013-02-08
+-- Last update: 2014-07-15
 -- Platform   : FPGA-generics
 -- Standard   : VHDL
 -------------------------------------------------------------------------------
@@ -73,16 +73,18 @@ entity xwr_core is
     g_virtual_uart              : boolean                        := false;
     g_aux_clks                  : integer                        := 1;
     g_ep_rxbuf_size             : integer                        := 1024;
+    g_tx_runt_padding           : boolean                        := false;
     g_dpram_initf               : string                         := "";
     g_dpram_size                : integer                        := 90112/4;  --in 32-bit words
     g_interface_mode            : t_wishbone_interface_mode      := PIPELINED;
     g_address_granularity       : t_wishbone_address_granularity := WORD;
     g_aux_sdb                   : t_sdb_device                   := c_wrc_periph3_sdb;
-    g_softpll_channels_config   : t_softpll_channel_config_array := c_softpll_default_channel_config;
     g_softpll_enable_debugger   : boolean                        := false;
     g_vuart_fifo_size           : integer                        := 1024;
+    g_pcs_16bit                 : boolean                        := false;
     g_pstats                    : boolean                        := false
     );
+
   port(
     ---------------------------------------------------------------------------
     -- Clocks/resets
@@ -103,6 +105,9 @@ entity xwr_core is
     -- External 10 MHz reference (cesium, GPSDO, etc.), used in Grandmaster mode
     clk_ext_i : in std_logic := '0';
 
+    clk_ext_mul_i : in std_logic := '0';
+    clk_ext_mul_locked_i : in std_logic := '1';
+
     -- External PPS input (cesium, GPSDO, etc.), used in Grandmaster mode
     pps_ext_i : in std_logic := '0';
 
@@ -120,19 +125,22 @@ entity xwr_core is
     -- PHY I/f
     phy_ref_clk_i : in std_logic;
 
-    phy_tx_data_o      : out std_logic_vector(7 downto 0);
+    phy_tx_data_o      : out std_logic_vector(f_pcs_data_width(g_pcs_16bit)-1 downto 0);
     phy_tx_k_o         : out std_logic;
+    phy_tx_k16_o       : out std_logic;
     phy_tx_disparity_i : in  std_logic;
     phy_tx_enc_err_i   : in  std_logic;
 
-    phy_rx_data_i     : in std_logic_vector(7 downto 0);
+    phy_rx_data_i     : in std_logic_vector(f_pcs_data_width(g_pcs_16bit)-1 downto 0);
     phy_rx_rbclk_i    : in std_logic;
     phy_rx_k_i        : in std_logic;
+    phy_rx_k16_i      : in std_logic;
     phy_rx_enc_err_i  : in std_logic;
-    phy_rx_bitslide_i : in std_logic_vector(3 downto 0);
+    phy_rx_bitslide_i : in std_logic_vector(f_pcs_bts_width(g_pcs_16bit)-1 downto 0);
 
     phy_rst_o    : out std_logic;
     phy_loopen_o : out std_logic;
+    phy_rdy_i    : in  std_logic := '1';
 
     -----------------------------------------
     --GPIO
@@ -150,6 +158,10 @@ entity xwr_core is
     sfp_det_i  : in  std_logic;
     btn1_i     : in  std_logic := '1';
     btn2_i     : in  std_logic := '1';
+    spi_sclk_o : out std_logic;
+    spi_ncs_o  : out std_logic;
+    spi_mosi_o : out std_logic;
+    spi_miso_i : in  std_logic := '0';
 
     -----------------------------------------
     --UART
@@ -223,6 +235,7 @@ begin
       g_phys_uart                 => g_phys_uart,
       g_virtual_uart              => g_virtual_uart,
       g_rx_buffer_size            => g_ep_rxbuf_size,
+      g_tx_runt_padding           => g_tx_runt_padding,
       g_with_external_clock_input => g_with_external_clock_input,
       g_aux_clks                  => g_aux_clks,
       g_dpram_initf               => g_dpram_initf,
@@ -230,18 +243,21 @@ begin
       g_interface_mode            => g_interface_mode,
       g_address_granularity       => g_address_granularity,
       g_aux_sdb                   => g_aux_sdb,
-      g_softpll_channels_config   => g_softpll_channels_config,
       g_softpll_enable_debugger   => g_softpll_enable_debugger,
       g_vuart_fifo_size           => g_vuart_fifo_size,
+		g_pcs_16bit           		 => g_pcs_16bit,
       g_pstats                    => g_pstats)
+
     port map(
-      clk_sys_i  => clk_sys_i,
-      clk_dmtd_i => clk_dmtd_i,
-      clk_ref_i  => clk_ref_i,
-      clk_aux_i  => clk_aux_i,
-      clk_ext_i  => clk_ext_i,
-      pps_ext_i  => pps_ext_i,
-      rst_n_i    => rst_n_i,
+      clk_sys_i     => clk_sys_i,
+      clk_dmtd_i    => clk_dmtd_i,
+      clk_ref_i     => clk_ref_i,
+      clk_aux_i     => clk_aux_i,
+      clk_ext_i     => clk_ext_i,
+      clk_ext_mul_i => clk_ext_mul_i,
+      clk_ext_mul_locked_i  => clk_ext_mul_locked_i,
+      pps_ext_i     => pps_ext_i,
+      rst_n_i       => rst_n_i,
 
       dac_hpll_load_p1_o => dac_hpll_load_p1_o,
       dac_hpll_data_o    => dac_hpll_data_o,
@@ -260,6 +276,7 @@ begin
       phy_rx_bitslide_i  => phy_rx_bitslide_i,
       phy_rst_o          => phy_rst_o,
       phy_loopen_o       => phy_loopen_o,
+      phy_rdy_i          => phy_rdy_i,
 
       led_act_o  => led_act_o,
       led_link_o => led_link_o,
@@ -274,6 +291,10 @@ begin
       sfp_det_i  => sfp_det_i,
       btn1_i     => btn1_i,
       btn2_i     => btn2_i,
+      spi_sclk_o => spi_sclk_o,
+      spi_ncs_o  => spi_ncs_o,
+      spi_mosi_o => spi_mosi_o,
+      spi_miso_i => spi_miso_i,
       uart_rxd_i => uart_rxd_i,
       uart_txd_o => uart_txd_o,
 

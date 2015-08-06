@@ -86,6 +86,11 @@ entity spec_top is
 
       button1_i : in std_logic := 'H';
       button2_i : in std_logic := 'H';
+      
+      spi_sclk_o : out std_logic;
+      spi_ncs_o  : out std_logic;
+      spi_mosi_o : out std_logic;
+      spi_miso_i : in  std_logic := 'L';
 
       thermo_id : inout std_logic;      -- 1-Wire interface to DS18B20
 
@@ -240,6 +245,14 @@ architecture rtl of spec_top is
       rst_n_o          : out std_logic);
   end component;
 
+  component ext_pll_10_to_125m
+    port (
+      clk_ext_i     : in  std_logic;
+      clk_ext_mul_o : out std_logic;
+      rst_a_i       : in  std_logic;
+      locked_o      : out std_logic);
+  end component;
+
   --component chipscope_ila
   --  port (
   --    CONTROL : inout std_logic_vector(35 downto 0);
@@ -347,6 +360,7 @@ architecture rtl of spec_top is
   signal phy_rx_bitslide  : std_logic_vector(3 downto 0);
   signal phy_rst          : std_logic;
   signal phy_loopen       : std_logic;
+  signal phy_rdy          : std_logic;
 
   signal dio_in  : std_logic_vector(4 downto 0);
   signal dio_out : std_logic_vector(4 downto 0);
@@ -376,8 +390,31 @@ architecture rtl of spec_top is
   signal etherbone_wb_in   : t_wishbone_master_in;
   signal etherbone_cfg_in  : t_wishbone_slave_in;
   signal etherbone_cfg_out : t_wishbone_slave_out;
+
+  signal local_reset, ext_pll_reset : std_logic;
+  signal clk_ext, clk_ext_mul       : std_logic;
+  signal clk_ext_mul_locked         : std_logic;
+  signal clk_ref_div2               : std_logic;
   
 begin
+
+  local_reset <= not local_reset_n;
+
+  U_Ext_PLL : ext_pll_10_to_125m
+    port map (
+      clk_ext_i     => clk_ext,
+      clk_ext_mul_o => clk_ext_mul,
+      rst_a_i       => ext_pll_reset,
+      locked_o      => clk_ext_mul_locked);
+
+  U_Extend_EXT_Reset : gc_extend_pulse
+    generic map (
+      g_width => 1000)
+    port map (
+      clk_i      => clk_sys,
+      rst_n_i    => local_reset_n,
+      pulse_i    => local_reset,
+      extended_o => ext_pll_reset);
 
   cmp_sys_clk_pll : PLL_BASE
     generic map (
@@ -623,21 +660,26 @@ begin
       --
       g_phys_uart                 => true,
       g_virtual_uart              => true,
-      g_aux_clks                  => 1,
+      g_aux_clks                  => 0,
       g_ep_rxbuf_size             => 1024,
+      g_tx_runt_padding           => true,
+      g_pcs_16bit                 => false,
       g_dpram_initf               => "wrc.ram",
-      g_dpram_size                => 90112/4,  --16384,
+      g_aux_sdb                   => c_etherbone_sdb,
+      g_dpram_size                => 131072/4,
       g_interface_mode            => PIPELINED,
       g_pstats                    => true,
       g_address_granularity       => BYTE)
     port map (
-      clk_sys_i  => clk_sys,
-      clk_dmtd_i => clk_dmtd,
-      clk_ref_i  => clk_125m_pllref,
-      clk_aux_i  => (others => '0'),
-      clk_ext_i  => dio_clk,
-      pps_ext_i  => dio_in(3),
-      rst_n_i    => local_reset_n,
+      clk_sys_i     => clk_sys,
+      clk_dmtd_i    => clk_dmtd,
+      clk_ref_i     => clk_125m_pllref,
+      clk_aux_i     => (others => '0'),
+      clk_ext_i     => clk_ext,
+      clk_ext_mul_i => clk_ext_mul,
+      clk_ext_mul_locked_i => clk_ext_mul_locked,
+      pps_ext_i     => dio_in(3),
+      rst_n_i       => local_reset_n,
 
       dac_hpll_load_p1_o => dac_hpll_load_p1,
       dac_hpll_data_o    => dac_hpll_data,
@@ -656,20 +698,25 @@ begin
       phy_rx_bitslide_i  => phy_rx_bitslide,
       phy_rst_o          => phy_rst,
       phy_loopen_o       => phy_loopen,
+      phy_rdy_i          => phy_rdy,
 
-      led_act_o   => LED_RED,
-      led_link_o  => LED_GREEN,
-      scl_o       => wrc_scl_o,
-      scl_i       => wrc_scl_i,
-      sda_o       => wrc_sda_o,
-      sda_i       => wrc_sda_i,
-      sfp_scl_o   => sfp_scl_o,
-      sfp_scl_i   => sfp_scl_i,
-      sfp_sda_o   => sfp_sda_o,
-      sfp_sda_i   => sfp_sda_i,
-      sfp_det_i   => sfp_mod_def0_b,
-      btn1_i      => button1_i,
-      btn2_i      => button2_i,
+      led_act_o  => LED_RED,
+      led_link_o => LED_GREEN,
+      scl_o      => wrc_scl_o,
+      scl_i      => wrc_scl_i,
+      sda_o      => wrc_sda_o,
+      sda_i      => wrc_sda_i,
+      sfp_scl_o  => sfp_scl_o,
+      sfp_scl_i  => sfp_scl_i,
+      sfp_sda_o  => sfp_sda_o,
+      sfp_sda_i  => sfp_sda_i,
+      sfp_det_i  => sfp_mod_def0_b,
+      btn1_i     => button1_i,
+      btn2_i     => button2_i,
+      spi_sclk_o  => spi_sclk_o,
+      spi_ncs_o   => spi_ncs_o,
+      spi_mosi_o  => spi_mosi_o,
+      spi_miso_i  => spi_miso_i,
 
       uart_rxd_i => uart_rxd_i,
       uart_txd_o => uart_txd_o,
@@ -690,7 +737,7 @@ begin
 
       tm_dac_value_o       => open,
       tm_dac_wr_o          => open,
-      tm_clk_aux_lock_en_i => (others=>'0'),
+      tm_clk_aux_lock_en_i => (others => '0'),
       tm_clk_aux_locked_o  => open,
       tm_time_valid_o      => open,
       tm_tai_o             => open,
@@ -698,7 +745,7 @@ begin
       pps_p_o              => pps,
       pps_led_o            => pps_led,
 
-      dio_o       => dio_out(4 downto 1),
+--      dio_o       => dio_out(4 downto 1),
       rst_aux_n_o => etherbone_rst_n
       );
 
@@ -757,6 +804,7 @@ begin
       ch0_rx_bitslide_o  => open,
       ch0_rst_i          => '1',
       ch0_loopen_i       => '0',
+      ch0_rdy_o          => open,
 
       ch1_ref_clk_i      => clk_125m_pllref,
       ch1_tx_data_i      => phy_tx_data,
@@ -770,6 +818,7 @@ begin
       ch1_rx_bitslide_o  => phy_rx_bitslide,
       ch1_rst_i          => phy_rst,
       ch1_loopen_i       => phy_loopen,
+      ch1_rdy_o          => phy_rdy,
       pad_txn0_o         => open,
       pad_txp0_o         => open,
       pad_rxn0_i         => '0',
@@ -831,18 +880,28 @@ begin
         OB => dio_n_o(i)
         );
   end generate gen_dio_iobufs;
-  U_input_buffer : IBUFDS
+
+  U_input_buffer : IBUFGDS
     generic map (
       DIFF_TERM => true)
     port map (
-      O  => dio_clk,
+      O  => clk_ext,
       I  => dio_clk_p_i,
       IB => dio_clk_n_i
       );
 
   dio_led_bot_o <= '0';
 
-  dio_out(0)             <= pps;
+  process(clk_125m_pllref)
+  begin
+    if rising_edge(clk_125m_pllref) then
+      clk_ref_div2 <= not clk_ref_div2;
+    end if;
+  end process;
+  
+  dio_out(0) <= pps;
+  dio_out(1) <= clk_ref_div2;
+
   dio_oe_n_o(0)          <= '0';
   dio_oe_n_o(2 downto 1) <= (others => '0');
   dio_oe_n_o(3)          <= '1';        -- for external 1-PPS

@@ -1,8 +1,10 @@
 files = [
+  "eca_ac_wbm_auto_pkg.vhd",
   "eca.vhd",
   "eca_adder.vhd",
   "eca_channel.vhd",
   "eca_gpio_channel.vhd",
+  "eca_scubus_channel.vhd",
   "eca_offset.vhd",
   "eca_pkg.vhd",
   "eca_sdp.vhd",
@@ -13,4 +15,6 @@ files = [
   "eca_wb_channel.vhd",
   "eca_wb_event.vhd",
   "eca_wr_time.vhd",
-  "wr_eca.vhd"]
+  "wr_eca.vhd",
+  "eca_ac_wbm_auto.vhd",
+  "eca_ac_wbm.vhd"]
