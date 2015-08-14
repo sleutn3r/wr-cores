@@ -76,7 +76,7 @@ use work.endpoint_pkg.all;
 use work.wr_fabric_pkg.all;
 use work.sysc_wbgen2_pkg.all;
 use work.softpll_pkg.all;
-use work.wrsw_pstats_pkg.all;
+use work.wr_pstats_pkg.all;
 
 entity wr_core is
   generic(
@@ -452,6 +452,9 @@ architecture struct of wr_core is
   signal minic_wb_in  : t_wishbone_slave_in;
   signal minic_wb_out : t_wishbone_slave_out;
   
+  signal pstat_wb_in  : t_wishbone_slave_in;
+  signal pstat_wb_out : t_wishbone_slave_out;
+  
   signal monitor_sys_wb_in  : t_wishbone_slave_in;
   signal monitor_sys_wb_out : t_wishbone_slave_out;
 
@@ -757,25 +760,18 @@ begin
   -- Monitorign Sys
   -----------------------------------------------------------------------------
   Y_PSTATS: if g_pstats generate
-      U_PSTATS : xwrsw_pstats
-        generic map(
-          g_interface_mode      => PIPELINED,
-          g_address_granularity => BYTE,
-          g_nports => 1,
-          g_cnt_pp => c_all_events,
-          g_cnt_pw => 2)
+      U_PSTATS : xwr_pstats
         port map(
-          rst_n_i  => rst_n_i,
-          clk_i    => clk_sys_i,
-          events_i => ep_events,
-          --events_i => rmon_events,
-          wb_i  => monitor_sys_wb_in,
-          wb_o  => monitor_sys_wb_out
-        );
+          clk_i       => clk_sys_i,
+          rstn_i      => rst_n_i,
+          events_i    => ep_events,
+          wb_slave_i  => pstat_wb_in,
+          wb_slave_o  => pstat_wb_out);
+  
+  secbar_master_i(8) <= pstat_wb_out;
+  pstat_wb_in        <= secbar_master_o(8);
+  
       --rmon_events(c_all_events-1 downto 0) <= ep_events(c_epevents_sz-1 downto 0);  
-      --monitoring sys
-      secbar_master_i(8)  <= monitor_sys_wb_out;
-      monitor_sys_wb_in   <= secbar_master_o(8);
   end generate;
      
   N_PSTATS: if not g_pstats generate

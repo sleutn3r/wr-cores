@@ -1,16 +1,16 @@
 -------------------------------------------------------------------------------
--- Title      : Per-port monitoring system
+-- Title      : Port monitoring system
 -- Project    : White Rabbit 
 -------------------------------------------------------------------------------
--- File       : xwrsw_pstats_pkg.vhd
+-- File       : xwr_pstats_pkg.vhd
 -- Author     : Cesar Prados
 -- Company    : GSI
--- Created    : 2013-11-08
+-- Created    : 2015-08-11
 -- Platform   : FPGA-generic
 -- Standard   : VHDL
 -------------------------------------------------------------------------------
 -- Description:
--- Per-port monitoring system package
+-- Stats package
 -------------------------------------------------------------------------------
 -- Copyright (c) 2013 Cesar Prados c.prados@gsi.de / GSI
 -------------------------------------------------------------------------------
@@ -24,26 +24,50 @@ use IEEE.numeric_std.all;
 library work;
 use work.wishbone_pkg.all;
 
-package wrsw_pstats_pkg is
+package wr_pstats_pkg is
+  
+  constant c_events  : integer   := 29;
+  constant c_L1_cnt_density  : integer := 32; -- bits
+  constant c_L2_cnt_density  : integer := 16; -- bits
 
-  component xwrsw_pstats
-    generic(
-      g_interface_mode      : t_wishbone_interface_mode      := PIPELINED;
-      g_address_granularity : t_wishbone_address_granularity := BYTE;
-      g_nports : integer := 2;
-      g_cnt_pp : integer := 16; 
-      g_cnt_pw : integer := 4); 
-   port(
-      rst_n_i : in std_logic;
-      clk_i   : in std_logic;
+  type t_cnt is
+    record
+      L1_cnt  : std_logic_vector(c_L1_cnt_density - 1 downto 0);
+      L2_cnt  : std_logic_vector(c_L2_cnt_density - 1 downto 0);
+      cnt_ovf : std_logic;
+    end record;
 
-      events_i : in std_logic_vector(g_nports*g_cnt_pp-1 downto 0); 
+  type t_cnt_events is array (c_events - 1 downto 0) of t_cnt;
 
-      wb_i : in  t_wishbone_slave_in;
-      wb_o : out t_wishbone_slave_out );
+  component xwr_pstats
+    port(
+      clk_i       : in  std_logic;
+      rstn_i      : in  std_logic;
+      events_i    : in  std_logic_vector(c_events - 1 downto 0); 
+      wb_slave_o  : out t_wishbone_slave_out;
+      wb_slave_i  : in  t_wishbone_slave_in);
   end component;
 
- constant c_xwr_pstats_sdb : t_sdb_device := (
+  component port_cntr
+    port(
+      clk_i       : in  std_logic;
+      rstn_i      : in  std_logic;
+      cnt_eo_i    : in  std_logic;
+      cnt_ovf_o   : out std_logic;
+      cnt_o       : out t_cnt);
+  end component;
+
+  component pstats_wb_slave
+    port (
+      clk_i       : in  std_logic;
+      rstn_i      : in  std_logic;
+      reg_i       : in  t_cnt_events;
+      cnt_ovf_i   : in  std_logic_vector(c_events - 1 downto 0);
+      wb_slave_o  : out t_wishbone_slave_out;
+      wb_slave_i  : in  t_wishbone_slave_in);
+  end component;
+
+  constant c_xwr_pstats_sdb : t_sdb_device := (
       abi_class     => x"0000",              -- undocumented device
       abi_ver_major => x"01",
       abi_ver_minor => x"01",
@@ -59,4 +83,4 @@ package wrsw_pstats_pkg is
       date      => x"20131116",
       name      => "wr-node-monitor    ")));
 
-end wrsw_pstats_pkg;
+end wr_pstats_pkg;
