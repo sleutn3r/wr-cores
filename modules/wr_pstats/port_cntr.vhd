@@ -45,7 +45,7 @@ architecture rtl of port_cntr is
   signal s_L2_ovf     : std_logic;
   signal s_L1_ovf_d   : std_logic;
   signal s_L1_ovf_r   : std_logic;
-  singal s_cnt_ovf    : std_logic;
+  signal s_cnt_ovf    : std_logic;
   signal s_toggle     : std_logic;
 begin
 
