@@ -63,6 +63,7 @@ package wr_pstats_pkg is
       rstn_i      : in  std_logic;
       reg_i       : in  t_cnt_events;
       cnt_ovf_i   : in  std_logic_vector(c_events - 1 downto 0);
+      cnt_rst_o   : out std_logic;
       wb_slave_o  : out t_wishbone_slave_out;
       wb_slave_i  : in  t_wishbone_slave_in);
   end component;
@@ -81,6 +82,6 @@ package wr_pstats_pkg is
       device_id => x"6a0c4d4d",
       version   => x"00000001",
       date      => x"20131116",
-      name      => "wr-node-monitor    ")));
+      name      => "WR-PSTATS          ")));
 
 end wr_pstats_pkg;
