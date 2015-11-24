@@ -1,6 +1,6 @@
 target = "xilinx"
 action = "synthesis"
-
+syn_tool = "ise"
 fetchto = "../../../ip_cores"
 
 #top_module = "spec_top"
@@ -10,10 +10,10 @@ syn_package = "fgg484"
 syn_top = "spec_top"
 syn_project = "spec_top_wrc.xise"
 
-modules = { "local" : 
-						[ "../../../top/spec_1_1/wr_core_demo", 
+modules = { "local" :
+						[ "../../../top/spec_1_1/wr_core_demo",
 						  "../../../platform" ],
-	    "git" : 
+	    "git" :
 						[ "git://ohwr.org/hdl-core-lib/general-cores.git",
 						  "git://ohwr.org/hdl-core-lib/gn4124-core.git",
 						  "git://ohwr.org/hdl-core-lib/etherbone-core.git" ] };

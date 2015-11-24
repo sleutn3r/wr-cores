@@ -136,6 +136,16 @@ entity spec_top is
       dio_led_top_o : out std_logic;
       dio_led_bot_o : out std_logic;
 
+      s_pg1     : out std_logic;
+      s_pg2     : out std_logic;
+      s_led_1     : out std_logic;
+      s_led_2     : out std_logic;
+      
+      ttl1      : out std_logic;
+      ttl2      : out std_logic;
+      lemo1     : out std_logic;
+      lemo2     : out std_logic;
+      
       -----------------------------------------
       --UART
       -----------------------------------------
@@ -299,7 +309,8 @@ architecture rtl of spec_top is
   signal clk_ext, clk_ext_mul       : std_logic;
   signal clk_ext_mul_locked         : std_logic;
   signal clk_ref_div2               : std_logic;
-  
+  signal s_tmp : std_logic;
+  signal s_tmp1 : std_logic;
 begin
 
   local_reset <= not local_reset_n;
@@ -651,7 +662,7 @@ begin
       tm_dac_wr_o          => open,
       tm_clk_aux_lock_en_i => (others => '0'),
       tm_clk_aux_locked_o  => open,
-      tm_time_valid_o      => open,
+      tm_time_valid_o      => s_tmp,
       tm_tai_o             => open,
       tm_cycles_o          => open,
       pps_p_o              => pps,
@@ -774,7 +785,7 @@ begin
       clk_i      => clk_125m_pllref,
       rst_n_i    => local_reset_n,
       pulse_i    => pps_led,
-      extended_o => dio_led_top_o);
+      extended_o => s_tmp1);
 
 
   gen_dio_iobufs : for i in 0 to 4 generate
@@ -804,7 +815,20 @@ begin
       IB => dio_clk_n_i
       );
 
-  dio_led_bot_o <= '0';
+  dio_led_bot_o <= s_tmp1;
+  dio_led_top_o <= not s_tmp1;
+
+  s_pg1 <= '1';
+  s_pg2 <= '1';
+  
+  ttl1 <= '0';
+  ttl2 <= '0';
+
+  lemo1 <= s_tmp1;
+  lemo2 <= not s_tmp1;
+
+  s_led_1 <= s_tmp1;
+  s_led_2 <= not s_tmp1;
 
   process(clk_125m_pllref)
   begin
