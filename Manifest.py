@@ -1,6 +1,6 @@
 fetchto = "ip_cores"
 
-modules =  {"local" : 
+modules =  {"local" :
 											[ "modules/fabric",
 												"modules/wr_tbi_phy",
 												"modules/timing",
@@ -12,6 +12,7 @@ modules =  {"local" :
 												"modules/wr_si57x_interface",
 												"modules/wr_eca",
 												"modules/wr_tlu",
+												"modules/wr_pstats",
 												"modules/wrc_core",
 												"platform"]
 						}
