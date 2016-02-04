@@ -312,7 +312,8 @@ package wrcore_pkg is
       g_aux_sdb                   : t_sdb_device                   := c_wrc_periph3_sdb;
       g_softpll_enable_debugger   : boolean                        := false;
       g_vuart_fifo_size           : integer                        := 1024;
-      g_pcs_16bit                 : boolean                        := false);
+      g_pcs_16bit                 : boolean                        := false;
+      g_pstats                    : boolean                        := false);
     port(
       clk_sys_i            : in std_logic;
       clk_dmtd_i           : in std_logic := '0';
@@ -430,7 +431,8 @@ package wrcore_pkg is
       g_aux_sdb                   : t_sdb_device                   := c_wrc_periph3_sdb;
       g_softpll_enable_debugger   : boolean                        := false;
       g_vuart_fifo_size           : integer                        := 1024;
-      g_pcs_16bit                 : boolean                        := false);
+      g_pcs_16bit                 : boolean                        := false;
+      g_pstats                    : boolean                        := false);
     port(
       ---------------------------------------------------------------------------
       -- Clocks/resets

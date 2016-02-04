@@ -97,7 +97,8 @@ entity wr_core is
     g_softpll_channels_config   : t_softpll_channel_config_array := c_softpll_default_channel_config;
     g_softpll_enable_debugger   : boolean                        := false;
     g_vuart_fifo_size           : integer                        := 1024;
-    g_pcs_16bit                 : boolean                        := false);
+    g_pcs_16bit                 : boolean                        := false;
+    g_pstats                    : boolean                        := false);
   port(
     ---------------------------------------------------------------------------
     -- Clocks/resets
