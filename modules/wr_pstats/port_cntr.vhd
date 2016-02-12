@@ -10,8 +10,7 @@
 -- Standard   : VHDL
 -------------------------------------------------------------------------------
 -- Description:
--- Simply counters in two layers organized. L1 is the basic counter and L2,
--- counts the overflow of L1. One bit to sign overflow of L2 counter.
+-- Simply counters with overflow bit
 -------------------------------------------------------------------------------
 -- Copyright (c) 2013 Cesar Prados c.prados@gsi.de / GSI
 -------------------------------------------------------------------------------
@@ -39,51 +38,25 @@ end port_cntr;
 
 architecture rtl of port_cntr is
 
-  signal s_L1_cnt     : unsigned(c_L1_cnt_density - 1 downto 0);
-  signal s_L2_cnt     : unsigned(c_L2_cnt_density - 1 downto 0);
-  signal s_L1_ovf     : std_logic;
-  signal s_L2_ovf     : std_logic;
-  signal s_L1_ovf_d   : std_logic;
-  signal s_L1_ovf_r   : std_logic;
-  signal s_cnt_ovf    : std_logic;
-  signal s_toggle     : std_logic;
+  signal s_cnt      : t_cnt;
+  signal s_ovf      : std_logic;
+  signal s_cnt_ovf  : std_logic;
+  signal s_toggle   : std_logic;
 begin
 
-  L1_CNT  : process(clk_i)
+  CNT  : process(clk_i)
   begin
     if rising_edge(clk_i) then
       if rstn_i = '0' then
-        s_L1_cnt  <= (others => '0');
-        s_L1_ovf_d <= '0';
+        s_cnt  <= (others => '0');
       else
         if cnt_eo_i = '1' then
-          s_L1_cnt <= s_L1_cnt + 1; 
+          s_cnt <= s_cnt + 1; 
         else
-          s_L1_cnt <= s_L1_cnt; 
-        end if;
-        s_L1_ovf_d <= s_L1_ovf;
-      end if;
-    end if;
-  end process;
-
-  s_L1_ovf <= '1' when s_L1_cnt = (2**c_L1_cnt_density - 1) else '0';
-  s_L1_ovf_r <= (not s_L1_ovf_d) and s_L1_ovf; 
-  
-  L2_CNT  : process(clk_i)
-  begin
-    if rising_edge(clk_i) then
-      if rstn_i = '0' then
-        s_L2_cnt    <= (others => '0');
-        s_toggle    <= '0';
-        s_cnt_ovf   <= '0';
-      else
-        if s_L1_ovf_r = '1' then
-          s_L2_cnt <= s_L2_cnt + 1; 
-        else
-          s_L2_cnt <= s_L2_cnt; 
+          s_cnt <= s_cnt; 
         end if;
 
-        if s_L2_ovf = '1' and s_toggle = '0' then
+        if s_ovf = '1' and s_toggle = '0' then
           s_cnt_ovf   <= '1';
           s_toggle    <= '1';
         end if;
@@ -91,10 +64,8 @@ begin
     end if;
   end process;
 
-  s_L2_ovf  <= '1' when s_L2_cnt = (2**c_L2_cnt_density - 1) else '0';
+  s_ovf  <= '1' when s_cnt = (2**c_cnt_density - 1) else '0';
 
   cnt_ovf_o     <= s_cnt_ovf;
-  cnt_o.L1_cnt  <= std_logic_vector(s_L1_cnt); 
-  cnt_o.L2_cnt  <= std_logic_vector(s_L2_cnt);
-
+  cnt_o         <= s_cnt; 
 end rtl;

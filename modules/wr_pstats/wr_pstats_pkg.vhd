@@ -26,16 +26,12 @@ use work.wishbone_pkg.all;
 
 package wr_pstats_pkg is
   
-  constant c_events  : integer   := 29;
-  constant c_L1_cnt_density  : integer := 32; -- bits
-  constant c_L2_cnt_density  : integer := 16; -- bits
+  constant c_events       : integer := 29; -- max 32
+  constant c_cnt_reg      : integer := c_events*2;
+  constant c_events_l     : integer := 6;
+  constant c_cnt_density  : integer := 48; -- min 33 - max 64 bits
 
-  type t_cnt is
-    record
-      L1_cnt  : std_logic_vector(c_L1_cnt_density - 1 downto 0);
-      L2_cnt  : std_logic_vector(c_L2_cnt_density - 1 downto 0);
-    end record;
-
+  subtype t_cnt is unsigned(c_cnt_density - 1 downto 0);
   type t_cnt_events is array (c_events - 1 downto 0) of t_cnt;
 
   component xwr_pstats
@@ -60,7 +56,7 @@ package wr_pstats_pkg is
     port (
       clk_i       : in  std_logic;
       rstn_i      : in  std_logic;
-      reg_i       : in  t_cnt_events;
+      port_cnt_i  : in  t_cnt_events;
       cnt_ovf_i   : in  std_logic_vector(c_events - 1 downto 0);
       cnt_rst_o   : out std_logic;
       wb_slave_o  : out t_wishbone_slave_out;
@@ -81,6 +77,6 @@ package wr_pstats_pkg is
       device_id => x"6a0c4d4d",
       version   => x"00000001",
       date      => x"20131116",
-      name      => "WR-PSTATS          ")));
+      name      => "WR-Pstats          ")));
 
 end wr_pstats_pkg;

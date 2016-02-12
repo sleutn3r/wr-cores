@@ -58,7 +58,7 @@ begin
     port map (
       clk_i         => clk_i,
       rstn_i        => rstn_i,
-      reg_i         => s_cnt_reg,
+      port_cnt_i    => s_cnt_reg,
       cnt_ovf_i     => s_cnt_ovf,
       cnt_rst_o     => s_wb_rst,
       wb_slave_i    => wb_slave_i,
