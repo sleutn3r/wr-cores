@@ -519,9 +519,9 @@ begin  -- rtl
           ch0_rx_k_o       <= '1';
           ch0_rx_enc_err_o <= '1';
         else
-          ch0_rx_data_o    <= ch0_rx_data_int;
-          ch0_rx_k_o       <= ch0_rx_k_int;
-          ch0_rx_enc_err_o <= ch0_rx_disperr or ch0_rx_invcode;
+          ch0_rx_data_o    <= ch0_rx_data_int after 1ns;
+          ch0_rx_k_o       <= ch0_rx_k_int after 1ns;
+          ch0_rx_enc_err_o <= (ch0_rx_disperr or ch0_rx_invcode) after 1ns;
         end if;
       end if;
     end process;
@@ -674,9 +674,9 @@ begin  -- rtl
           ch1_rx_k_o       <= '1';
           ch1_rx_enc_err_o <= '1';
         else
-          ch1_rx_data_o    <= ch1_rx_data_int;
-          ch1_rx_k_o       <= ch1_rx_k_int;
-          ch1_rx_enc_err_o <= ch1_rx_disperr or ch1_rx_invcode;
+          ch1_rx_data_o    <= ch1_rx_data_int after 1ns;
+          ch1_rx_k_o       <= ch1_rx_k_int after 1ns;
+          ch1_rx_enc_err_o <= (ch1_rx_disperr or ch1_rx_invcode) after 1ns;
         end if;
       end if;
     end process;
