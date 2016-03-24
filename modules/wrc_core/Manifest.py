@@ -1,4 +1,5 @@
 files = [ "xwr_core.vhd",
+          "xcute_core.vhd",
           "wr_core.vhd",
           "wrc_dpram.vhd",
           "wrcore_pkg.vhd",
