@@ -57,7 +57,7 @@ architecture behavioral of xwr_lhaaso_ed is
 
       rst_n_i : in std_logic;
 
-      wb_adr_i   : in  std_logic_vector(0 downto 0);
+      wb_adr_i   : in  std_logic_vector(4 downto 0);
       wb_dat_i   : in  std_logic_vector(31 downto 0);
       wb_dat_o   : out std_logic_vector(31 downto 0);
       wb_cyc_i   : in  std_logic;
@@ -84,7 +84,7 @@ begin  -- behavioral
       clk_ref_i       => clk_ref_i,
       clk_sys_i       => clk_sys_i,
       rst_n_i         => rst_n_i,
-      wb_adr_i        => slave_i.adr(0 downto 0),
+      wb_adr_i        => slave_i.adr(4 downto 0),
       wb_dat_i        => slave_i.dat,
       wb_dat_o        => slave_o.dat,
       wb_cyc_i        => slave_i.cyc,

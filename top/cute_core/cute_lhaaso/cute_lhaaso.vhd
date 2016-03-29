@@ -28,7 +28,7 @@ entity cute_lhaaso is
       clk_ref_i     : in std_logic;     -- 125M reference clock
       clk_gtp_i     : in std_logic;     -- Dedicated clock for Xilinx GTP transceiver
       
-	    rst_n_i  		: in std_logic;
+	    rst_n_i  		  : in std_logic;
 	  
       -- From GN4124 Local bus, not used in cute
       --L_CLKp : in std_logic;  -- Local bus clock (frequency set in GN4124 config registers)
@@ -195,7 +195,7 @@ architecture rtl of cute_lhaaso is
   --signal p2l_pll_locked : std_logic;
 
   -- Reset
-  signal rst_a : std_logic;
+  --signal rst_a : std_logic;
   signal rst   : std_logic;
 
   --signal ram_we      : std_logic_vector(0 downto 0);
@@ -204,7 +204,7 @@ architecture rtl of cute_lhaaso is
   --signal irq_to_gn4124 : std_logic;
 
   -- SPI
-  signal spi_slave_select : std_logic_vector(7 downto 0);
+  --signal spi_slave_select : std_logic_vector(7 downto 0);
 
 
   signal pllout_clk_sys       : std_logic;
@@ -320,6 +320,22 @@ architecture rtl of cute_lhaaso is
 
   signal lhaaso_slave_i : t_wishbone_slave_in;
   signal lhaaso_slave_o : t_wishbone_slave_out;
+
+  constant c_null_sdb : t_sdb_device := (
+    abi_class     => x"0000",              -- undocumented device
+    abi_ver_major => x"01",
+    abi_ver_minor => x"01",
+    wbd_endian    => c_sdb_endian_big,
+    wbd_width     => x"7",                 -- 8/16/32-bit port granularity
+    sdb_component => (
+      addr_first  => x"0000000000000000",
+      addr_last   => x"00000000000000ff",
+      product     => (
+        vendor_id => x"0000000000001103",  -- THU
+        device_id => x"c0403598",
+        version   => x"00000001",
+        date      => x"20160324",
+        name      => "WR-NULL            ")));
 
   constant c_lhaaso_ed_sdb : t_sdb_device := (
     abi_class     => x"0000",              -- undocumented device
@@ -637,6 +653,7 @@ begin
       g_dpram_initf               => "wrc.ram",
       g_etherbone_cfg_sdb         => c_etherbone_sdb,
       g_aux1_sdb                  => c_lhaaso_ed_sdb,
+      g_aux2_sdb                  => c_null_sdb,
       g_dpram_size                => 131072/4,
       g_interface_mode            => PIPELINED,
       g_address_granularity       => BYTE)
@@ -906,6 +923,9 @@ begin
   -- LHAASO ED Project
   --------------------------------------------------------------
   U_LHAASO_ED : xwr_lhaaso_ed
+  generic map(
+      g_interface_mode       => PIPELINED,
+      g_address_granularity  => BYTE)
   port map(
     clk_sys_i => clk_sys_i,
     clk_ref_i => clk_sys_i,

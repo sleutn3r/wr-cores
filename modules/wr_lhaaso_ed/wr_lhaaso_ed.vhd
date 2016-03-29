@@ -39,7 +39,7 @@ entity wr_lhaaso_ed is
 
     rst_n_i : in std_logic;
 
-    wb_adr_i   : in  std_logic_vector(0 downto 0);
+    wb_adr_i   : in  std_logic_vector(4 downto 0);
     wb_dat_i   : in  std_logic_vector(31 downto 0);
     wb_dat_o   : out std_logic_vector(31 downto 0);
     wb_cyc_i   : in  std_logic;
@@ -60,7 +60,7 @@ component lhaaso_ed_wb is
   port (
     rst_n_i                                  : in     std_logic;
     clk_sys_i                                : in     std_logic;
-    wb_adr_i                                 : in     std_logic_vector(0 downto 0);
+    wb_adr_i                                 : in     std_logic_vector(1 downto 0);
     wb_dat_i                                 : in     std_logic_vector(31 downto 0);
     wb_dat_o                                 : out    std_logic_vector(31 downto 0);
     wb_cyc_i                                 : in     std_logic;
@@ -72,7 +72,8 @@ component lhaaso_ed_wb is
     refclk_i                                 : in     std_logic;
 -- Port for asynchronous (clock: refclk_i) std_logic_vector field: 'Temperature register' in reg: 'Board temperature register'
     lhaaso_ed_temperature_o                  : out    std_logic_vector(31 downto 0);
--- Port for asynchronous (clock: refclk_i) BIT field: 'Temperature Valid register' in reg: 'Temperature Valid Register'
+    lhaaso_ed_ed_null_o                         : out    std_logic_vector(31 downto 0);
+    -- Port for asynchronous (clock: refclk_i) BIT field: 'Temperature Valid register' in reg: 'Temperature Valid Register'
     lhaaso_ed_tempvalid_o                    : out    std_logic
   );
 end component;
@@ -83,11 +84,11 @@ end component;
 
   signal temperature       : std_logic_vector(31 downto 0);
   signal temperature_valid : std_logic;
-
+  signal null_ed:std_logic_vector(31 downto 0);
 begin  -- behavioral
 
 
-  resized_addr(0 downto 0)                          <= wb_adr_i;
+  resized_addr(4 downto 0)                          <= wb_adr_i;
   resized_addr(c_wishbone_address_width-1 downto 5) <= (others => '0');
 
   U_Adapter : wb_slave_adapter
@@ -117,7 +118,7 @@ begin  -- behavioral
     port map (
       rst_n_i                => rst_n_i,
       clk_sys_i              => clk_sys_i,
-      wb_adr_i               => wb_in.adr(0 downto 0),
+      wb_adr_i               => wb_in.adr(1 downto 0),
       wb_dat_i               => wb_in.dat,
       wb_dat_o               => wb_out.dat,
       wb_cyc_i               => wb_in.cyc,
@@ -127,7 +128,8 @@ begin  -- behavioral
       wb_ack_o               => wb_out.ack,
       refclk_i               => clk_ref_i,
       lhaaso_ed_temperature_o=> temperature,
-      lhaaso_ed_tempvalid_o  => temperature_valid);
+      lhaaso_ed_tempvalid_o  => temperature_valid,
+      lhaaso_ed_ed_null_o    => null_ed);
 
     temperature_o <= temperature;
     temperature_valid_o <= temperature_valid;

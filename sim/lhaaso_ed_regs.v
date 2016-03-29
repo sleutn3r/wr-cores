@@ -1,2 +1,3 @@
-`define ADDR_LHAASO_ED_TEMPERATURE     3'h0
-`define ADDR_LHAASO_ED_TEMPVALID       3'h4
+`define ADDR_LHAASO_ED_TEMPERATURE     4'h0
+`define ADDR_LHAASO_ED_ED_NULL         4'h4
+`define ADDR_LHAASO_ED_TEMPVALID       4'h8
