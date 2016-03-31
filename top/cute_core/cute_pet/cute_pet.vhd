@@ -378,7 +378,7 @@ architecture rtl of cute_pet is
         date      => x"20160214",
         name      => "WR-PET-GPIO        ")));
 
-  constant c_wrc_i2c_sdb : t_sdb_device := (
+  constant c_wrc_spi_sdb : t_sdb_device := (
     abi_class     => x"0000",              -- undocumented device
     abi_ver_major => x"01",
     abi_ver_minor => x"01",
@@ -392,7 +392,7 @@ architecture rtl of cute_pet is
         device_id => x"f0403599",
         version   => x"00000001",
         date      => x"20160214",
-        name      => "WR-PET-I2C         ")));
+        name      => "WR-PET-SPI         ")));
 begin
 
   --U_Ext_PLL : ext_pll_10_to_125m
@@ -676,7 +676,7 @@ begin
       g_dpram_initf               => "wrc.ram",
       g_etherbone_cfg_sdb         => c_etherbone_sdb,
       g_aux1_sdb                  => c_wrc_gpio_sdb,
-      g_aux2_sdb                  => c_wrc_i2c_sdb,
+      g_aux2_sdb                  => c_wrc_spi_sdb,
       g_dpram_size                => 131072/4,
       g_interface_mode            => PIPELINED,
       g_address_granularity       => BYTE)
