@@ -1,3 +1,3 @@
-files = ["cute_core.vhd", "cute_reset_gen.vhd"]
+files = ["cute_core.vhd"]
 
 modules = { "local" : ["../../../"] }

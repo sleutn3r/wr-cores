@@ -2,8 +2,6 @@ library ieee;
 use ieee.STD_LOGIC_1164.all;
 use ieee.NUMERIC_STD.all;
 
-use work.gencores_pkg.all;
-
 entity cute_reset_gen is
   
   port (
@@ -18,6 +16,22 @@ entity cute_reset_gen is
 end cute_reset_gen;
 
 architecture behavioral of cute_reset_gen is
+
+component gc_sync_ffs is
+  generic(
+    g_sync_edge : string := "positive"
+    );
+  port(
+    clk_i    : in  std_logic;  -- clock from the destination clock domain
+    rst_n_i  : in  std_logic;           -- reset
+    data_i   : in  std_logic;           -- async input
+    synced_o : out std_logic;           -- synchronized output
+    npulse_o : out std_logic;  -- negative edge detect output (single-clock
+    -- pulse)
+    ppulse_o : out std_logic   -- positive edge detect output (single-clock
+   -- pulse)
+    );
+end component;
 
   signal powerup_cnt     : unsigned(7 downto 0) := x"00";
   signal button_synced_n : std_logic;

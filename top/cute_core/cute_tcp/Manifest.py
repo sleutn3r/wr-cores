@@ -1,3 +1,3 @@
-files = ["cute_tcp.vhd", "cute_reset_gen.vhd"]
+files = ["cute_tcp.vhd"]
 
 modules = { "local" : ["../../../"] }

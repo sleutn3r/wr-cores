@@ -9,6 +9,7 @@ use work.wrcore_pkg.all;
 use work.wr_fabric_pkg.all;
 use work.wr_xilinx_pkg.all;
 use work.etherbone_pkg.all;
+use work.com5402pkg.all;
 
 library UNISIM;
 use UNISIM.vcomponents.all;
@@ -17,7 +18,7 @@ library work;
 use work.wishbone_pkg.all;
 
 
-entity cute_core is
+entity cute_dp is
   generic
     (
       TAR_ADDR_WDTH : integer := 13     -- not used for this project
@@ -27,10 +28,10 @@ entity cute_core is
       clk_sys_i     : in std_logic;     -- 62.5M system clock, from PLL drived by clk_125m_pllref
       clk_dmtd_i    : in std_logic;     -- 62.5M DMTD clock, from PLL drived by clk_20m_vcxo
       clk_ref_i     : in std_logic;     -- 125M reference clock
-      clk_gtp_i     : in std_logic;     -- Dedicated clock for Xilinx GTP transceiver
-      
-	  rst_n_i		: in std_logic;
-	  
+      clk_gtp0_i     : in std_logic;     -- Dedicated clock for Xilinx GTP transceiver
+      clk_gtp1_i     : in std_logic;     -- Dedicated clock for Xilinx GTP transceiver
+
+      rst_n_i		: in std_logic;
       -- From GN4124 Local bus, not used in cute
       --L_CLKp : in std_logic;  -- Local bus clock (frequency set in GN4124 config registers)
       --L_CLKn : in std_logic;  -- Local bus clock (frequency set in GN4124 config registers)
@@ -69,11 +70,6 @@ entity cute_core is
       --TX_ERROR   : in std_logic;        -- Transmit Error
       --VC_RDY     : in std_logic_vector(1 downto 0);  -- Channel ready
 
-      -- Font panel LEDs
-      LED_RED   : out std_logic;
-      LED_GREEN : out std_logic;
-      LED_TEST  : out std_logic;
-
       dac_sclk_o  : out std_logic;
       dac_din_o   : out std_logic;
       dac_clr_n_o : out std_logic;
@@ -97,26 +93,38 @@ entity cute_core is
       thermo_id_o : out std_logic;      -- 1-Wire interface to DS18B20
 
       -------------------------------------------------------------------------
-      -- SFP pins
+      -- SFP0 pins
       -------------------------------------------------------------------------
+      sfp0_led_o : out std_logic;
+      sfp0_txp_o : out std_logic;
+      sfp0_txn_o : out std_logic;
+      sfp0_rxp_i : in std_logic;
+      sfp0_rxn_i : in std_logic;
+      sfp0_mod_def0_b    : in    std_logic;  -- sfp detect
+      sfp0_mod_def1_i    : in std_logic;  -- scl
+      sfp0_mod_def1_o    : out std_logic;  -- scl
+      sfp0_mod_def2_i    : in std_logic;  -- sda
+      sfp0_mod_def2_o    : out std_logic;  -- sda
+      sfp0_tx_fault_i    : in    std_logic;
+      sfp0_tx_disable_o  : out   std_logic;
+      sfp0_los_i         : in    std_logic;
 
-      sfp_txp_o : out std_logic;
-      sfp_txn_o : out std_logic;
-
-      sfp_rxp_i : in std_logic;
-      sfp_rxn_i : in std_logic;
-
-      sfp_mod_def0_b    : in    std_logic;  -- sfp detect
-      sfp_mod_def1_i    : in std_logic;  -- scl
-      sfp_mod_def1_o    : out std_logic;  -- scl
-      sfp_mod_def2_i    : in std_logic;  -- sda
-      sfp_mod_def2_o    : out std_logic;  -- sda
-      sfp_rate_select_i : in std_logic;
-      sfp_rate_select_o : out std_logic;
-      sfp_tx_fault_i    : in    std_logic;
-      sfp_tx_disable_o  : out   std_logic;
-      sfp_los_i         : in    std_logic;
-
+      -------------------------------------------------------------------------
+      -- SFP1 pins
+      -------------------------------------------------------------------------
+      sfp1_led_o : out std_logic;
+      sfp1_txp_o : out std_logic;
+      sfp1_txn_o : out std_logic;
+      sfp1_rxp_i : in std_logic;
+      sfp1_rxn_i : in std_logic;
+      sfp1_mod_def0_b    : in    std_logic;  -- sfp detect
+      sfp1_mod_def1_i    : in std_logic;  -- scl
+      sfp1_mod_def1_o    : out std_logic;  -- scl
+      sfp1_mod_def2_i    : in std_logic;  -- sda
+      sfp1_mod_def2_o    : out std_logic;  -- sda
+      sfp1_tx_fault_i    : in    std_logic;
+      sfp1_tx_disable_o  : out   std_logic;
+      sfp1_los_i         : in    std_logic;
 
       -------------------------------------------------------------------------
       -- Digital I/O FMC Pins
@@ -142,38 +150,43 @@ entity cute_core is
       --dio_led_bot_o : out std_logic;
 
       pps_o : out std_logic;
-	  tm_utc_o: out std_logic_vector(39 downto 0);
+	    tm_utc_o: out std_logic_vector(39 downto 0);
 	  
       -----------------------------------------
       --UART
       -----------------------------------------
       uart_rxd_i : in  std_logic;
-      uart_txd_o : out std_logic
+      uart_txd_o : out std_logic;
+
+      usr_led1_o  : out std_logic;
+      usr_led2_o  : out std_logic;
+
+      ----------------------------------------
+      -- Ext tcp interface
+      ---------------------------------------
+      tcp_rx_data:out std_logic_vector(7 downto 0);
+      tcp_rx_data_valid:out std_logic;
+      tcp_rx_rts:out std_logic;
+      tcp_tx_data:in std_logic_vector(7 downto 0);
+      tcp_tx_data_valid:in std_logic;
+      tcp_tx_cts:out std_logic
       );
 
-end cute_core;
+end cute_dp;
 
-architecture rtl of cute_core is
+architecture rtl of cute_dp is
 
   ------------------------------------------------------------------------------
   -- Components declaration
   ------------------------------------------------------------------------------
-  component cute_reset_gen
-    port (
-      clk_sys_i        : in  std_logic;
-      rst_pcie_n_a_i   : in  std_logic;
-      rst_button_n_a_i : in  std_logic;
-      rst_n_o          : out std_logic);
-  end component;
-
-  component ext_pll_10_to_125m
-    port (
-      clk_ext_i     : in  std_logic;
-      clk_ext_mul_o : out std_logic;
-      rst_a_i       : in  std_logic;
-      clk_in_stopped_o: out  std_logic;
-      locked_o      : out std_logic);
-  end component;
+  --component ext_pll_10_to_125m
+  --  port (
+  --    clk_ext_i     : in  std_logic;
+  --    clk_ext_mul_o : out std_logic;
+  --    rst_a_i       : in  std_logic;
+  --    clk_in_stopped_o: out  std_logic;
+  --    locked_o      : out std_logic);
+  --end component;
 
   --component chipscope_ila
   --  port (
@@ -213,13 +226,14 @@ architecture rtl of cute_core is
   --signal l_clk : std_logic;
 
   -- Dedicated clock for GTP transceiver
-  signal gtp_dedicated_clk : std_logic;
+  signal gtp0_dedicated_clk : std_logic;
+  signal gtp1_dedicated_clk : std_logic;
 
   -- P2L colck PLL status
   --signal p2l_pll_locked : std_logic;
 
   -- Reset
-  signal rst_a : std_logic;
+  --signal rst_a : std_logic;
   signal rst   : std_logic;
 
   --signal ram_we      : std_logic_vector(0 downto 0);
@@ -228,8 +242,7 @@ architecture rtl of cute_core is
   --signal irq_to_gn4124 : std_logic;
 
   -- SPI
-  signal spi_slave_select : std_logic_vector(7 downto 0);
-
+  --signal spi_slave_select : std_logic_vector(7 downto 0);
 
   signal pllout_clk_sys       : std_logic;
   signal pllout_clk_dmtd      : std_logic;
@@ -247,10 +260,14 @@ architecture rtl of cute_core is
   signal wrc_scl_i : std_logic;
   signal wrc_sda_o : std_logic;
   signal wrc_sda_i : std_logic;
-  signal sfp_scl_o : std_logic;
-  signal sfp_scl_i : std_logic;
-  signal sfp_sda_o : std_logic;
-  signal sfp_sda_i : std_logic;
+  signal sfp0_scl_o : std_logic;
+  signal sfp0_scl_i : std_logic;
+  signal sfp0_sda_o : std_logic;
+  signal sfp0_sda_i : std_logic;
+  signal sfp1_scl_o : std_logic;
+  signal sfp1_scl_i : std_logic;
+  signal sfp1_sda_o : std_logic;
+  signal sfp1_sda_i : std_logic;
   --signal dio       : std_logic_vector(3 downto 0);
 
   signal dac_hpll_load_p1 : std_logic;
@@ -259,22 +276,36 @@ architecture rtl of cute_core is
   signal dac_dpll_data    : std_logic_vector(15 downto 0);
 
   signal pps     : std_logic;
-  signal pps_led : std_logic;
 
-  signal phy_tx_data      : std_logic_vector(7 downto 0);
-  signal phy_tx_k         : std_logic_vector(0 downto 0);
-  signal phy_tx_disparity : std_logic;
-  signal phy_tx_enc_err   : std_logic;
-  signal phy_rx_data      : std_logic_vector(7 downto 0);
-  signal phy_rx_rbclk     : std_logic;
-  signal phy_rx_k         : std_logic_vector(0 downto 0);
-  signal phy_rx_enc_err   : std_logic;
-  signal phy_rx_bitslide  : std_logic_vector(3 downto 0);
-  signal phy_rst          : std_logic;
-  signal phy_loopen       : std_logic;
-  signal phy_loopen_vec   : std_logic_vector(2 downto 0);
-  signal phy_prbs_sel     : std_logic_vector(2 downto 0);
-  signal phy_rdy          : std_logic;
+  signal phy0_tx_data      : std_logic_vector(7 downto 0);
+  signal phy0_tx_k         : std_logic_vector(0 downto 0);
+  signal phy0_tx_disparity : std_logic;
+  signal phy0_tx_enc_err   : std_logic;
+  signal phy0_rx_data      : std_logic_vector(7 downto 0);
+  signal phy0_rx_rbclk     : std_logic;
+  signal phy0_rx_k         : std_logic_vector(0 downto 0);
+  signal phy0_rx_enc_err   : std_logic;
+  signal phy0_rx_bitslide  : std_logic_vector(3 downto 0);
+  signal phy0_rst          : std_logic;
+  signal phy0_loopen       : std_logic;
+  signal phy0_loopen_vec   : std_logic_vector(2 downto 0);
+  signal phy0_prbs_sel     : std_logic_vector(2 downto 0);
+  signal phy0_rdy          : std_logic;
+
+  signal phy1_tx_data      : std_logic_vector(7 downto 0);
+  signal phy1_tx_k         : std_logic_vector(0 downto 0);
+  signal phy1_tx_disparity : std_logic;
+  signal phy1_tx_enc_err   : std_logic;
+  signal phy1_rx_data      : std_logic_vector(7 downto 0);
+  signal phy1_rx_rbclk     : std_logic;
+  signal phy1_rx_k         : std_logic_vector(0 downto 0);
+  signal phy1_rx_enc_err   : std_logic;
+  signal phy1_rx_bitslide  : std_logic_vector(3 downto 0);
+  signal phy1_rst          : std_logic;
+  signal phy1_loopen       : std_logic;
+  signal phy1_loopen_vec   : std_logic_vector(2 downto 0);
+  signal phy1_prbs_sel     : std_logic_vector(2 downto 0);
+  signal phy1_rdy          : std_logic;
 
   --signal dio_in  : std_logic_vector(4 downto 0);
   --signal dio_out : std_logic_vector(4 downto 0);
@@ -316,8 +347,33 @@ architecture rtl of cute_core is
   --signal clk_ext_rst                : std_logic;
   --signal clk_ref_div2               : std_logic;
   
-begin
+  component xwb_tcp_core is
+    port(
+      clk_ref :     in  std_logic;
+      clk_sys :     in  std_logic;
+      rst_n_i :     in  std_logic;
+      snk_i :   in  t_wrf_sink_in;
+      snk_o :   out t_wrf_sink_out;
+      tcp_rx_data:out slv8xntcpstreamstype;
+      tcp_rx_data_valid: out std_logic_vector((ntcpstreams-1) downto 0);
+      tcp_rx_rts: out std_logic;
+      src_o :   out t_wrf_source_out;
+      src_i :   in  t_wrf_source_in;
+      tcp_tx_data:in slv8xntcpstreamstype;
+      tcp_tx_data_valid: in std_logic_vector((ntcpstreams-1) downto 0);
+      tcp_tx_cts: out std_logic_vector((ntcpstreams-1) downto 0);
+      wb_i :        in t_wishbone_master_in;
+      wb_o :        out t_wishbone_master_out);
+  end component;
 
+  signal xwb_tcp_tx_data: SLV8xNTCPSTREAMStype := (others => (others => '0'));
+  signal xwb_tcp_tx_data_valid: std_logic_vector((NTCPSTREAMS-1) downto 0) := (others => '0');
+  signal xwb_tcp_tx_cts: std_logic_vector((NTCPSTREAMS-1) downto 0);
+  signal xwb_tcp_rx_rts: std_logic;
+  signal xwb_tcp_rx_data: SLV8xNTCPSTREAMStype;
+  signal xwb_tcp_rx_data_valid: std_logic_vector((NTCPSTREAMS-1) downto 0);
+
+begin
 
   --U_Ext_PLL : ext_pll_10_to_125m
   --  port map (
@@ -465,7 +521,8 @@ begin
 
   clk_sys <= clk_sys_i;
   clk_dmtd <= clk_dmtd_i;
-  gtp_dedicated_clk <= clk_gtp_i;
+  gtp0_dedicated_clk <= clk_gtp0_i;
+  gtp1_dedicated_clk <= clk_gtp1_i;
   clk_125m_pllref <= clk_ref_i;
 
   ------------------------------------------------------------------------------
@@ -562,7 +619,7 @@ begin
   --genum_wb_out.adr(18 downto 2)  <= wb_adr(16 downto 0);
   --genum_wb_out.adr(31 downto 19) <= (others => '0');
 
-  LED_TEST <= led_divider(23);
+  usr_led1_o <= led_divider(23);
   process(clk_sys)
   begin
     if rising_edge(clk_sys) then
@@ -575,16 +632,17 @@ begin
   wrc_scl_i  <= fpga_scl_i;
   wrc_sda_i  <= fpga_sda_i;
 
-  sfp_mod_def1_o <= sfp_scl_o;
-  sfp_mod_def2_o <= sfp_sda_o;
-  sfp_scl_i      <= sfp_mod_def1_i;
-  sfp_sda_i      <= sfp_mod_def2_i;
+  sfp0_mod_def1_o <= sfp0_scl_o;
+  sfp0_mod_def2_o <= sfp0_sda_o;
+  sfp0_scl_i      <= sfp0_mod_def1_i;
+  sfp0_sda_i      <= sfp0_mod_def2_i;
 
   thermo_id_o <= owr_en(0);
   owr_i(0)  <= thermo_id_i;
   owr_i(1)  <= '0';
 
   pps_o <= pps;
+
   U_WR_CORE : xcute_core
     generic map (
       g_simulation                => 0,
@@ -622,35 +680,35 @@ begin
       dac_dpll_data_o    => dac_dpll_data,
 
       phy_ref_clk_i      => clk_125m_pllref,
-      phy_tx_data_o      => phy_tx_data,
-      phy_tx_k_o         => phy_tx_k,
-      phy_tx_disparity_i => phy_tx_disparity,
-      phy_tx_enc_err_i   => phy_tx_enc_err,
-      phy_rx_data_i      => phy_rx_data,
-      phy_rx_rbclk_i     => phy_rx_rbclk,
-      phy_rx_k_i         => phy_rx_k,
-      phy_rx_enc_err_i   => phy_rx_enc_err,
-      phy_rx_bitslide_i  => phy_rx_bitslide,
-      phy_rst_o          => phy_rst,
-      phy_loopen_o       => phy_loopen,
-      phy_loopen_vec_o   => phy_loopen_vec,
-      phy_rdy_i          => phy_rdy,
-      phy_sfp_tx_fault_i => sfp_tx_fault_i,
-      phy_sfp_los_i      => sfp_los_i,
-      phy_sfp_tx_disable_o => sfp_tx_disable_o,
-      phy_tx_prbs_sel_o  =>  phy_prbs_sel,
+      phy_tx_data_o      => phy0_tx_data,
+      phy_tx_k_o         => phy0_tx_k,
+      phy_tx_disparity_i => phy0_tx_disparity,
+      phy_tx_enc_err_i   => phy0_tx_enc_err,
+      phy_rx_data_i      => phy0_rx_data,
+      phy_rx_rbclk_i     => phy0_rx_rbclk,
+      phy_rx_k_i         => phy0_rx_k,
+      phy_rx_enc_err_i   => phy0_rx_enc_err,
+      phy_rx_bitslide_i  => phy0_rx_bitslide,
+      phy_rst_o          => phy0_rst,
+      phy_loopen_o       => phy0_loopen,
+      phy_loopen_vec_o   => phy0_loopen_vec,
+      phy_rdy_i          => phy0_rdy,
+      phy_sfp_tx_fault_i => sfp0_tx_fault_i,
+      phy_sfp_los_i      => sfp0_los_i,
+      phy_sfp_tx_disable_o => sfp0_tx_disable_o,
+      phy_tx_prbs_sel_o  =>  phy0_prbs_sel,
 
-      led_act_o  => LED_RED,
-      led_link_o => LED_GREEN,
+      led_act_o  => sfp0_led_o,
+      led_link_o => sfp1_led_o,
       scl_o      => wrc_scl_o,
       scl_i      => wrc_scl_i,
       sda_o      => wrc_sda_o,
       sda_i      => wrc_sda_i,
-      sfp_scl_o  => sfp_scl_o,
-      sfp_scl_i  => sfp_scl_i,
-      sfp_sda_o  => sfp_sda_o,
-      sfp_sda_i  => sfp_sda_i,
-      sfp_det_i  => sfp_mod_def0_b,
+      sfp_scl_o  => sfp0_scl_o,
+      sfp_scl_i  => sfp0_scl_i,
+      sfp_sda_o  => sfp0_sda_o,
+      sfp_sda_i  => sfp0_sda_i,
+      sfp_det_i  => sfp0_mod_def0_b,
       btn1_i     => open,
       btn2_i     => open,
       spi_sclk_o  => open,
@@ -681,10 +739,10 @@ begin
       etherbone_snk_o => etherbone_src_in,
       etherbone_snk_i => etherbone_src_out,
 
-      ext_src_o => open,
-      ext_src_i => open,
-      ext_snk_o => open,
-      ext_snk_i => open,
+      ext_src_o => ext_snk_in,
+      ext_src_i => ext_snk_out,
+      ext_snk_o => ext_src_in,
+      ext_snk_i => ext_src_out,
       
       tm_dac_value_o       => open,
       tm_dac_wr_o          => open,
@@ -694,7 +752,7 @@ begin
       tm_tai_o             => tm_utc_o,
       tm_cycles_o          => open,
       pps_p_o              => pps,
-      pps_led_o            => pps_led,
+      pps_led_o            => open,
 
 --      dio_o       => dio_out(4 downto 1),
       rst_aux_n_o => etherbone_rst_n
@@ -737,53 +795,52 @@ begin
 
   U_GTP : wr_gtp_phy_spartan6
     generic map (
-      g_enable_ch0 => 0,
+      g_enable_ch0 => 1,
       g_enable_ch1 => 1,
       g_simulation => 0)
     port map (
-      gtp_clk_i => gtp_dedicated_clk,
+      gtp_clk_i => gtp0_dedicated_clk,
 
       ch0_ref_clk_i      => clk_125m_pllref,
-      ch0_tx_data_i      => x"00",
-      ch0_tx_k_i         => '0',
-      ch0_tx_disparity_o => open,
-      ch0_tx_enc_err_o   => open,
-      ch0_rx_rbclk_o     => open,
-      ch0_rx_data_o      => open,
-      ch0_rx_k_o         => open,
-      ch0_rx_enc_err_o   => open,
-      ch0_rx_bitslide_o  => open,
-      ch0_rst_i          => '1',
-      ch0_loopen_i       => '0',
-      ch0_rdy_o          => open,
+      ch0_tx_data_i      => phy0_tx_data,
+      ch0_tx_k_i         => phy0_tx_k(0),
+      ch0_tx_disparity_o => phy0_tx_disparity,
+      ch0_tx_enc_err_o   => phy0_tx_enc_err,
+      ch0_rx_rbclk_o     => phy0_rx_rbclk,
+      ch0_rx_data_o      => phy0_rx_data,
+      ch0_rx_k_o         => phy0_rx_k(0),
+      ch0_rx_enc_err_o   => phy0_rx_enc_err,
+      ch0_rx_bitslide_o  => phy0_rx_bitslide,
+      ch0_rst_i          => phy0_rst,
+      ch0_loopen_i       => phy0_loopen,
+      ch0_loopen_vec_i   => phy0_loopen_vec,
+      ch0_tx_prbs_sel_i  => phy0_prbs_sel,
+      ch0_rdy_o          => phy0_rdy,
 
       ch1_ref_clk_i      => clk_125m_pllref,
-      ch1_tx_data_i      => phy_tx_data,
-      ch1_tx_k_i         => phy_tx_k(0),
-      ch1_tx_disparity_o => phy_tx_disparity,
-      ch1_tx_enc_err_o   => phy_tx_enc_err,
-      ch1_rx_data_o      => phy_rx_data,
-      ch1_rx_rbclk_o     => phy_rx_rbclk,
-      ch1_rx_k_o         => phy_rx_k(0),
-      ch1_rx_enc_err_o   => phy_rx_enc_err,
-      ch1_rx_bitslide_o  => phy_rx_bitslide,
-      ch1_rst_i          => phy_rst,
-      ch1_loopen_i       => phy_loopen,
-      ch1_loopen_vec_i   => phy_loopen_vec,
-      ch1_tx_prbs_sel_i  => phy_prbs_sel,
-      ch1_rdy_o          => phy_rdy,
-      pad_txn0_o         => open,
-      pad_txp0_o         => open,
-      pad_rxn0_i         => '0',
-      pad_rxp0_i         => '0',
-      pad_txn1_o         => sfp_txn_o,
-      pad_txp1_o         => sfp_txp_o,
-      pad_rxn1_i         => sfp_rxn_i,
-      pad_rxp1_i         => sfp_rxp_i);
+      ch1_tx_data_i      => phy1_tx_data,
+      ch1_tx_k_i         => phy1_tx_k(0),
+      ch1_tx_disparity_o => phy1_tx_disparity,
+      ch1_tx_enc_err_o   => phy1_tx_enc_err,
+      ch1_rx_data_o      => phy1_rx_data,
+      ch1_rx_rbclk_o     => phy1_rx_rbclk,
+      ch1_rx_k_o         => phy1_rx_k(0),
+      ch1_rx_enc_err_o   => phy1_rx_enc_err,
+      ch1_rx_bitslide_o  => phy1_rx_bitslide,
+      ch1_rst_i          => phy1_rst,
+      ch1_loopen_i       => phy1_loopen,
+      ch1_loopen_vec_i   => phy1_loopen_vec,
+      ch1_tx_prbs_sel_i  => phy1_prbs_sel,
+      ch1_rdy_o          => phy1_rdy,
+      pad_txn0_o         => sfp0_txn_o,
+      pad_txp0_o         => sfp0_txp_o,
+      pad_rxn0_i         => sfp0_rxn_i,
+      pad_rxp0_i         => sfp0_rxp_i,
+      pad_txn1_o         => sfp1_txn_o,
+      pad_txp1_o         => sfp1_txp_o,
+      pad_rxn1_i         => sfp1_rxn_i,
+      pad_rxp1_i         => sfp1_rxp_i);
 
-  
-
-  
   U_DAC_ARB : cute_serial_dac_arb
     generic map (
       g_invert_sclk    => false,
@@ -866,6 +923,34 @@ begin
 
   --dio_sdn_ck_n_o <= '1';
   --dio_sdn_n_o    <= '1';
+
+    ------------------------------------------------------------------------
+      -- tcp core modules --
+    ------------------------------------------------------------------------
+    Inst_wb_tcp_core : xwb_tcp_core
+    port map(
+        clk_ref  => clk_ref_i,
+        clk_sys  => clk_sys_i,
+        rst_n_i  => local_reset_n,
+        wb_i     => ext_wb_in,
+        wb_o     => ext_wb_out,
+        snk_i    => ext_snk_in,
+        snk_o    => ext_snk_out,
+        src_o    => ext_src_out,
+        src_i    => ext_src_in,
+        tcp_tx_data       => xwb_tcp_tx_data,
+        tcp_tx_data_valid => xwb_tcp_tx_data_valid,
+        tcp_tx_cts        => xwb_tcp_tx_cts,
+        tcp_rx_data       => xwb_tcp_rx_data,
+        tcp_rx_data_valid => xwb_tcp_rx_data_valid,
+        tcp_rx_rts        => xwb_tcp_rx_rts);
+
+    tcp_rx_data_valid <= xwb_tcp_rx_data_valid(0);
+    tcp_rx_data <= xwb_tcp_rx_data(0);
+    xwb_tcp_tx_data(0) <= tcp_tx_data;
+    xwb_tcp_tx_data_valid(0) <= tcp_tx_data_valid;
+    tcp_tx_cts <= xwb_tcp_tx_cts(0);
+    tcp_rx_rts <= xwb_tcp_rx_rts;
 
 end rtl;
 
