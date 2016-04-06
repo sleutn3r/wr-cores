@@ -10,12 +10,12 @@ entity WHITERABBITGTP_WRAPPER_TILE_SPARTAN6 is
   generic
     (
       TILE_SIM_GTPRESET_SPEEDUP : integer := 0;  -- Set to 1 to speed up sim reset
-      TILE_CLK25_DIVIDER_0      : integer := 4;
-      TILE_CLK25_DIVIDER_1      : integer := 4;
-      TILE_PLL_DIVSEL_FB_0      : integer := 5;
-      TILE_PLL_DIVSEL_FB_1      : integer := 5;
-      TILE_PLL_DIVSEL_REF_0     : integer := 2;
-      TILE_PLL_DIVSEL_REF_1     : integer := 2;
+      TILE_CLK25_DIVIDER_0      : integer := 5;
+      TILE_CLK25_DIVIDER_1      : integer := 5;
+      TILE_PLL_DIVSEL_FB_0      : integer := 2;
+      TILE_PLL_DIVSEL_FB_1      : integer := 2;
+      TILE_PLL_DIVSEL_REF_0     : integer := 1;
+      TILE_PLL_DIVSEL_REF_1     : integer := 1;
       TILE_PLL_SOURCE_0         : string  := "PLL0";
       TILE_PLL_SOURCE_1         : string  := "PLL1"
       );
@@ -256,7 +256,7 @@ begin
       PMA_RX_CFG_0          => (x"05ce048"),
       PMA_RXSYNC_CFG_0      => (x"00"),
       RCV_TERM_GND_0        => (false),
-      RCV_TERM_VTTRX_0      => (true),
+      RCV_TERM_VTTRX_0      => (false),
       RXEQ_CFG_0            => ("01111011"),
       TERMINATION_CTRL_0    => ("10100"),
       TERMINATION_OVRD_0    => (false),
@@ -267,7 +267,7 @@ begin
       PMA_RX_CFG_1          => (x"05ce048"),
       PMA_RXSYNC_CFG_1      => (x"00"),
       RCV_TERM_GND_1        => (false),
-      RCV_TERM_VTTRX_1      => (true),
+      RCV_TERM_VTTRX_1      => (false),
       RXEQ_CFG_1            => ("01111011"),
       TERMINATION_CTRL_1    => ("10100"),
       TERMINATION_OVRD_1    => (false),
@@ -402,8 +402,8 @@ begin
       CDR_PH_ADJ_TIME_0     => ("01010"),
       PCI_EXPRESS_MODE_0    => (false),
       RX_EN_IDLE_HOLD_CDR_0 => (false),
-      RX_EN_IDLE_RESET_FR_0 => (true),
-      RX_EN_IDLE_RESET_PH_0 => (true),
+      RX_EN_IDLE_RESET_FR_0 => (false),
+      RX_EN_IDLE_RESET_PH_0 => (false),
       RX_STATUS_FMT_0       => ("PCIE"),
       TRANS_TIME_FROM_P2_0  => (x"03c"),
       TRANS_TIME_NON_P2_0   => (x"19"),
@@ -412,8 +412,8 @@ begin
       CDR_PH_ADJ_TIME_1     => ("01010"),
       PCI_EXPRESS_MODE_1    => (false),
       RX_EN_IDLE_HOLD_CDR_1 => (false),
-      RX_EN_IDLE_RESET_FR_1 => (true),
-      RX_EN_IDLE_RESET_PH_1 => (true),
+      RX_EN_IDLE_RESET_FR_1 => (false),
+      RX_EN_IDLE_RESET_PH_1 => (false),
       RX_STATUS_FMT_1       => ("PCIE"),
       TRANS_TIME_FROM_P2_1  => (x"03c"),
       TRANS_TIME_NON_P2_1   => (x"19"),
