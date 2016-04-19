@@ -107,7 +107,7 @@ entity cute_tdc is
       sfp_rxp_i : in std_logic;
       sfp_rxn_i : in std_logic;
 
-      sfp_mod_def0_b    : in    std_logic;  -- sfp detect
+      sfp_mod_def0_i    : in    std_logic;  -- sfp detect
       sfp_mod_def1_i    : in std_logic;  -- scl
       sfp_mod_def1_o    : out std_logic;  -- scl
       sfp_mod_def2_i    : in std_logic;  -- sda
@@ -751,7 +751,7 @@ port map (
     sfp_scl_i  => sfp_scl_i,
     sfp_sda_o  => sfp_sda_o,
     sfp_sda_i  => sfp_sda_i,
-    sfp_det_i  => sfp_mod_def0_b,
+    sfp_det_i  => sfp_mod_def0_i,
     btn1_i     => open,
     btn2_i     => open,
     spi_sclk_o  => open,
