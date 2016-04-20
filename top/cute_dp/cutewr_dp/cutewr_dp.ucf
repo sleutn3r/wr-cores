@@ -82,8 +82,8 @@ NET "sfp1_txp_o" LOC = B6;
 
 NET "pps_o" LOC = C18;
 NET "pps_o" IOSTANDARD = LVCMOS33;
-NET "ext_clk_o" LOC = C17;
-NET "ext_clk_o" IOSTANDARD = LVCMOS33;
+#NET "ext_clk_o" LOC = C17;
+#NET "ext_clk_o" IOSTANDARD = LVCMOS33;
 
 NET "fpga_scl_b" LOC = U17;
 NET "fpga_scl_b" IOSTANDARD = LVCMOS33;
@@ -129,7 +129,7 @@ TIMESPEC TS_sfp1_ref_clk_p_i = PERIOD "sfp1_ref_clk_p_i" 8 ns HIGH 50 %;
 NET "sfp1_ref_clk_n_i" TNM_NET = "sfp1_ref_clk_n_i";
 TIMESPEC TS_sfp1_ref_clk_n_i = PERIOD "sfp1_ref_clk_n_i" 8 ns HIGH 50 %;
 
-INST "*/U_SOFTPLL/U_Wrapped_Softpll/gen_feedback_dmtds*/clk_in" TNM = skew_limit;
-INST "*/U_SOFTPLL/U_Wrapped_Softpll/gen_ref_dmtds*/clk_in" TNM = skew_limit;
-TIMESPEC TS_ = FROM "skew_limit" TO "FFS" 1 ns DATAPATHONLY;
+#INST "*/U_SOFTPLL/U_Wrapped_Softpll/gen_feedback_dmtds*/clk_in" TNM = skew_limit;
+#INST "*/U_SOFTPLL/U_Wrapped_Softpll/gen_ref_dmtds*/clk_in" TNM = skew_limit;
+#TIMESPEC TS_ = FROM "skew_limit" TO "FFS" 1 ns DATAPATHONLY;
 

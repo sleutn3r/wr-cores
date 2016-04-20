@@ -25,8 +25,8 @@ port
     fpga_clk_p_i : in std_logic;  -- 125 MHz PLL reference
     fpga_clk_n_i : in std_logic;
 
-    sfp0_ref_clk_p_i : in std_logic;  -- Dedicated clock for Xilinx GTP transceiver
-    sfp0_ref_clk_n_i : in std_logic;
+--    sfp0_ref_clk_p_i : in std_logic;  -- Dedicated clock for Xilinx GTP transceiver
+--    sfp0_ref_clk_n_i 	: in std_logic;
 
     sfp1_ref_clk_p_i : in std_logic;  -- Dedicated clock for Xilinx GTP transceiver
     sfp1_ref_clk_n_i : in std_logic;
@@ -138,21 +138,15 @@ end component;
 
   signal pps: std_logic;
 
-  signal sfp0_scl_o : std_logic;
-  signal sfp0_scl_i : std_logic;
-  signal sfp0_sda_o : std_logic;
-  signal sfp0_sda_i : std_logic;
+  signal sfp0_mod_def1_i : std_logic;
+  signal sfp0_mod_def1_o : std_logic;
+  signal sfp0_mod_def2_i : std_logic;
+  signal sfp0_mod_def2_o : std_logic;
 
-  signal sfp0_mod_def1_i,sfp0_mod_def1_o:std_logic;
-  signal sfp0_mod_def2_i,sfp0_mod_def2_o:std_logic;
-  
-  signal sfp1_scl_o : std_logic;
-  signal sfp1_scl_i : std_logic;
-  signal sfp1_sda_o : std_logic;
-  signal sfp1_sda_i : std_logic;
-
-  signal sfp1_mod_def1_i,sfp1_mod_def1_o:std_logic;
-  signal sfp1_mod_def2_i,sfp1_mod_def2_o:std_logic;
+  signal sfp1_mod_def1_i : std_logic;
+  signal sfp1_mod_def1_o : std_logic;
+  signal sfp1_mod_def2_i : std_logic;
+  signal sfp1_mod_def2_o : std_logic;
 
   signal dac_hpll_load_p1 : std_logic;
   signal dac_dpll_load_p1 : std_logic;
@@ -359,7 +353,7 @@ cmp_clk_dmtd_buf : BUFG
   owr_i(1)  <= '0';
 
   pps_o <= pps;
-  ext_clk_o <= pps;
+  --ext_clk_o <= pps;
 
 U_WR_CORE : xcute_core
     generic map (
@@ -448,10 +442,10 @@ U_WR_CORE : xcute_core
       --sfp_sda_i  => sfp0_sda_i,
       --sfp_det_i  => sfp0_mod_def0_i,
 
-      sfp_scl_o  => sfp1_scl_o,
-      sfp_scl_i  => sfp1_scl_i,
-      sfp_sda_o  => sfp1_sda_o,
-      sfp_sda_i  => sfp1_sda_i,
+      sfp_scl_o  => sfp1_mod_def1_o,
+      sfp_scl_i  => sfp1_mod_def1_i,
+      sfp_sda_o  => sfp1_mod_def2_o,
+      sfp_sda_i  => sfp1_mod_def2_i,
       sfp_det_i  => sfp1_mod_def0_i,
 
       btn1_i     => open,
