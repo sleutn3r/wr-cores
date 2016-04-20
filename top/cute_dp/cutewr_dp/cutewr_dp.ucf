@@ -10,10 +10,10 @@ NET "fpga_clk_n_i" IOSTANDARD = LVDS_33;
 NET "fpga_clk_p_i" LOC = F12;
 NET "fpga_clk_p_i" IOSTANDARD = LVDS_33;
 
-NET "sfp0_ref_clk_n_i" LOC = A8;
-NET "sfp0_ref_clk_p_i" LOC = B8;
-NET "sfp0_ref_clk_n_i" IOSTANDARD = LVDS_33;
-NET "sfp0_ref_clk_p_i" IOSTANDARD = LVDS_33;
+#NET "sfp0_ref_clk_n_i" LOC = A8;
+#NET "sfp0_ref_clk_p_i" LOC = B8;
+#NET "sfp0_ref_clk_n_i" IOSTANDARD = LVDS_33;
+#NET "sfp0_ref_clk_p_i" IOSTANDARD = LVDS_33;
 
 #NET "fmc_ref_clk_n_i" LOC = A10;
 #NET "fmc_ref_clk_p_i" LOC = B10;
@@ -40,37 +40,39 @@ NET "dac_ldac_n_o" IOSTANDARD = LVCMOS33;
 NET "dac_sync_n_o" LOC = E1;
 NET "dac_sync_n_o" IOSTANDARD = LVCMOS33;
 
-#NET "sfp0_led_o" LOC = C2;
-#NET "sfp0_led_o" IOSTANDARD = LVCMOS33;
-NET "sfp0_mod_def0_b" LOC = D2;
-NET "sfp0_mod_def0_b" IOSTANDARD = LVCMOS33;
-NET "sfp0_mod_def1_b" LOC = E3;
-NET "sfp0_mod_def1_b" IOSTANDARD = LVCMOS33;
-NET "sfp0_mod_def2_b" LOC = E4;
-NET "sfp0_mod_def2_b" IOSTANDARD = LVCMOS33;
-NET "sfp0_tx_fault_i" LOC = F3;
-NET "sfp0_tx_fault_i" IOSTANDARD = LVCMOS33;
-NET "sfp0_tx_disable_o" LOC = F2;
-NET "sfp0_tx_disable_o" IOSTANDARD = LVCMOS33;
-NET "sfp0_los_i" LOC = D3;
-NET "sfp0_los_i" IOSTANDARD = LVCMOS33;
-NET "sfp0_rxn_i" LOC = C5;
-NET "sfp0_rxp_i" LOC = D5;
-NET "sfp0_txn_o" LOC = A4;
-NET "sfp0_txp_o" LOC = B4;
+NET "sfp0_led_o" LOC = C2;
+NET "sfp0_led_o" IOSTANDARD = LVCMOS33;
 
-#NET "sfp1_led_o" LOC = E18;
-#NET "sfp1_led_o" IOSTANDARD = LVCMOS33;
-NET "sfp1_mod_def0_b" LOC = F16;
-NET "sfp1_mod_def0_b" IOSTANDARD = LVCMOS33;
+NET "sfp1_led_o" LOC = E18;
+NET "sfp1_led_o" IOSTANDARD = LVCMOS33;
+
+#NET "sfp0_mod_def0_i" LOC = D2;
+#NET "sfp0_mod_def0_i" IOSTANDARD = LVCMOS33;
+#NET "sfp0_mod_def1_b" LOC = E3;
+#NET "sfp0_mod_def1_b" IOSTANDARD = LVCMOS33;
+#NET "sfp0_mod_def2_b" LOC = E4;
+#NET "sfp0_mod_def2_b" IOSTANDARD = LVCMOS33;
+#NET "sfp0_tx_fault_i" LOC = F3;
+#NET "sfp0_tx_fault_i" IOSTANDARD = LVCMOS33;
+#NET "sfp0_tx_disable_o" LOC = F2;
+#NET "sfp0_tx_disable_o" IOSTANDARD = LVCMOS33;
+#NET "sfp0_los_i" LOC = D3;
+#NET "sfp0_los_i" IOSTANDARD = LVCMOS33;
+#NET "sfp0_rxn_i" LOC = C5;
+#NET "sfp0_rxp_i" LOC = D5;
+#NET "sfp0_txn_o" LOC = A4;
+#NET "sfp0_txp_o" LOC = B4;
+
+NET "sfp1_mod_def0_i" LOC = F16;
+NET "sfp1_mod_def0_i" IOSTANDARD = LVCMOS33;
 NET "sfp1_mod_def1_b" LOC = G16;
 NET "sfp1_mod_def1_b" IOSTANDARD = LVCMOS33;
 NET "sfp1_mod_def2_b" LOC = F18;
 NET "sfp1_mod_def2_b" IOSTANDARD = LVCMOS33;
 NET "sfp1_tx_fault_i" LOC = J16;
 NET "sfp1_tx_fault_i" IOSTANDARD = LVCMOS33;
-#NET "sfp1_tx_disable_o" LOC = H16;
-#NET "sfp1_tx_disable_o" IOSTANDARD = LVCMOS33;
+NET "sfp1_tx_disable_o" LOC = H16;
+NET "sfp1_tx_disable_o" IOSTANDARD = LVCMOS33;
 NET "sfp1_los_i" LOC = E16;
 NET "sfp1_los_i" IOSTANDARD = LVCMOS33;
 NET "sfp1_rxn_i" LOC = C7;
@@ -78,8 +80,8 @@ NET "sfp1_rxp_i" LOC = D7;
 NET "sfp1_txn_o" LOC = A6;
 NET "sfp1_txp_o" LOC = B6;
 
-#NET "pps_o" LOC = C18;
-#NET "pps_o" IOSTANDARD = LVCMOS33;
+NET "pps_o" LOC = C18;
+NET "pps_o" IOSTANDARD = LVCMOS33;
 NET "ext_clk_o" LOC = C17;
 NET "ext_clk_o" IOSTANDARD = LVCMOS33;
 
@@ -88,8 +90,8 @@ NET "fpga_scl_b" IOSTANDARD = LVCMOS33;
 NET "fpga_sda_b" LOC = U18;
 NET "fpga_sda_b" IOSTANDARD = LVCMOS33;
 
-NET "thermo_id" LOC = J1;
-NET "thermo_id" IOSTANDARD = LVCMOS33;
+NET "thermo_id_b" LOC = J1;
+NET "thermo_id_b" IOSTANDARD = LVCMOS33;
  
 #NET "usr_led1_o" LOC = D18;
 #NET "usr_led1_o" IOSTANDARD = LVCMOS33;
@@ -98,9 +100,9 @@ NET "thermo_id" IOSTANDARD = LVCMOS33;
 NET "usr_button_i" LOC = G3;
 NET "usr_button_i" IOSTANDARD = LVCMOS33;
 
-NET "uart_rxd_i" LOC = H3;
+NET "uart_rxd_i" LOC = H2;
 NET "uart_rxd_i" IOSTANDARD = LVCMOS33;
-NET "uart_txd_o" LOC = H2;
+NET "uart_txd_o" LOC = H3;
 NET "uart_txd_o" IOSTANDARD = LVCMOS33;
 
 #---------------------------------------------------------------------------------------------
@@ -115,11 +117,11 @@ TIMESPEC TS_fpga_clk_p_i = PERIOD "fpga_clk_p_i" 8 ns HIGH 50 %;
 NET "fpga_clk_n_i" TNM_NET = "fpga_clk_n_i";
 TIMESPEC TS_fpga_clk_n_i = PERIOD "fpga_clk_n_i" 8 ns HIGH 50 %;
 
-NET "sfp0_ref_clk_p_i" TNM_NET = "sfp0_ref_clk_p_i";
-TIMESPEC TS_sfp0_ref_clk_p_i = PERIOD "sfp0_ref_clk_p_i" 8 ns HIGH 50 %;
+#NET "sfp0_ref_clk_p_i" TNM_NET = "sfp0_ref_clk_p_i";
+#TIMESPEC TS_sfp0_ref_clk_p_i = PERIOD "sfp0_ref_clk_p_i" 8 ns HIGH 50 %;
 
-NET "sfp0_ref_clk_n_i" TNM_NET = "sfp0_ref_clk_n_i";
-TIMESPEC TS_sfp0_ref_clk_n_i = PERIOD "sfp0_ref_clk_n_i" 8 ns HIGH 50 %;
+#NET "sfp0_ref_clk_n_i" TNM_NET = "sfp0_ref_clk_n_i";
+#TIMESPEC TS_sfp0_ref_clk_n_i = PERIOD "sfp0_ref_clk_n_i" 8 ns HIGH 50 %;
 
 NET "sfp1_ref_clk_p_i" TNM_NET = "sfp1_ref_clk_p_i";
 TIMESPEC TS_sfp1_ref_clk_p_i = PERIOD "sfp1_ref_clk_p_i" 8 ns HIGH 50 %;
