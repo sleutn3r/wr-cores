@@ -25,11 +25,11 @@ port
     fpga_clk_p_i : in std_logic;  -- 125 MHz PLL reference
     fpga_clk_n_i : in std_logic;
 
---    sfp0_ref_clk_p_i : in std_logic;  -- Dedicated clock for Xilinx GTP transceiver
---    sfp0_ref_clk_n_i 	: in std_logic;
+    sfp0_ref_clk_p_i : in std_logic;  -- Dedicated clock for Xilinx GTP transceiver
+    sfp0_ref_clk_n_i 	: in std_logic;
 
-    sfp1_ref_clk_p_i : in std_logic;  -- Dedicated clock for Xilinx GTP transceiver
-    sfp1_ref_clk_n_i : in std_logic;
+    --sfp1_ref_clk_p_i : in std_logic;  -- Dedicated clock for Xilinx GTP transceiver
+    --sfp1_ref_clk_n_i : in std_logic;
 
     dac_sclk_o  : out std_logic;
     dac_din_o   : out std_logic;
@@ -81,7 +81,7 @@ port
     --PPS
     -----------------------------------------
     pps_o     :  out std_logic;
-    ext_clk_o :  out  std_logic;   
+    --ext_clk_o :  out  std_logic;   
     ----------------------------------------
     -- user interface
     ---------------------------------------
@@ -224,27 +224,27 @@ port map (
 );
 
 
---cmp_gtp0_dedicated_clk_buf : IBUFDS
---generic map(
---    DIFF_TERM    => true,
---    IBUF_LOW_PWR => true,
---    IOSTANDARD   => "DEFAULT")
---port map (
---    O  => clk_gtp_i,
---    I  => sfp0_ref_clk_p_i,
---    IB => sfp0_ref_clk_n_i
---);
-
-cmp_gtp1_dedicated_clk_buf : IBUFDS
+cmp_gtp0_dedicated_clk_buf : IBUFDS
 generic map(
     DIFF_TERM    => true,
     IBUF_LOW_PWR => true,
     IOSTANDARD   => "DEFAULT")
 port map (
     O  => clk_gtp_i,
-    I  => sfp1_ref_clk_p_i,
-    IB => sfp1_ref_clk_n_i
+    I  => sfp0_ref_clk_p_i,
+    IB => sfp0_ref_clk_n_i
 );
+
+--cmp_gtp1_dedicated_clk_buf : IBUFDS
+--generic map(
+--    DIFF_TERM    => true,
+--    IBUF_LOW_PWR => true,
+--    IOSTANDARD   => "DEFAULT")
+--port map (
+--    O  => clk_gtp_i,
+--    I  => sfp1_ref_clk_p_i,
+--    IB => sfp1_ref_clk_n_i
+--);
 
 cmp_sys_clk_pll : PLL_BASE
 generic map (
@@ -538,11 +538,11 @@ U_WR_CORE : xcute_core
       clk_i   => clk_sys_i,
       rst_n_i => local_reset_n,
 
-      val1_i  => dac_dpll_data,
-      load1_i => dac_dpll_load_p1,
+      val1_i  => dac_hpll_data,
+      load1_i => dac_hpll_load_p1,
 
-      val2_i  => dac_hpll_data,
-      load2_i => dac_hpll_load_p1,
+      val2_i  => dac_dpll_data,
+      load2_i => dac_dpll_load_p1,
       dac_sync_n_o  => dac_sync_n_o,
       dac_ldac_n_o  => dac_ldac_n_o,
       dac_clr_n_o   => dac_clr_n_o,
