@@ -25,11 +25,11 @@ port
     fpga_clk_p_i : in std_logic;  -- 125 MHz PLL reference
     fpga_clk_n_i : in std_logic;
 
-    sfp0_ref_clk_p_i : in std_logic;  -- Dedicated clock for Xilinx GTP transceiver
-    sfp0_ref_clk_n_i 	: in std_logic;
+--    sfp0_ref_clk_p_i : in std_logic;  -- Dedicated clock for Xilinx GTP transceiver
+--    sfp0_ref_clk_n_i 	: in std_logic;
 
-    --sfp1_ref_clk_p_i : in std_logic;  -- Dedicated clock for Xilinx GTP transceiver
-    --sfp1_ref_clk_n_i : in std_logic;
+    sfp1_ref_clk_p_i : in std_logic;  -- Dedicated clock for Xilinx GTP transceiver
+    sfp1_ref_clk_n_i : in std_logic;
 
     dac_sclk_o  : out std_logic;
     dac_din_o   : out std_logic;
@@ -136,8 +136,6 @@ end component;
   signal fpga_sda_o : std_logic;
   signal fpga_sda_i : std_logic;
 
-  signal pps: std_logic;
-
   signal sfp0_mod_def1_i : std_logic;
   signal sfp0_mod_def1_o : std_logic;
   signal sfp0_mod_def2_i : std_logic;
@@ -224,27 +222,27 @@ port map (
 );
 
 
-cmp_gtp0_dedicated_clk_buf : IBUFDS
-generic map(
-    DIFF_TERM    => true,
-    IBUF_LOW_PWR => true,
-    IOSTANDARD   => "DEFAULT")
-port map (
-    O  => clk_gtp_i,
-    I  => sfp0_ref_clk_p_i,
-    IB => sfp0_ref_clk_n_i
-);
-
---cmp_gtp1_dedicated_clk_buf : IBUFDS
+--cmp_gtp0_dedicated_clk_buf : IBUFDS
 --generic map(
 --    DIFF_TERM    => true,
 --    IBUF_LOW_PWR => true,
 --    IOSTANDARD   => "DEFAULT")
 --port map (
 --    O  => clk_gtp_i,
---    I  => sfp1_ref_clk_p_i,
---    IB => sfp1_ref_clk_n_i
+--    I  => sfp0_ref_clk_p_i,
+--    IB => sfp0_ref_clk_n_i
 --);
+
+cmp_gtp1_dedicated_clk_buf : IBUFDS
+generic map(
+    DIFF_TERM    => true,
+    IBUF_LOW_PWR => true,
+    IOSTANDARD   => "DEFAULT")
+port map (
+    O  => clk_gtp_i,
+    I  => sfp1_ref_clk_p_i,
+    IB => sfp1_ref_clk_n_i
+);
 
 cmp_sys_clk_pll : PLL_BASE
 generic map (
@@ -352,7 +350,6 @@ cmp_clk_dmtd_buf : BUFG
   owr_i(0)  <= thermo_id_b;
   owr_i(1)  <= '0';
 
-  pps_o <= pps;
   --ext_clk_o <= pps;
 
 U_WR_CORE : xcute_core
@@ -490,7 +487,7 @@ U_WR_CORE : xcute_core
       tm_time_valid_o      => open,
       tm_tai_o             => open,
       tm_cycles_o          => open,
-      pps_p_o              => pps,
+      pps_p_o              => pps_o,
       pps_led_o            => open,
 
 --      dio_o       => dio_out(4 downto 1),
