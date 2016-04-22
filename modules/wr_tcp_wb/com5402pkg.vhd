@@ -9,7 +9,7 @@ use IEEE.STD_LOGIC_1164.all;
 
 package com5402pkg is
 
-	constant NTCPSTREAMS: integer range 0 to 255 := 1;  -- number of concurrent TCP streams handled by this component
+	constant NTCPSTREAMS: integer range 0 to 255 := 0;  -- number of concurrent TCP streams handled by this component
 	-- limitation: <= 255 streams (some integer to 8-bit slv conversions in the memory pointers)
 	-- In practice, the number of concurrent TCP streams per instantiated server is quite small as timing
 	-- gets worse. If a large number of concurrent TCP streams is needed, it may be better to create

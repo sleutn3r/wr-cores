@@ -118,30 +118,6 @@ entity cute_tdc is
       sfp_tx_disable_o  : out   std_logic;
       sfp_los_i         : in    std_logic;
 
-
-      -------------------------------------------------------------------------
-      -- Digital I/O FMC Pins
-      -------------------------------------------------------------------------
-
-      --dio_clk_p_i : in std_logic;
-      --dio_clk_n_i : in std_logic;
-
-      --dio_n_i : in std_logic_vector(4 downto 0);
-      --dio_p_i : in std_logic_vector(4 downto 0);
-
-      --dio_n_o : out std_logic_vector(4 downto 0);
-      --dio_p_o : out std_logic_vector(4 downto 0);
-
-      --dio_oe_n_o    : out std_logic_vector(4 downto 0);
-      --dio_term_en_o : out std_logic_vector(4 downto 0);
-
-      --dio_onewire_b  : inout std_logic;
-      --dio_sdn_n_o    : out   std_logic;
-      --dio_sdn_ck_n_o : out   std_logic;
-
-      --dio_led_top_o : out std_logic;
-      --dio_led_bot_o : out std_logic;
-
       pps_o : out std_logic;
 	    tm_utc_o: out std_logic_vector(39 downto 0);
 	  
@@ -151,15 +127,26 @@ entity cute_tdc is
       uart_rxd_i : in  std_logic;
       uart_txd_o : out std_logic;
       
-      ------------------------------------------
-      ---- Ext tcp interface
-      -----------------------------------------
-      --tcp_rx_data:out std_logic_vector(7 downto 0);
-      --tcp_rx_data_valid:out std_logic;
-      --tcp_rx_rts:out std_logic;
-      --tcp_tx_data:in std_logic_vector(7 downto 0);
-      --tcp_tx_data_valid:in std_logic;
-      --tcp_tx_cts:out std_logic;
+      ---------------------------------------
+      -- ext udp interface
+      ---------------------------------------
+      udp_rx_data: out std_logic_vector(7 downto 0);
+      udp_rx_data_valid: out std_logic;
+      udp_rx_sof: out std_logic;
+      udp_rx_eof: out std_logic;
+
+      udp_tx_data: in std_logic_vector(7 downto 0);
+      udp_tx_data_valid: in std_logic;
+      udp_tx_sof: in std_logic;
+      udp_tx_eof: in std_logic;
+      udp_tx_cts: out std_logic;
+      udp_tx_ack: out std_logic;
+      udp_tx_nak: out std_logic;
+
+      udp_rx_dest_port_no:    in std_logic_vector(15 downto 0);
+      udp_tx_dest_ip_addr:    in std_logic_vector(127 downto 0);
+      udp_tx_dest_port_no:    in std_logic_vector(15 downto 0); 
+      udp_tx_source_port_no:  in std_logic_vector(15 downto 0);
 
       -----------------------------------------
       -- TDC Control Module
@@ -188,36 +175,6 @@ architecture rtl of cute_tdc is
       clk_in_stopped_o: out  std_logic;
       locked_o      : out std_logic);
   end component;
-
-  --component chipscope_ila
-  --  port (
-  --    CONTROL : inout std_logic_vector(35 downto 0);
-  --    CLK     : in    std_logic;
-  --    TRIG0   : in    std_logic_vector(31 downto 0);
-  --    TRIG1   : in    std_logic_vector(31 downto 0);
-  --    TRIG2   : in    std_logic_vector(31 downto 0);
-  --    TRIG3   : in    std_logic_vector(31 downto 0));
-  --end component;
-
-  --signal CONTROL : std_logic_vector(35 downto 0);
-  --signal CLK     : std_logic;
-  --signal TRIG0   : std_logic_vector(31 downto 0);
-  --signal TRIG1   : std_logic_vector(31 downto 0);
-  --signal TRIG2   : std_logic_vector(31 downto 0);
-  --signal TRIG3   : std_logic_vector(31 downto 0);
-
-  --component chipscope_icon
-  --  port (
-  --    CONTROL0 : inout std_logic_vector (35 downto 0));
-  --end component;
-
-  ------------------------------------------------------------------------------
-  -- Constants declaration
-  ------------------------------------------------------------------------------
-  --constant c_BAR0_APERTURE     : integer := 20;
-  --constant c_CSR_WB_SLAVES_NB  : integer := 1;
-  --constant c_DMA_WB_SLAVES_NB  : integer := 1;
-  --constant c_DMA_WB_ADDR_WIDTH : integer := 26;
 
   ------------------------------------------------------------------------------
   -- Signals declaration
@@ -330,31 +287,52 @@ architecture rtl of cute_tdc is
   --signal clk_ext_rst                : std_logic;
   --signal clk_ref_div2               : std_logic;
   
-  --component xwb_tcp_core is
-  --  port(
-  --    clk_ref :     in  std_logic;
-  --    clk_sys :     in  std_logic;
-  --    rst_n_i :     in  std_logic;
-  --    snk_i :   in  t_wrf_sink_in;
-  --    snk_o :   out t_wrf_sink_out;
-  --    tcp_rx_data:out slv8xntcpstreamstype;
-  --    tcp_rx_data_valid: out std_logic_vector((ntcpstreams-1) downto 0);
-  --    tcp_rx_rts: out std_logic;
-  --    src_o :   out t_wrf_source_out;
-  --    src_i :   in  t_wrf_source_in;
-  --    tcp_tx_data:in slv8xntcpstreamstype;
-  --    tcp_tx_data_valid: in std_logic_vector((ntcpstreams-1) downto 0);
-  --    tcp_tx_cts: out std_logic_vector((ntcpstreams-1) downto 0);
-  --    wb_i :        in t_wishbone_master_in;
-  --    wb_o :        out t_wishbone_master_out);
-  --end component;
+component xwb_udp_core is
+port(
+    clk_ref : in std_logic;
+    clk_sys  : in std_logic;
+    rst_n_i : IN std_logic;
 
-  --signal xwb_tcp_tx_data: SLV8xNTCPSTREAMStype := (others => (others => '0'));
-  --signal xwb_tcp_tx_data_valid: std_logic_vector((NTCPSTREAMS-1) downto 0) := (others => '0');
-  --signal xwb_tcp_tx_cts: std_logic_vector((NTCPSTREAMS-1) downto 0);
-  --signal xwb_tcp_rx_rts: std_logic;
-  --signal xwb_tcp_rx_data: SLV8xNTCPSTREAMStype;
-  --signal xwb_tcp_rx_data_valid: std_logic_vector((NTCPSTREAMS-1) downto 0);
+    snk_i : in  t_wrf_sink_in;
+    snk_o : out t_wrf_sink_out;
+    udp_rx_data: out std_logic_vector(7 downto 0);
+    udp_rx_data_valid: out std_logic;
+    udp_rx_sof: out std_logic;
+    udp_rx_eof: out std_logic;
+
+    src_o : out t_wrf_source_out;
+    src_i : in  t_wrf_source_in;
+    
+    udp_tx_data: in std_logic_vector(7 downto 0);
+    udp_tx_data_valid: in std_logic;
+    udp_tx_sof: in std_logic;
+    udp_tx_eof: in std_logic;
+    udp_tx_cts: out std_logic;
+    udp_tx_ack: out std_logic;
+    udp_tx_nak: out std_logic;
+
+    udp_rx_dest_port_no:    in std_logic_vector(15 downto 0);
+    udp_tx_dest_ip_addr:    in std_logic_vector(127 downto 0);
+    udp_tx_dest_port_no:    in std_logic_vector(15 downto 0); 
+    udp_tx_source_port_no:  in std_logic_vector(15 downto 0);
+    
+    wb_i : in t_wishbone_master_in;
+    wb_o : out t_wishbone_master_out
+);
+end component;
+
+  signal xwb_udp_tx_data: std_logic_vector(7 downto 0) := (others => '0');
+  signal xwb_udp_tx_data_valid: std_logic := '0';
+  signal xwb_udp_tx_sof: std_logic := '0';
+  signal xwb_udp_tx_eof: std_logic := '0';
+  signal xwb_udp_tx_cts: std_logic;
+  signal xwb_udp_tx_ack: std_logic;
+  signal xwb_udp_tx_nak: std_logic;
+  
+  signal xwb_udp_rx_data: std_logic_vector(7 downto 0);
+  signal xwb_udp_rx_data_valid: std_logic;
+  signal xwb_udp_rx_sof: std_logic;
+  signal xwb_udp_rx_eof: std_logic;
 
   signal tdc_cm_slave_i : t_wishbone_slave_in;
   signal tdc_cm_slave_o : t_wishbone_slave_out;
@@ -995,32 +973,52 @@ port map(
 );
 
 --------------------------------------------------------------------------
---  -- tcp core modules --
+--  -- udp core modules --
 --------------------------------------------------------------------------
---Inst_wb_tcp_core : xwb_tcp_core
---port map(
---    clk_ref  => clk_ref_i,
---    clk_sys  => clk_sys_i,
---    rst_n_i  => local_reset_n,
---    wb_i     => ext_wb_in,
---    wb_o     => ext_wb_out,
---    snk_i    => ext_snk_in,
---    snk_o    => ext_snk_out,
---    src_o    => ext_src_out,
---    src_i    => ext_src_in,
---    tcp_tx_data       => xwb_tcp_tx_data,
---    tcp_tx_data_valid => xwb_tcp_tx_data_valid,
---    tcp_tx_cts        => xwb_tcp_tx_cts,
---    tcp_rx_data       => xwb_tcp_rx_data,
---    tcp_rx_data_valid => xwb_tcp_rx_data_valid,
---    tcp_rx_rts        => xwb_tcp_rx_rts);
+Inst_wb_udp_core : xwb_udp_core
+port map(
+    clk_ref     => clk_ref_i,
+    clk_sys     => clk_sys_i,
+    rst_n_i     => local_reset_n,
+    wb_i        => ext_wb_in,
+    wb_o        => ext_wb_out,
+    snk_i       => ext_snk_in,
+    snk_o       => ext_snk_out,
+    src_o       => ext_src_out,
+    src_i       => ext_src_in,
 
---tcp_rx_data_valid <= xwb_tcp_rx_data_valid(0);
---tcp_rx_data <= xwb_tcp_rx_data(0);
---xwb_tcp_tx_data(0) <= tcp_tx_data;
---xwb_tcp_tx_data_valid(0) <= tcp_tx_data_valid;
---tcp_tx_cts <= xwb_tcp_tx_cts(0);
---tcp_rx_rts <= xwb_tcp_rx_rts;
+    udp_rx_data       => xwb_udp_rx_data,
+    udp_rx_data_valid => xwb_udp_rx_data_valid,
+    udp_rx_sof        => xwb_udp_rx_sof,
+    udp_rx_eof        => xwb_udp_rx_eof,
+
+    udp_tx_data       => xwb_udp_tx_data,
+    udp_tx_data_valid => xwb_udp_tx_data_valid,
+    udp_tx_sof        => xwb_udp_tx_sof,
+    udp_tx_eof        => xwb_udp_tx_eof,
+    udp_tx_cts        => xwb_udp_tx_cts,
+    udp_tx_ack        => xwb_udp_tx_ack,
+    udp_tx_nak        => xwb_udp_tx_nak,
+
+    udp_rx_dest_port_no   => udp_rx_dest_port_no,
+    udp_tx_dest_ip_addr   => udp_tx_dest_ip_addr,
+    udp_tx_dest_port_no   => udp_tx_dest_port_no,
+    udp_tx_source_port_no => udp_tx_source_port_no
+);
+
+    udp_rx_data         <= xwb_udp_rx_data;
+    udp_rx_data_valid   <= xwb_udp_rx_data_valid;
+    udp_rx_sof          <= xwb_udp_rx_sof;
+    udp_rx_eof          <= xwb_udp_rx_eof;
+
+
+    xwb_udp_tx_data       <= udp_tx_data;
+    xwb_udp_tx_data_valid <= udp_tx_data_valid;
+    xwb_udp_tx_sof        <= udp_tx_sof;
+    xwb_udp_tx_eof        <= udp_tx_eof;
+    udp_tx_cts            <= xwb_udp_tx_cts;
+    udp_tx_ack            <= xwb_udp_tx_ack;
+    udp_tx_nak            <= xwb_udp_tx_nak;
 
 end rtl;
 

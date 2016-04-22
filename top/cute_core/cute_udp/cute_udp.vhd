@@ -160,7 +160,7 @@ entity cute_udp is
       --tcp_tx_data:in std_logic_vector(7 downto 0);
       --tcp_tx_data_valid:in std_logic;
       --tcp_tx_cts:out std_logic
-		----------------------------------------
+		  ---------------------------------------
       -- Ext udp interface
       ---------------------------------------
       UDP_RX_DATA: out std_logic_vector(7 downto 0);
