@@ -95,8 +95,9 @@ entity xcute_core is
     g_interface_mode            : t_wishbone_interface_mode      := PIPELINED;
     g_address_granularity       : t_wishbone_address_granularity := BYTE;
     g_etherbone_cfg_sdb         : t_sdb_device                   := c_wrc_periph3_sdb;
-    g_aux1_sdb                   : t_sdb_device                   := c_wrc_periph3_sdb;
-	g_aux2_sdb                   : t_sdb_device                   := c_wrc_periph3_sdb;
+    g_ext_cfg_sdb               : t_sdb_device                   := c_wrc_periph3_sdb;
+    g_aux1_sdb                  : t_sdb_device                   := c_wrc_periph3_sdb;
+	  g_aux2_sdb                  : t_sdb_device                   := c_wrc_periph3_sdb;
     g_softpll_channels_config   : t_softpll_channel_config_array := c_softpll_default_channel_config;
     g_softpll_enable_debugger   : boolean                        := false;
     g_vuart_fifo_size           : integer                        := 1024;
@@ -210,10 +211,10 @@ entity xcute_core is
     aux1_master_o   : out t_wishbone_master_out;
     aux1_master_i	   : in t_wishbone_master_in;
 	
-	aux2_master_o   : out t_wishbone_master_out;
+	  aux2_master_o   : out t_wishbone_master_out;
     aux2_master_i	   : in t_wishbone_master_in;
 	
-	-----------------------------------------
+	  -----------------------------------------
     -- EtherBone cfg
     -----------------------------------------	
     etherbone_cfg_master_o   : out t_wishbone_master_out;
@@ -228,6 +229,12 @@ entity xcute_core is
     etherbone_src_i   : in  t_wrf_source_in;
     etherbone_src_o   : out t_wrf_source_out;
 
+	  -----------------------------------------
+    -- External cfg
+    -----------------------------------------	
+    ext_cfg_master_o   : out t_wishbone_master_out;
+    ext_cfg_master_i   : in  t_wishbone_master_in;
+    
     -----------------------------------------
     -- External Fabric I/F
     -----------------------------------------
@@ -379,7 +386,7 @@ architecture struct of xcute_core is
      4 => f_sdb_embed_device(c_wrc_periph0_sdb, x"00000400"),  -- Syscon
      5 => f_sdb_embed_device(c_wrc_periph1_sdb, x"00000500"),  -- UART
      6 => f_sdb_embed_device(c_wrc_periph2_sdb, x"00000600"),  -- 1-Wire
-     7 => f_sdb_embed_device(g_etherbone_cfg_sdb, x"00000700"),    -- etherbone cfg
+     7 => f_sdb_embed_device(g_ext_cfg_sdb, x"00000700"),    -- ext cfg
      8 => f_sdb_embed_device(g_aux1_sdb, x"00000800"),          -- aux1 WB bus 
 	 9 => f_sdb_embed_device(g_aux2_sdb, x"00000900")          -- aux2 WB bus 
      );
@@ -925,9 +932,12 @@ begin
   periph_slave_i(2)  <= secbar_master_o(6);
 
 
-  etherbone_cfg_master_o <= secbar_master_o(7);
-  secbar_master_i(7)   <= etherbone_cfg_master_i;
+--  etherbone_cfg_master_o <= secbar_master_o(7);
+--  secbar_master_i(7)   <= etherbone_cfg_master_i;
 
+  ext_cfg_master_o <= secbar_master_o(7);
+  secbar_master_i(7)   <= ext_cfg_master_i;
+  
   aux1_master_o <= secbar_master_o(8);
   secbar_master_i(8)   <= aux1_master_i;
   

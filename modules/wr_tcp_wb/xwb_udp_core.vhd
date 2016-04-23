@@ -75,13 +75,11 @@ port(
     udp_tx_ack: out std_logic;
     udp_tx_nak: out std_logic;
 
-    udp_rx_dest_port_no:    in std_logic_vector(15 downto 0);
     udp_tx_dest_ip_addr:    in std_logic_vector(127 downto 0);
     udp_tx_dest_port_no:    in std_logic_vector(15 downto 0); 
-    udp_tx_source_port_no:  in std_logic_vector(15 downto 0);
 
-    wb_i : in t_wishbone_master_in;
-    wb_o : out t_wishbone_master_out
+    ext_cfg_slave_in : in t_wishbone_slave_in;
+    ext_cfg_slave_out : out t_wishbone_slave_out
 );
 end xwb_udp_core;
 
@@ -123,16 +121,7 @@ port(
     udp_tx_nak: out std_logic;  
     udp_tx_dest_ip_addr: in std_logic_vector(127 downto 0);
     udp_tx_dest_port_no: in std_logic_vector(15 downto 0);
-    udp_tx_source_port_no: in std_logic_vector(15 downto 0);
-    tcp_rx_data: out slv8xntcpstreamstype;
-    tcp_rx_data_valid: out std_logic_vector((ntcpstreams-1) downto 0);
-    tcp_rx_rts: out std_logic;
-    tcp_rx_cts: in std_logic;
-    tcp_tx_data: in slv8xntcpstreamstype;
-    tcp_tx_data_valid: in std_logic_vector((ntcpstreams-1) downto 0);
-    tcp_tx_cts: out std_logic_vector((ntcpstreams-1) downto 0); 
-
-    tp : out std_logic_vector(31 downto 0)
+    udp_tx_source_port_no: in std_logic_vector(15 downto 0)
 );
 end component;
 
@@ -167,24 +156,23 @@ end component;
 
 component ip_wb_config is
 port(
-    clk_sys_i :  in std_logic;
+    clk_i :  in std_logic;
     rst_n_i   :  in std_logic;
     ----
-    our_mac_address_o : out std_logic_vector(47 downto 0);
-    our_ip_address_o  : out std_logic_vector(31 downto 0);
-    dst_ip_address_o  : out std_logic_vector(31 downto 0);
-    dst_port_o        : out std_logic_vector(15 downto 0);
-    ip_config_done_o  : out std_logic;
+    my_mac_o : out std_logic_vector(47 downto 0);
+    my_ip_o  : out std_logic_vector(31 downto 0);
+    my_port_o: out std_logic_vector(15 downto 0);
     ----
-    wb_o              : out t_wishbone_master_out;
-    wb_i              : in  t_wishbone_master_in
+    cfg_i : in t_wishbone_slave_in;
+    cfg_o : out t_wishbone_slave_out
 );
 end component;
   
 signal rst:std_logic;
-signal our_mac_address : std_logic_vector(47 downto 0) := (others => '0');
-signal our_ip_address  : std_logic_vector(31 downto 0) := (others => '0'); 
-signal ip_config_done:std_logic;
+signal my_mac : std_logic_vector(47 downto 0) := (others => '0');
+signal my_ip  : std_logic_vector(31 downto 0) := (others => '0'); 
+signal my_port: std_logic_vector(15 downto 0);
+signal my_gateway: std_logic_vector(31 downto 0) := (others => '0'); 
 
 signal mac_rx_data : std_logic_vector(7 downto 0) := (others => '0');
 signal mac_rx_data_valid : std_logic := '0';
@@ -200,6 +188,9 @@ signal test_point:std_logic_vector(31 downto 0);
 
 begin
 
+my_gateway <= my_ip(31 downto 8) & x"01";
+rst <= not rst_n_i;
+
 inst_com5402 : com5402
 generic map(
     clk_frequency       => 125,  -- 125 mhz clock (8ns simulation period), use for time and frequency
@@ -209,11 +200,11 @@ port map (
     clk                 => clk_ref,
     async_reset         => rst,
     sync_reset          => rst,
-    mac_addr            => our_mac_address,
-    ipv4_addr           => our_ip_address,
+    mac_addr            => my_mac,
+    ipv4_addr           => my_ip,
     ipv6_addr           => x"0123456789abcdef00112233ac100180",
     subnet_mask         => x"ffffff00",
-    gateway_ip_addr     => x"c0a80001",
+    gateway_ip_addr     => my_gateway,
     mac_tx_data         => mac_tx_data,
     mac_tx_data_valid   => mac_tx_data_valid,
     mac_tx_eof          => mac_tx_eof,
@@ -227,7 +218,7 @@ port map (
     udp_rx_data_valid   => udp_rx_data_valid,
     udp_rx_sof          => udp_rx_sof,
     udp_rx_eof          => udp_rx_eof,
-    udp_rx_dest_port_no => udp_rx_dest_port_no,
+    udp_rx_dest_port_no => my_port,
     -- udp tx
     udp_tx_data         => udp_tx_data,
     udp_tx_data_valid   => udp_tx_data_valid,
@@ -238,18 +229,7 @@ port map (
     udp_tx_nak          => udp_tx_nak,
     udp_tx_dest_ip_addr => udp_tx_dest_ip_addr,
     udp_tx_dest_port_no => udp_tx_dest_port_no,
-    udp_tx_source_port_no => udp_tx_source_port_no,
-    -- tcp rx streams
-    tcp_rx_data         => open,
-    tcp_rx_data_valid   => open,
-    tcp_rx_rts          => open,
-    tcp_rx_cts          => '1',
-    -- tcp tx streams
-    tcp_tx_data         => (others => (others => '0')),
-    tcp_tx_data_valid   => (others => '0'),
-    tcp_tx_cts          => open,
-    -- monitoring
-    tp => test_point
+    udp_tx_source_port_no => my_port
 );
 
 inst_macto5402 :mac_to_c5402
@@ -283,18 +263,14 @@ port map(
 
 U_ip_wb_config : ip_wb_config
 port map(
-    clk_sys_i   => clk_sys,
+    clk_i       => clk_sys,
     rst_n_i     => rst_n_i,
-    our_mac_address_o => our_mac_address,
-    our_ip_address_o  => our_ip_address,
-    dst_ip_address_o  => open,
-    dst_port_o        => open,
-    ip_config_done_o  => ip_config_done,
-    wb_o              => wb_o,
-    wb_i              => wb_i
+    my_mac_o    => my_mac,
+    my_ip_o     => my_ip,
+    my_port_o   => my_port,
+    cfg_i       => ext_cfg_slave_in,
+    cfg_o       => ext_cfg_slave_out
 );
-
-rst <= not ip_config_done;
 
 end behavioral;
 

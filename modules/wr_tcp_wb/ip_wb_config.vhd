@@ -45,119 +45,86 @@ use work.wishbone_pkg.all;
 
 entity ip_wb_config is
 port(
-    clk_sys_i        :  in std_logic;
-    rst_n_i          :  in std_logic;
+    clk_i :  in std_logic;
+    rst_n_i   :  in std_logic;
     ----
-    our_mac_address_o:  out std_logic_vector(47 downto 0);
-    our_ip_address_o :  out std_logic_vector(31 downto 0);
-    dst_ip_address_o :  out std_logic_vector(31 downto 0);
-    dst_port_o       :  out std_logic_vector(15 downto 0);
-    ip_config_done_o :  out std_logic;
+    my_mac_o  : out std_logic_vector(47 downto 0);
+    my_ip_o   : out std_logic_vector(31 downto 0);
+    my_port_o : out std_logic_vector(15 downto 0);
     ----
-    wb_o             :  out t_wishbone_master_out;
-    wb_i             :  in  t_wishbone_master_in
+    cfg_i  : in t_wishbone_slave_in;
+    cfg_o  : out t_wishbone_slave_out
 );
 end ip_wb_config;
 
-architecture beha of ip_wb_config is
-
-type t_config_state is (INIT, RD_MACH, RD_MACL, RD_IP, DONE);
-signal config_state : t_config_state;
-
-signal rdreq : std_logic;
-signal init_cnt : unsigned(31 downto 0);
-signal our_ip_address : std_logic_vector(31 downto 0);
-
+architecture rtl of ip_wb_config is
+  
+  constant c_pad  : std_logic_vector(31 downto 16) := (others => '0');
+  
+  signal r_mac  : std_logic_vector(6*8-1 downto 0);
+  signal r_ip   : std_logic_vector(4*8-1 downto 0);
+  signal r_port : std_logic_vector(2*8-1 downto 0);
+  
+  impure function update(x : std_logic_vector) return std_logic_vector is
+    alias    y : std_logic_vector(x'length-1 downto 0) is x;
+    variable o : std_logic_vector(x'length-1 downto 0);
+  begin
+    for i in (y'length/8)-1 downto 0 loop
+      if cfg_i.sel(i) = '1' then
+        o(i*8+7 downto i*8) := cfg_i.dat(i*8+7 downto i*8);
+      else
+        o(i*8+7 downto i*8) := y(i*8+7 downto i*8);
+      end if;
+    end loop;
+    
+    return o;
+  end update;
+  
 begin
 
-dst_ip_address_o <= X"C0A8000C";  -- 192.168.0.12
-dst_port_o <= std_logic_vector(unsigned(our_ip_address(7 downto 0)) + to_unsigned(10000,16));
-our_ip_address_o <= our_ip_address;
-   
-p_wb_fsm : process(clk_sys_i)
-begin
-if rising_edge(clk_sys_i) then
+  cfg_o.int <= '0';
+  cfg_o.err <= '0';
+  cfg_o.rty <= '0';
+  cfg_o.stall <= '0';
+
+  cfg_wbs : process(rst_n_i, clk_i) is
+  begin
     if rst_n_i = '0' then
-        wb_o.cyc <= '0';
-        wb_o.stb <= '0';
-        wb_o.sel <= "1111";
-        wb_o.we  <= '0';
-        wb_o.dat <= (others => '0');
-    else
-        if rdreq = '1' then 
-            wb_o.cyc <= '1';
-        elsif wb_i.ack = '1' or wb_i.err = '1' then
-            wb_o.cyc <= '0';
-        end if;
-
-        if rdreq = '1' then
-            wb_o.stb <= '1';
-        elsif wb_i.stall = '0' then
-            wb_o.stb <= '0';
-        end if;
-    end if;
-end if;
-end process p_wb_fsm;
-
-with config_state select
-    wb_o.adr(31 downto 0) <=  X"00020124" when rd_mach, -- endpoint_mach
-                              X"00020128" when rd_macl, -- endpoint_macl
-                              X"00020718" when rd_ip,   -- etherbone_ip
-                              (others => '0') when others;
-
-p_rd_config : process(clk_sys_i)
-begin
-if rising_edge(clk_sys_i) then
-    if rst_n_i = '0' then
-        config_state      <= INIT;
-        init_cnt          <= (others => '0');
-        ip_config_done_o  <= '0';
-        rdreq             <= '0';
-        our_mac_address_o <= X"080030902496";
-        our_ip_address    <= X"C0A80019";
-    else
-        case config_state is
-        when INIT =>      -- wait for stable mac and ip
-            if init_cnt <= X"10000000" then  -- wait 4 seconds to load correct mac and ip address
-                init_cnt <= init_cnt +1;
-            else
-                config_state <= RD_MACH;
-                rdreq <= '1';
-            end if;
-            ip_config_done_o <= '0';
-         
-        when RD_MACH =>
-            rdreq <= '0';
-            if wb_i.ack = '1' then
-                rdreq <= '1';
-                config_state <= RD_MACL;
-                our_mac_address_o(47 downto 32) <= wb_i.dat(15 downto 0);
-            end if;
-
-        when RD_MACL =>
-            rdreq <= '0';
-            if wb_i.ack = '1' then
-                rdreq <= '1';
-                config_state <= RD_IP;
-                our_mac_address_o(31 downto 0) <= wb_i.dat;
-            end if;
-
-        when RD_IP =>
-            rdreq <= '0';
-            if wb_i.ack = '1' then
-                config_state  <= DONE;
-                our_ip_address<= wb_i.dat;
-            end if;
-
-        when DONE => 
-            ip_config_done_o <= '1';
-          
-        when others => 
-            config_state <= INIT;
-        
+      r_mac  <= x"D15EA5EDBEEF";
+      r_ip   <= x"C0A80064";
+      r_port <= x"EBC0";
+      
+      cfg_o.ack <= '0';
+      cfg_o.dat <= (others => '0');
+    elsif rising_edge(clk_i) then
+      if cfg_i.cyc = '1' and cfg_i.stb = '1' and cfg_i.we = '1' then
+        case to_integer(unsigned(cfg_i.adr(4 downto 2))) is
+          when 4 => r_mac(47 downto 32) <= update(r_mac(47 downto 32));
+          when 5 => r_mac(31 downto  0) <= update(r_mac(31 downto  0));
+          when 6 => r_ip   <= update(r_ip);
+          when 7 => r_port <= update(r_port);
+          when others => null;
         end case;
+      end if;
+      
+      cfg_o.ack <= cfg_i.cyc and cfg_i.stb;
+      
+      case to_integer(unsigned(cfg_i.adr(4 downto 2))) is
+        when 0 => cfg_o.dat <= (others =>'0');
+        when 1 => cfg_o.dat <= (others =>'0');
+        when 2 => cfg_o.dat <= (others => '0');
+        when 3 => cfg_o.dat <= (others => '0');
+        when 4 => cfg_o.dat <= c_pad & r_mac(47 downto 32);
+        when 5 => cfg_o.dat <= r_mac(31 downto 0);
+        when 6 => cfg_o.dat <= r_ip;
+        when others => cfg_o.dat <= c_pad & r_port;
+      end case;
+      
     end if;
-end if;
-end process p_rd_config;
+  end process;
+    
+  my_mac_o  <= r_mac;
+  my_ip_o   <= r_ip;
+  my_port_o <= r_port;
 
-end beha;
+end rtl;

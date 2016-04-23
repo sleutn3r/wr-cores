@@ -8,7 +8,7 @@ use work.gencores_pkg.all;
 use work.wrcore_pkg.all;
 use work.wr_fabric_pkg.all;
 use work.wr_xilinx_pkg.all;
-use work.etherbone_pkg.all;
+--use work.etherbone_pkg.all;
 use work.com5402pkg.all;
 
 library UNISIM;
@@ -143,10 +143,8 @@ entity cute_tdc is
       udp_tx_ack: out std_logic;
       udp_tx_nak: out std_logic;
 
-      udp_rx_dest_port_no:    in std_logic_vector(15 downto 0);
       udp_tx_dest_ip_addr:    in std_logic_vector(127 downto 0);
       udp_tx_dest_port_no:    in std_logic_vector(15 downto 0); 
-      udp_tx_source_port_no:  in std_logic_vector(15 downto 0);
 
       -----------------------------------------
       -- TDC Control Module
@@ -254,31 +252,31 @@ architecture rtl of cute_tdc is
   signal local_reset_n  : std_logic;
   --signal button1_synced : std_logic_vector(2 downto 0);
 
-  signal ext_wb_out    : t_wishbone_master_out;
-  signal ext_wb_in     : t_wishbone_master_in;
+  signal ext_cfg_slave_out    : t_wishbone_slave_out;
+  signal ext_cfg_slave_in     : t_wishbone_slave_in;
 
   signal ext_src_out : t_wrf_source_out;
   signal ext_src_in  : t_wrf_source_in;
   signal ext_snk_out : t_wrf_sink_out;
   signal ext_snk_in  : t_wrf_sink_in;
 
-  signal wrc_slave_i : t_wishbone_slave_in;
-  signal wrc_slave_o : t_wishbone_slave_out;
+--  signal wrc_slave_i : t_wishbone_slave_in;
+--  signal wrc_slave_o : t_wishbone_slave_out;
 
   signal owr_en : std_logic_vector(1 downto 0);
   signal owr_i  : std_logic_vector(1 downto 0);
 
   signal wb_adr : std_logic_vector(31 downto 0);  --c_BAR0_APERTURE-priv_log2_ceil(c_CSR_WB_SLAVES_NB+1)-1 downto 0);
 
-  signal etherbone_rst_n   : std_logic;
-  signal etherbone_src_out : t_wrf_source_out;
-  signal etherbone_src_in  : t_wrf_source_in;
-  signal etherbone_snk_out : t_wrf_sink_out;
-  signal etherbone_snk_in  : t_wrf_sink_in;
-  signal etherbone_wb_out  : t_wishbone_master_out;
-  signal etherbone_wb_in   : t_wishbone_master_in;
-  signal etherbone_cfg_slave_in  : t_wishbone_slave_in;
-  signal etherbone_cfg_slave_out : t_wishbone_slave_out;
+--  signal etherbone_rst_n   : std_logic;
+--  signal etherbone_src_out : t_wrf_source_out;
+--  signal etherbone_src_in  : t_wrf_source_in;
+--  signal etherbone_snk_out : t_wrf_sink_out;
+--  signal etherbone_snk_in  : t_wrf_sink_in;
+--  signal etherbone_wb_out  : t_wishbone_master_out;
+--  signal etherbone_wb_in   : t_wishbone_master_in;
+--  signal etherbone_cfg_slave_in  : t_wishbone_slave_in;
+--  signal etherbone_cfg_slave_out : t_wishbone_slave_out;
 
   --signal ext_pll_reset : std_logic;
   --signal clk_ext, clk_ext_mul       : std_logic;
@@ -311,13 +309,11 @@ port(
     udp_tx_ack: out std_logic;
     udp_tx_nak: out std_logic;
 
-    udp_rx_dest_port_no:    in std_logic_vector(15 downto 0);
     udp_tx_dest_ip_addr:    in std_logic_vector(127 downto 0);
     udp_tx_dest_port_no:    in std_logic_vector(15 downto 0); 
-    udp_tx_source_port_no:  in std_logic_vector(15 downto 0);
     
-    wb_i : in t_wishbone_master_in;
-    wb_o : out t_wishbone_master_out
+    ext_cfg_slave_in : in t_wishbone_slave_in;
+    ext_cfg_slave_out : out t_wishbone_slave_out
 );
 end component;
 
@@ -368,6 +364,23 @@ end component;
         version   => x"00000001",
         date      => x"20160324",
         name      => "WR-NULL            ")));
+        
+  constant c_ext_sdb : t_sdb_device := (
+    abi_class     => x"0000",              -- undocumented device
+    abi_ver_major => x"01",
+    abi_ver_minor => x"01",
+    wbd_endian    => c_sdb_endian_big,
+    wbd_width     => x"4",                 -- 8/16/32-bit port granularity
+    sdb_component => (
+      addr_first  => x"0000000000000000",
+      addr_last   => x"00000000000000ff",
+      product     => (
+        vendor_id => x"0000000000001103",  -- THU
+        device_id => x"c0413599",
+        version   => x"00000001",
+        date      => x"20160424",
+        name      => "WR-EXT-CONFIG      ")));
+        
 
   component xwr_tdc_cm is
     generic(
@@ -676,7 +689,8 @@ generic map (
     g_tx_runt_padding           => true,
     g_pcs_16bit                 => false,
     g_dpram_initf               => "",
-    g_etherbone_cfg_sdb         => c_etherbone_sdb,
+    g_etherbone_cfg_sdb         => c_null_sdb,
+    g_ext_cfg_sdb               => c_ext_sdb,
     g_aux1_sdb                  => c_wrc_tdc_cm_sdb,
     g_aux2_sdb                  => c_null_sdb,
     g_dpram_size                => 131072/4,
@@ -743,8 +757,8 @@ port map (
     owr_en_o => owr_en,
     owr_i    => owr_i,
 
-    wrc_slave_i => wrc_slave_i,
-    wrc_slave_o => wrc_slave_o,
+    wrc_slave_i => open,
+    wrc_slave_o => open,
 
     aux1_master_o => tdc_cm_slave_i,
     aux1_master_i => tdc_cm_slave_o,
@@ -752,14 +766,17 @@ port map (
     aux2_master_o => open,
     aux2_master_i => open,
 
-    etherbone_cfg_master_o=> etherbone_cfg_slave_in,
-    etherbone_cfg_master_i=> etherbone_cfg_slave_out,
+    etherbone_cfg_master_o=> open,
+    etherbone_cfg_master_i=> open,
 
-    etherbone_src_o => etherbone_snk_in,
-    etherbone_src_i => etherbone_snk_out,
-    etherbone_snk_o => etherbone_src_in,
-    etherbone_snk_i => etherbone_src_out,
+    etherbone_src_o => open,
+    etherbone_src_i => open,
+    etherbone_snk_o => open,
+    etherbone_snk_i => open,
 
+    ext_cfg_master_o=> ext_cfg_slave_in,
+    ext_cfg_master_i=> ext_cfg_slave_out,
+    
     ext_src_o => ext_snk_in,
     ext_src_i => ext_snk_out,
     ext_snk_o => ext_src_in,
@@ -776,43 +793,43 @@ port map (
     pps_led_o            => pps_led,
 
 --  dio_o       => dio_out(4 downto 1),
-    rst_aux_n_o => etherbone_rst_n
+    rst_aux_n_o => open
 );
 
-Etherbone : eb_slave_core
-generic map (
-    g_sdb_address => x"0000000000030000")
-port map (
-    clk_i       => clk_sys,
-    nRst_i      => etherbone_rst_n,
-    src_o       => etherbone_src_out,
-    src_i       => etherbone_src_in,
-    snk_o       => etherbone_snk_out,
-    snk_i       => etherbone_snk_in,
-    cfg_slave_o => etherbone_cfg_slave_out,
-    cfg_slave_i => etherbone_cfg_slave_in,
-    master_o    => etherbone_wb_out,
-    master_i    => etherbone_wb_in
-);
+--Etherbone : eb_slave_core
+--generic map (
+--    g_sdb_address => x"0000000000030000")
+--port map (
+--    clk_i       => clk_sys,
+--    nRst_i      => etherbone_rst_n,
+--    src_o       => etherbone_src_out,
+--    src_i       => etherbone_src_in,
+--    snk_o       => etherbone_snk_out,
+--    snk_i       => etherbone_snk_in,
+--    cfg_slave_o => etherbone_cfg_slave_out,
+--    cfg_slave_i => etherbone_cfg_slave_in,
+--    master_o    => etherbone_wb_out,
+--    master_i    => etherbone_wb_in
+--);
 
   ---------------------
-masterbar : xwb_crossbar
-generic map (
-    g_num_masters => 2,
-    g_num_slaves  => 1,
-    g_registered  => false,
-    g_address     => (0 => x"00000000"),
-    g_mask        => (0 => x"00000000"))
-port map (
-    clk_sys_i   => clk_sys,
-    rst_n_i     => local_reset_n,
-    slave_i(0)  => ext_wb_out,
-    slave_i(1)  => etherbone_wb_out,
-    slave_o(0)  => ext_wb_in,
-    slave_o(1)  => etherbone_wb_in,
-    master_i(0) => wrc_slave_o,
-    master_o(0) => wrc_slave_i
-);
+--masterbar : xwb_crossbar
+--generic map (
+--    g_num_masters => 2,
+--    g_num_slaves  => 1,
+--    g_registered  => false,
+--    g_address     => (0 => x"00000000"),
+--    g_mask        => (0 => x"00000000"))
+--port map (
+--    clk_sys_i   => clk_sys,
+--    rst_n_i     => local_reset_n,
+--    slave_i(0)  => ext_wb_out,
+--    slave_i(1)  => etherbone_wb_out,
+--    slave_o(0)  => ext_wb_in,
+--    slave_o(1)  => etherbone_wb_in,
+--    master_i(0) => wrc_slave_o,
+--    master_o(0) => wrc_slave_i
+--);
 
   ---------------------
 
@@ -980,8 +997,8 @@ port map(
     clk_ref     => clk_ref_i,
     clk_sys     => clk_sys_i,
     rst_n_i     => local_reset_n,
-    wb_i        => ext_wb_in,
-    wb_o        => ext_wb_out,
+    ext_cfg_slave_in => ext_cfg_slave_in,
+    ext_cfg_slave_out => ext_cfg_slave_out,
     snk_i       => ext_snk_in,
     snk_o       => ext_snk_out,
     src_o       => ext_src_out,
@@ -1000,10 +1017,8 @@ port map(
     udp_tx_ack        => xwb_udp_tx_ack,
     udp_tx_nak        => xwb_udp_tx_nak,
 
-    udp_rx_dest_port_no   => udp_rx_dest_port_no,
     udp_tx_dest_ip_addr   => udp_tx_dest_ip_addr,
-    udp_tx_dest_port_no   => udp_tx_dest_port_no,
-    udp_tx_source_port_no => udp_tx_source_port_no
+    udp_tx_dest_port_no   => udp_tx_dest_port_no
 );
 
     udp_rx_data         <= xwb_udp_rx_data;
