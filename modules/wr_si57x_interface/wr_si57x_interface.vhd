@@ -6,7 +6,7 @@
 -- Author     : Tomasz Wlostowski
 -- Company    : CERN BE-Co-HT
 -- Created    : 2010-04-26
--- Last update: 2013-03-19
+-- Last update: 2016-04-15
 -- Platform   : FPGA-generic
 -- Standard   : VHDL '93
 -------------------------------------------------------------------------------
@@ -215,8 +215,9 @@ begin  -- rtl
   rfreq_base(31 downto 0)  <= unsigned(regs_out.rfreql_o);
   rfreq_base(37 downto 32) <= unsigned(regs_out.rfreqh_o(5 downto 0));
 
-  rfreq_adj (15 downto 0)  <= unsigned(tm_dac_value_i(15 downto 0));
-  rfreq_adj (37 downto 16) <= (others => tm_dac_value_i(15));
+  rfreq_adj (1 downto 0) <= (others => '0');
+  rfreq_adj (15+2 downto 2)  <= unsigned(tm_dac_value_i(15 downto 0)) - to_unsigned(32767, 16);
+  rfreq_adj (37 downto 16+2) <= (others => rfreq_adj(15+2));
 
   n1 <= regs_out.rfreqh_o(7 downto 6);
 
