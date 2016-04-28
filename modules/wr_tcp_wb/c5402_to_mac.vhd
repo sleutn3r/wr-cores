@@ -305,13 +305,13 @@ end process ;
 U_tcp_tx_fifo : generic_async_fifo
 generic map (
     g_data_width             => c_fifo_width,
-    g_size                   => 2048,
+    g_size                   => 256,
     g_with_rd_empty          => true,
     g_with_rd_almost_empty   => false,
     g_with_rd_count          => false,
     g_with_wr_almost_full    => true,
     g_almost_empty_threshold => 8,
-    g_almost_full_threshold  => 1024
+    g_almost_full_threshold  => 240
 )
 port map (
     rst_n_i           => rst_n_i,

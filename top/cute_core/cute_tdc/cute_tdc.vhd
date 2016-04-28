@@ -119,7 +119,9 @@ entity cute_tdc is
       sfp_los_i         : in    std_logic;
 
       pps_o : out std_logic;
-	    tm_utc_o: out std_logic_vector(39 downto 0);
+	   tm_time_valid_o      : out std_logic;
+      tm_tai_o             : out std_logic_vector(39 downto 0);
+      tm_cycles_o          : out std_logic_vector(27 downto 0);
 	  
       -----------------------------------------
       --UART
@@ -405,7 +407,12 @@ end component;
       tdc_buf_full_i      : in  std_logic
       );
   end component;
-
+  
+  
+  signal tm_time_valid : std_logic;
+  signal tm_tai        : std_logic_vector(39 downto 0);
+  signal tm_cycles     : std_logic_vector(27 downto 0);
+  
 begin
 
   --U_Ext_PLL : ext_pll_10_to_125m
@@ -786,9 +793,9 @@ port map (
     tm_dac_wr_o          => open,
     tm_clk_aux_lock_en_i => (others => '0'),
     tm_clk_aux_locked_o  => open,
-    tm_time_valid_o      => open,
-    tm_tai_o             => tm_utc_o,
-    tm_cycles_o          => open,
+    tm_time_valid_o      => tm_time_valid,
+    tm_tai_o             => tm_tai,
+    tm_cycles_o          => tm_cycles,
     pps_p_o              => pps,
     pps_led_o            => pps_led,
 
@@ -796,6 +803,10 @@ port map (
     rst_aux_n_o => open
 );
 
+tm_time_valid_o  <= tm_time_valid;
+tm_tai_o         <= tm_tai;
+tm_cycles_o      <= tm_cycles;
+	 
 --Etherbone : eb_slave_core
 --generic map (
 --    g_sdb_address => x"0000000000030000")

@@ -147,7 +147,7 @@
     <property xil_pn:name="JTAG Pin TDI" xil_pn:value="Pull Up" xil_pn:valueState="default"/>
     <property xil_pn:name="JTAG Pin TDO" xil_pn:value="Pull Up" xil_pn:valueState="default"/>
     <property xil_pn:name="JTAG Pin TMS" xil_pn:value="Pull Up" xil_pn:valueState="default"/>
-    <property xil_pn:name="Keep Hierarchy" xil_pn:value="No" xil_pn:valueState="default"/>
+    <property xil_pn:name="Keep Hierarchy" xil_pn:value="Soft" xil_pn:valueState="non-default"/>
     <property xil_pn:name="LUT Combining Map" xil_pn:value="Off" xil_pn:valueState="default"/>
     <property xil_pn:name="LUT Combining Xst" xil_pn:value="Auto" xil_pn:valueState="default"/>
     <property xil_pn:name="Language" xil_pn:value="VHDL" xil_pn:valueState="default"/>
@@ -1262,79 +1262,75 @@
     <file xil_pn:name="../../../ip_cores/etherbone-core/hdl/eb_slave_core/eb_pass_fifo.vhd" xil_pn:type="FILE_VHDL">
       <association xil_pn:name="Implementation" xil_pn:seqID="0"/>
     </file>
-    <file xil_pn:name="../../../../../com5402/src/com5402pkg.vhd" xil_pn:type="FILE_VHDL">
-      <association xil_pn:name="BehavioralSimulation" xil_pn:seqID="329"/>
-      <association xil_pn:name="Implementation" xil_pn:seqID="0"/>
-    </file>
-    <file xil_pn:name="../../../../../com5402/src/packet_parsing.vhd" xil_pn:type="FILE_VHDL">
+    <file xil_pn:name="../../../../com5402/src/packet_parsing.vhd" xil_pn:type="FILE_VHDL">
       <association xil_pn:name="BehavioralSimulation" xil_pn:seqID="331"/>
       <association xil_pn:name="Implementation" xil_pn:seqID="108"/>
     </file>
-    <file xil_pn:name="../../../../../com5402/src/tcp_rxbufndemux.vhd" xil_pn:type="FILE_VHDL">
+    <file xil_pn:name="../../../../com5402/src/tcp_rxbufndemux.vhd" xil_pn:type="FILE_VHDL">
       <association xil_pn:name="BehavioralSimulation" xil_pn:seqID="336"/>
       <association xil_pn:name="Implementation" xil_pn:seqID="0"/>
     </file>
-    <file xil_pn:name="../../../../../com5402/src/tcp_server.vhd" xil_pn:type="FILE_VHDL">
+    <file xil_pn:name="../../../../com5402/src/tcp_server.vhd" xil_pn:type="FILE_VHDL">
       <association xil_pn:name="BehavioralSimulation" xil_pn:seqID="337"/>
       <association xil_pn:name="Implementation" xil_pn:seqID="0"/>
     </file>
-    <file xil_pn:name="../../../../../com5402/src/tcp_tx.vhd" xil_pn:type="FILE_VHDL">
+    <file xil_pn:name="../../../../com5402/src/tcp_tx.vhd" xil_pn:type="FILE_VHDL">
       <association xil_pn:name="BehavioralSimulation" xil_pn:seqID="338"/>
       <association xil_pn:name="Implementation" xil_pn:seqID="0"/>
     </file>
-    <file xil_pn:name="../../../../../com5402/src/tcp_txbuf.vhd" xil_pn:type="FILE_VHDL">
+    <file xil_pn:name="../../../../com5402/src/tcp_txbuf.vhd" xil_pn:type="FILE_VHDL">
       <association xil_pn:name="BehavioralSimulation" xil_pn:seqID="339"/>
       <association xil_pn:name="Implementation" xil_pn:seqID="0"/>
     </file>
-    <file xil_pn:name="../../../../../com5402/src/timer_4us.vhd" xil_pn:type="FILE_VHDL">
+    <file xil_pn:name="../../../../com5402/src/timer_4us.vhd" xil_pn:type="FILE_VHDL">
       <association xil_pn:name="BehavioralSimulation" xil_pn:seqID="340"/>
       <association xil_pn:name="Implementation" xil_pn:seqID="106"/>
     </file>
-    <file xil_pn:name="../../../../../com5402/src/arp.vhd" xil_pn:type="FILE_VHDL">
+    <file xil_pn:name="../../../../com5402/src/arp.vhd" xil_pn:type="FILE_VHDL">
       <association xil_pn:name="BehavioralSimulation" xil_pn:seqID="345"/>
       <association xil_pn:name="Implementation" xil_pn:seqID="110"/>
     </file>
-    <file xil_pn:name="../../../../../com5402/src/arp_cache2.vhd" xil_pn:type="FILE_VHDL">
+    <file xil_pn:name="../../../../com5402/src/arp_cache2.vhd" xil_pn:type="FILE_VHDL">
       <association xil_pn:name="BehavioralSimulation" xil_pn:seqID="346"/>
       <association xil_pn:name="Implementation" xil_pn:seqID="109"/>
     </file>
-    <file xil_pn:name="../../../../../com5402/src/com5402.vhd" xil_pn:type="FILE_VHDL">
+    <file xil_pn:name="../../../../com5402/src/com5402.vhd" xil_pn:type="FILE_VHDL">
       <association xil_pn:name="BehavioralSimulation" xil_pn:seqID="347"/>
       <association xil_pn:name="Implementation" xil_pn:seqID="129"/>
     </file>
-    <file xil_pn:name="../../../../../com5402/src/lfsr11p.vhd" xil_pn:type="FILE_VHDL">
+    <file xil_pn:name="../../../../com5402/src/lfsr11p.vhd" xil_pn:type="FILE_VHDL">
       <association xil_pn:name="BehavioralSimulation" xil_pn:seqID="348"/>
       <association xil_pn:name="Implementation" xil_pn:seqID="0"/>
     </file>
-    <file xil_pn:name="../../../../../com5402/src/packets_2_stream.vhd" xil_pn:type="FILE_VHDL">
+    <file xil_pn:name="../../../../com5402/src/packets_2_stream.vhd" xil_pn:type="FILE_VHDL">
       <association xil_pn:name="BehavioralSimulation" xil_pn:seqID="349"/>
       <association xil_pn:name="Implementation" xil_pn:seqID="0"/>
     </file>
-    <file xil_pn:name="../../../../../com5402/src/ping.vhd" xil_pn:type="FILE_VHDL">
+    <file xil_pn:name="../../../../com5402/src/ping.vhd" xil_pn:type="FILE_VHDL">
       <association xil_pn:name="BehavioralSimulation" xil_pn:seqID="350"/>
       <association xil_pn:name="Implementation" xil_pn:seqID="107"/>
     </file>
-    <file xil_pn:name="../../../../../com5402/src/serial2udp_tx.vhd" xil_pn:type="FILE_VHDL">
+    <file xil_pn:name="../../../../com5402/src/serial2udp_tx.vhd" xil_pn:type="FILE_VHDL">
       <association xil_pn:name="BehavioralSimulation" xil_pn:seqID="351"/>
       <association xil_pn:name="Implementation" xil_pn:seqID="0"/>
     </file>
-    <file xil_pn:name="../../../../../com5402/src/stream_2_packets.vhd" xil_pn:type="FILE_VHDL">
+    <file xil_pn:name="../../../../com5402/src/stream_2_packets.vhd" xil_pn:type="FILE_VHDL">
       <association xil_pn:name="BehavioralSimulation" xil_pn:seqID="352"/>
       <association xil_pn:name="Implementation" xil_pn:seqID="0"/>
     </file>
-    <file xil_pn:name="../../../../../com5402/src/udp_rx.vhd" xil_pn:type="FILE_VHDL">
+    <file xil_pn:name="../../../../com5402/src/udp_rx.vhd" xil_pn:type="FILE_VHDL">
       <association xil_pn:name="BehavioralSimulation" xil_pn:seqID="353"/>
       <association xil_pn:name="Implementation" xil_pn:seqID="104"/>
     </file>
-    <file xil_pn:name="../../../../../com5402/src/udp_tx.vhd" xil_pn:type="FILE_VHDL">
+    <file xil_pn:name="../../../../com5402/src/udp_tx.vhd" xil_pn:type="FILE_VHDL">
       <association xil_pn:name="BehavioralSimulation" xil_pn:seqID="354"/>
       <association xil_pn:name="Implementation" xil_pn:seqID="103"/>
     </file>
-    <file xil_pn:name="../../../../../com5402/src/udp2serial.vhd" xil_pn:type="FILE_VHDL">
+    <file xil_pn:name="../../../../com5402/src/udp2serial.vhd" xil_pn:type="FILE_VHDL">
       <association xil_pn:name="BehavioralSimulation" xil_pn:seqID="355"/>
       <association xil_pn:name="Implementation" xil_pn:seqID="105"/>
     </file>
-    <file xil_pn:name="../../../../../com5402/src/whois2.vhd" xil_pn:type="FILE_VHDL">
+    <file xil_pn:name="../../../../com5402/src/whois2.vhd" xil_pn:type="FILE_VHDL">
       <association xil_pn:name="BehavioralSimulation" xil_pn:seqID="356"/>
       <association xil_pn:name="Implementation" xil_pn:seqID="102"/>
     </file>
