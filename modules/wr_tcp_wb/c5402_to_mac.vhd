@@ -80,14 +80,14 @@ signal pre_eof: std_logic;
 signal pre_sel: std_logic;
 signal pre_data:std_logic_vector(15 downto 0);
 
-type t_pre_state is(T_IDLE,T_START,T_DATA,T_WAIT,T_EVEN,T_ODD);
+type t_pre_state is(T_IDLE,T_START,T_DATA,T_WAIT,T_ODD);
 signal pre_state : t_pre_state;
 
 signal post_eof : std_logic;
 signal post_sel,post_type: std_logic;
 signal post_data:std_logic_vector(15 downto 0);
 
-type t_post_state is(T_IDLE,T_SEND_STATUS,T_SEND_START,T_SEND_DATA,T_WAIT_LAST,T_CLR_FIFO);
+type t_post_state is(T_IDLE,T_SEND_STATUS,T_SEND_START,T_SEND_DATA,T_CLR_FIFO);
 signal post_state : t_post_state;
 
 --component chipscope_ila
@@ -160,7 +160,7 @@ if rising_edge(clk_wr) then
                     pre_eof<='1';
 
                     if(fifo_wrreq='0') then
-                        pre_state <= T_EVEN;
+                        pre_state <= T_IDLE;
                     else
                         pre_state <= T_ODD;
                     end if;
@@ -170,12 +170,6 @@ if rising_edge(clk_wr) then
             else
                 pre_state <= T_IDLE;
             end if;
-
-        when T_EVEN=>
-            fifo_wrreq<= not fifo_wrreq;
-            pre_eof   <='0';
-            pre_sel   <='0';
-            pre_state <= T_IDLE;
 
         when T_ODD=>
             fifo_wrreq<= not fifo_wrreq;
@@ -252,41 +246,28 @@ if rising_edge(clk_rd) then
 
         when T_SEND_DATA =>
             if stall = '0' then
-
-                if fifo_empty='0' then
+                if fifo_empty= '0' then
                     fifo_rdreq <='1';
                 else
                     fifo_rdreq <='0';
-                    post_state <= T_IDLE;
                 end if;
-
-                if post_eof='1' then
-                    src_out.stb <= '0';
-                    post_state <= T_WAIT_LAST;
-                end if ;
             else
                 fifo_rdreq <='0';
             end if;
 
+            if post_eof= '1' then
+                src_out.stb <= '0';
+                fifo_rdreq  <= '0';
+                post_state  <= T_IDLE;
+            end if ;
+
             if err = '1' then
-                post_state <= T_WAIT_LAST;
-            end if;
-
-        when T_WAIT_LAST=>
-            src_out.stb <= '0';
-            src_out.cyc <= '0';
-
-            if fifo_empty='0' then
-                fifo_rdreq <='1';
-                post_state  <= T_CLR_FIFO;
-            else
-                fifo_rdreq  <='0';
-                post_state <= T_IDLE;
+                post_state <= T_CLR_FIFO;
             end if;
 
         when T_CLR_FIFO=>
 
-            if fifo_empty='0' then
+            if fifo_empty= '0' then
                 fifo_rdreq <='1';
             else
                 fifo_rdreq <='0';
