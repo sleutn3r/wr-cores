@@ -30,7 +30,7 @@ entity cute_tdc is
       clk_ref_i     : in std_logic;     -- 125M reference clock
       clk_gtp_i     : in std_logic;     -- Dedicated clock for Xilinx GTP transceiver
       
-	    rst_n_i  		: in std_logic;
+      rst_n_i  		: in std_logic;
 	  
       -- From GN4124 Local bus, not used in cute
       --L_CLKp : in std_logic;  -- Local bus clock (frequency set in GN4124 config registers)
@@ -119,7 +119,7 @@ entity cute_tdc is
       sfp_los_i         : in    std_logic;
 
       pps_o : out std_logic;
-	   tm_time_valid_o      : out std_logic;
+      tm_time_valid_o      : out std_logic;
       tm_tai_o             : out std_logic_vector(39 downto 0);
       tm_cycles_o          : out std_logic_vector(27 downto 0);
 	  
@@ -130,7 +130,7 @@ entity cute_tdc is
       uart_txd_o : out std_logic;
       
       ---------------------------------------
-      -- ext udp interface
+      -- EXT udp interface
       ---------------------------------------
       udp_rx_data: out std_logic_vector(7 downto 0);
       udp_rx_data_valid: out std_logic;
@@ -740,7 +740,7 @@ port map (
     phy_sfp_tx_disable_o => sfp_tx_disable_o,
     phy_tx_prbs_sel_o  =>  phy_prbs_sel,
 
-    led_act_o  => LED_RED,
+    led_act_o  => led_red,
     led_link_o => LED_GREEN,
     scl_o      => wrc_scl_o,
     scl_i      => wrc_scl_i,
@@ -799,14 +799,13 @@ port map (
     pps_p_o              => pps,
     pps_led_o            => pps_led,
 
---  dio_o       => dio_out(4 downto 1),
     rst_aux_n_o => open
 );
 
 tm_time_valid_o  <= tm_time_valid;
 tm_tai_o         <= tm_tai;
 tm_cycles_o      <= tm_cycles;
-	 
+
 --Etherbone : eb_slave_core
 --generic map (
 --    g_sdb_address => x"0000000000030000")
@@ -895,14 +894,11 @@ U_DAC_ARB : cute_serial_dac_arb
 generic map (
     g_invert_sclk    => false,
     g_num_extra_bits => 8)
-
 port map (
     clk_i   => clk_sys,
     rst_n_i => local_reset_n,
-
     val1_i  => dac_dpll_data,
     load1_i => dac_dpll_load_p1,
-
     val2_i  => dac_hpll_data,
     load2_i => dac_hpll_load_p1,
     dac_sync_n_o  => dac_sync_n_o,

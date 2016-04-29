@@ -1,6 +1,6 @@
 -------------------------------------------------------------------------------
 -- Title      : COM5402 module to MAC / Tx
--- Project    : 
+-- Project    :
 -------------------------------------------------------------------------------
 -- File       : c5402_to_mac.vhd
 -- Author     : lihm
@@ -15,20 +15,20 @@
 --
 -- Copyright (c) 2011 CERN
 --
--- This source file is free software; you can redistribute it   
--- and/or modify it under the terms of the GNU Lesser General   
--- Public License as published by the Free Software Foundation; 
--- either version 2.1 of the License, or (at your option) any   
--- later version.                                               
+-- This source file is free software; you can redistribute it
+-- and/or modify it under the terms of the GNU Lesser General
+-- Public License as published by the Free Software Foundation;
+-- either version 2.1 of the License, or (at your option) any
+-- later version.
 --
--- This source is distributed in the hope that it will be       
--- useful, but WITHOUT ANY WARRANTY; without even the implied   
--- warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR      
--- PURPOSE.  See the GNU Lesser General Public License for more 
--- details.                                                     
+-- This source is distributed in the hope that it will be
+-- useful, but WITHOUT ANY WARRANTY; without even the implied
+-- warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+-- PURPOSE.  See the GNU Lesser General Public License for more
+-- details.
 --
--- You should have received a copy of the GNU Lesser General    
--- Public License along with this source; if not, download it   
+-- You should have received a copy of the GNU Lesser General
+-- Public License along with this source; if not, download it
 -- from http://www.gnu.org/licenses/lgpl-2.1.html
 --
 -------------------------------------------------------------------------------
@@ -83,7 +83,7 @@ signal pre_data:std_logic_vector(15 downto 0);
 type t_pre_state is(T_IDLE,T_START,T_DATA,T_WAIT,T_EVEN,T_ODD);
 signal pre_state : t_pre_state;
 
-signal post_eof : std_logic;  
+signal post_eof : std_logic;
 signal post_sel,post_type: std_logic;
 signal post_data:std_logic_vector(15 downto 0);
 
@@ -120,7 +120,7 @@ begin
 if rising_edge(clk_wr) then
     if rst_n_i='0' then
         pre_state   <= T_IDLE;
-        pre_eof     <='0';         
+        pre_eof     <='0';
         pre_sel     <='0';
         pre_data    <=(others=>'0');
         fifo_wrreq  <='0';
@@ -128,11 +128,11 @@ if rising_edge(clk_wr) then
         pre_data  <= pre_data(7 downto 0) & data_i;
 
         case( pre_state ) is
-        
+
         when T_IDLE=>
-            pre_eof     <='0';                    
+            pre_eof     <='0';
             pre_sel     <='0';
-            fifo_wrreq  <='0';                    
+            fifo_wrreq  <='0';
 
             if(data_valid_i='1') then
                 pre_state <= T_START;
@@ -155,7 +155,7 @@ if rising_edge(clk_wr) then
                 pre_eof   <='0';
                 pre_sel   <='0';
                 fifo_wrreq<= not fifo_wrreq;
-                
+
                 if(eof_i='1') then
                     pre_eof<='1';
 
@@ -174,7 +174,7 @@ if rising_edge(clk_wr) then
         when T_EVEN=>
             fifo_wrreq<= not fifo_wrreq;
             pre_eof   <='0';
-            pre_sel   <='0';            
+            pre_sel   <='0';
             pre_state <= T_IDLE;
 
         when T_ODD=>
@@ -184,7 +184,7 @@ if rising_edge(clk_wr) then
             pre_state <=T_IDLE;
 
         when others =>
-            pre_state <=T_IDLE;           
+            pre_state <=T_IDLE;
         end case ;
     end if;
 end if;
@@ -217,7 +217,7 @@ if rising_edge(clk_rd) then
         src_out.cyc <= '0';
         src_out.stb <= '0';
         src_out.adr <=(others=>'0');
-        src_out.we  <= '1';      
+        src_out.we  <= '1';
         post_type   <='0';
     else
         case( post_state ) is
@@ -233,7 +233,7 @@ if rising_edge(clk_rd) then
                 fifo_rdreq <='1';
                 post_state <= T_SEND_STATUS;
             end if ;
-      
+
         when T_SEND_STATUS =>
             src_out.stb <= '1';
             src_out.cyc <= '1';
@@ -241,10 +241,10 @@ if rising_edge(clk_rd) then
             post_type   <='0';
             fifo_rdreq  <='0';
             post_state  <= T_SEND_START;
-        
+
         when T_SEND_START =>
             if stall = '0' then
-                src_out.adr <= c_WRF_DATA;                 
+                src_out.adr <= c_WRF_DATA;
                 post_type   <='1';
                 fifo_rdreq  <= '1';
                 post_state  <= T_SEND_DATA;
@@ -261,22 +261,23 @@ if rising_edge(clk_rd) then
                 end if;
 
                 if post_eof='1' then
+                    src_out.stb <= '0';
                     post_state <= T_WAIT_LAST;
                 end if ;
             else
                 fifo_rdreq <='0';
             end if;
-            
+
             if err = '1' then
                 post_state <= T_WAIT_LAST;
-            end if; 
+            end if;
 
         when T_WAIT_LAST=>
             src_out.stb <= '0';
             src_out.cyc <= '0';
 
             if fifo_empty='0' then
-                fifo_rdreq <='1';            
+                fifo_rdreq <='1';
                 post_state  <= T_CLR_FIFO;
             else
                 fifo_rdreq  <='0';
@@ -284,11 +285,11 @@ if rising_edge(clk_rd) then
             end if;
 
         when T_CLR_FIFO=>
-            
+
             if fifo_empty='0' then
                 fifo_rdreq <='1';
             else
-                fifo_rdreq <='0';            
+                fifo_rdreq <='0';
                 post_state <=T_IDLE;
             end if ;
 
@@ -298,7 +299,7 @@ if rising_edge(clk_rd) then
         end case ;
     end if ;
 end if ;
-end process ; 
+end process ;
 
 
 
@@ -358,7 +359,7 @@ port map (
 --   trig1(21 downto 20) <= src_out.adr;
 --   trig1(22) <=stall;
 --   trig1(23) <=ack;
---  
+--
 --   trig2(17 downto 0) <= fifo_rddata;
 --   trig2(18) <= fifo_empty;
 --   trig2(19) <= fifo_rdreq;
