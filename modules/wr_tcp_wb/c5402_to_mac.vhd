@@ -70,7 +70,6 @@ architecture behavioral of c5402_to_mac is
 
 constant C_FIFO_WIDTH : integer := 16 + 2;
 
-signal src_out : t_wrf_source_out;
 signal stall,ack,err,rty: std_logic;
 
 signal fifo_wr_almost_full, fifo_wrreq, fifo_rdreq,fifo_empty: std_logic;
@@ -80,7 +79,7 @@ signal pre_eof: std_logic;
 signal pre_sel: std_logic;
 signal pre_data:std_logic_vector(15 downto 0);
 
-type t_pre_state is(T_IDLE,T_START,T_DATA,T_WAIT,T_ODD);
+type t_pre_state is(T_IDLE,T_DATA,T_DATA_WAIT,T_ODD);
 signal pre_state : t_pre_state;
 
 signal post_eof : std_logic;
@@ -90,29 +89,6 @@ signal post_data:std_logic_vector(15 downto 0);
 type t_post_state is(T_IDLE,T_SEND_STATUS,T_SEND_START,T_SEND_DATA,T_CLR_FIFO);
 signal post_state : t_post_state;
 
---component chipscope_ila
---port (
---    CONTROL : inout std_logic_vector(35 downto 0);
---    CLK     : in    std_logic;
---    TRIG0   : in    std_logic_vector(31 downto 0);
---    TRIG1   : in    std_logic_vector(31 downto 0);
---    TRIG2   : in    std_logic_vector(31 downto 0);
---    TRIG3   : in    std_logic_vector(31 downto 0)
---);
---end component;
-
---component chipscope_icon
---port (
---    CONTROL0 : inout std_logic_vector (35 downto 0));
---end component;
-
---signal CONTROL : std_logic_vector(35 downto 0);
---signal CLK     : std_logic;
---signal TRIG0   : std_logic_vector(31 downto 0);
---signal TRIG1   : std_logic_vector(31 downto 0);
---signal TRIG2   : std_logic_vector(31 downto 0);
---signal TRIG3   : std_logic_vector(31 downto 0);
-
 begin
 
 tx_data:process(clk_wr)
@@ -120,62 +96,64 @@ begin
 if rising_edge(clk_wr) then
     if rst_n_i='0' then
         pre_state   <= T_IDLE;
-        pre_eof     <='0';
-        pre_sel     <='0';
-        pre_data    <=(others=>'0');
-        fifo_wrreq  <='0';
+        pre_eof     <= '0';
+        pre_sel     <= '0';
+        pre_data    <= (others=>'0');
+        fifo_wrreq  <= '0';
     else
-        pre_data  <= pre_data(7 downto 0) & data_i;
-
         case( pre_state ) is
-
         when T_IDLE=>
-            pre_eof     <='0';
-            pre_sel     <='0';
-            fifo_wrreq  <='0';
-
-            if(data_valid_i='1') then
-                pre_state <= T_START;
-            else
-                pre_state <= T_IDLE;
-            end if;
-
-        when T_START=>
-            if(data_valid_i='1') then
-                pre_eof   <='0';
-                pre_sel   <='0';
-                fifo_wrreq<='1';
+            pre_eof     <= '0';
+            pre_sel     <= '0';
+            fifo_wrreq  <= '0';
+            if(data_valid_i= '1') then
+                pre_data  <= pre_data(7 downto 0) & data_i;
                 pre_state <= T_DATA;
-            else
-                pre_state <= T_IDLE;
             end if;
 
         when T_DATA=>
             if(data_valid_i='1') then
-                pre_eof   <='0';
-                pre_sel   <='0';
-                fifo_wrreq<= not fifo_wrreq;
+                pre_eof   <= '0';
+                pre_sel   <= '0';
+                pre_data  <= pre_data(7 downto 0) & data_i;
+                fifo_wrreq<= '1';
+                pre_state <= T_DATA_WAIT;
 
-                if(eof_i='1') then
-                    pre_eof<='1';
-
-                    if(fifo_wrreq='0') then
-                        pre_state <= T_IDLE;
-                    else
-                        pre_state <= T_ODD;
-                    end if;
-                else
-                    pre_state <= T_DATA;
+                if(eof_i= '1') then
+                    pre_eof   <= '1';
+                    pre_state <= T_IDLE;
                 end if;
             else
-                pre_state <= T_IDLE;
+                pre_eof   <= '0';
+                pre_sel   <= '0';
+                fifo_wrreq<= '0';
+                pre_state <= T_DATA;
+            end if;
+
+        when T_DATA_WAIT =>
+            if data_valid_i = '1' then
+                pre_eof   <= '0';
+                pre_sel   <= '0';
+                pre_data  <= pre_data(7 downto 0) & data_i;
+                fifo_wrreq<= '0';
+                pre_state <= T_DATA;
+
+                if(eof_i= '1') then
+                    pre_state <= T_ODD;
+                end if;
+            else
+                pre_eof   <= '0';
+                pre_sel   <= '0';
+                fifo_wrreq<= '0';
+                pre_state <= T_DATA_WAIT;
             end if;
 
         when T_ODD=>
-            fifo_wrreq<= not fifo_wrreq;
-            pre_sel   <='1';
-            pre_eof   <='1';
-            pre_state <=T_IDLE;
+            pre_data  <= pre_data(7 downto 0) & data_i;
+            fifo_wrreq<= '1';
+            pre_sel   <= '1';
+            pre_eof   <= '1';
+            pre_state <= T_IDLE;
 
         when others =>
             pre_state <=T_IDLE;
@@ -195,10 +173,9 @@ ack         <= src_i.ack;
 err         <= src_i.err;
 rty         <= src_i.rty;
 
-src_o       <= src_out;
-src_out.dat <= post_data when post_type = '1' else
+src_o.dat <= post_data when post_type = '1' else
                (others=>'0');
-src_out.sel <= "10" when post_sel='1' and post_type ='1'  else
+src_o.sel <= "10" when post_sel='1' and post_type ='1'  else
                "11";
 
 cts_o <= not fifo_wr_almost_full;
@@ -208,38 +185,38 @@ begin
 if rising_edge(clk_rd) then
     if rst_n_i='0' then
         fifo_rdreq  <='0';
-        src_out.cyc <= '0';
-        src_out.stb <= '0';
-        src_out.adr <=(others=>'0');
-        src_out.we  <= '1';
-        post_type   <='0';
+        src_o.cyc <= '0';
+        src_o.stb <= '0';
+        src_o.adr <=(others=>'0');
+        src_o.we  <= '1';
+        post_type <= '0';
     else
         case( post_state ) is
 
         when T_IDLE =>
-            src_out.cyc <= '0';
-            src_out.stb <= '0';
-            src_out.we  <= '1';
-            src_out.adr <= (others => '0');
-            post_type   <='0';
+            src_o.cyc <= '0';
+            src_o.stb <= '0';
+            src_o.we  <= '1';
+            src_o.adr <= (others => '0');
+            post_type <= '0';
 
-            if fifo_empty='0' then
+            if fifo_empty= '0' then
                 fifo_rdreq <='1';
                 post_state <= T_SEND_STATUS;
             end if ;
 
         when T_SEND_STATUS =>
-            src_out.stb <= '1';
-            src_out.cyc <= '1';
-            src_out.adr <= c_WRF_STATUS;
+            src_o.stb <= '1';
+            src_o.cyc <= '1';
+            src_o.adr <= c_WRF_STATUS;
             post_type   <='0';
             fifo_rdreq  <='0';
             post_state  <= T_SEND_START;
 
         when T_SEND_START =>
             if stall = '0' then
-                src_out.adr <= c_WRF_DATA;
-                post_type   <='1';
+                src_o.adr <= c_WRF_DATA;
+                post_type   <= '1';
                 fifo_rdreq  <= '1';
                 post_state  <= T_SEND_DATA;
             end if;
@@ -247,18 +224,19 @@ if rising_edge(clk_rd) then
         when T_SEND_DATA =>
             if stall = '0' then
                 if fifo_empty= '0' then
-                    fifo_rdreq <='1';
+                    fifo_rdreq <= '1';
                 else
-                    fifo_rdreq <='0';
+                    fifo_rdreq <= '0';
                 end if;
             else
                 fifo_rdreq <='0';
             end if;
 
             if post_eof= '1' then
-                src_out.stb <= '0';
-                fifo_rdreq  <= '0';
-                post_state  <= T_IDLE;
+                src_o.stb  <= '0';
+                src_o.cyc  <= '0';
+                fifo_rdreq <= '0';
+                post_state <= T_IDLE;
             end if ;
 
             if err = '1' then
@@ -333,11 +311,11 @@ port map (
 --   trig0(9)  <= eof_i;
 --   trig0(31 downto 16) <= pre_data;
 --
---   trig1(15 downto 0)  <= src_out.dat;
---   trig1(16)  <= src_out.cyc;
---   trig1(17)  <= src_out.stb;
---   trig1(19 downto 18)  <= src_out.sel;
---   trig1(21 downto 20) <= src_out.adr;
+--   trig1(15 downto 0)  <= src_o.dat;
+--   trig1(16)  <= src_o.cyc;
+--   trig1(17)  <= src_o.stb;
+--   trig1(19 downto 18)  <= src_o.sel;
+--   trig1(21 downto 20) <= src_o.adr;
 --   trig1(22) <=stall;
 --   trig1(23) <=ack;
 --
