@@ -4,14 +4,14 @@ use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
 library work;
-use work.wishbone_pkg.all;
 use work.gn4124_core_pkg.all;
 use work.gencores_pkg.all;
 use work.wrcore_pkg.all;
-use work.wrdp_pkg.all;
 use work.wr_fabric_pkg.all;
 use work.wr_xilinx_pkg.all;
+use work.wishbone_pkg.all;
 use work.etherbone_pkg.all;
+use work.com5402pkg.all;
 
 library unisim;
 use unisim.vcomponents.all;
@@ -46,7 +46,7 @@ port
     -------------------------------------------------------------------------
     -- sfp0 pins
     -------------------------------------------------------------------------
-    
+
     --sfp0_txp_o : out std_logic;
     --sfp0_txn_o : out std_logic;
     --sfp0_rxp_i : in std_logic;
@@ -77,20 +77,20 @@ port
     -----------------------------------------
     uart_rxd_i : in  std_logic;
     uart_txd_o : out std_logic;
-    -----------------------------------------
-    --PPS
-    -----------------------------------------
-    pps_o     :  out std_logic;
-    --ext_clk_o :  out  std_logic;   
     ----------------------------------------
     -- user interface
     ---------------------------------------
     -- Font panel LEDs
-    usr_button_i: in  std_logic
+    usr_button_i: in  std_logic;
 --    usr_led1_o  : out std_logic;
 --    usr_led2_o  : out std_logic;
 --    usr_lemo1_o : out std_logic;
 --    usr_lemo2_o : out std_logic
+    -----------------------------------------
+    --PPS
+    -----------------------------------------
+    pps_o     :  out std_logic
+    --ext_clk_o :  out  std_logic;
 );
 end cutewr_dp;
 
@@ -102,10 +102,100 @@ architecture rtl of cutewr_dp is
 component cute_reset_gen is
 port (
     clk_sys_i : in std_logic;
-    rst_pcie_n_a_i   : in std_logic;
     rst_button_n_a_i : in std_logic;
     rst_n_o : out std_logic);
 end component;
+
+component xwb_com5402 is
+port(
+    clk_ref_i         : in std_logic;
+    clk_sys_i         : in std_logic;
+    rst_n_i           : in std_logic;
+
+    snk_i             : in  t_wrf_sink_in;
+    snk_o             : out t_wrf_sink_out;
+    udp_rx_data       : out std_logic_vector(7 downto 0);
+    udp_rx_data_valid : out std_logic;
+    udp_rx_sof        : out std_logic;
+    udp_rx_eof        : out std_logic;
+    tcp_rx_data       : out slv8xntcpstreamstype;
+    tcp_rx_data_valid : out std_logic_vector((ntcpstreams-1) downto 0);
+    tcp_rx_rts        : out std_logic;
+    -- tcp_rx_cts        : in std_logic:='1';
+
+    src_o             : out t_wrf_source_out;
+    src_i             : in  t_wrf_source_in;
+    udp_tx_data       : in  std_logic_vector(7 downto 0):= (others=>'0');
+    udp_tx_data_valid : in  std_logic:= '0';
+    udp_tx_sof        : in  std_logic:= '0';
+    udp_tx_eof        : in  std_logic:= '0';
+    udp_tx_cts        : out std_logic;
+    udp_tx_ack        : out std_logic;
+    udp_tx_nak        : out std_logic;
+    udp_tx_dest_ip_addr:in  std_logic_vector(127 downto 0):= (others=>'0');
+    udp_tx_dest_port_no:in  std_logic_vector(15 downto 0):= (others=>'0');
+    tcp_tx_data       : in  slv8xntcpstreamstype:= (others=>(others=>'0'));
+    tcp_tx_data_valid : in  std_logic_vector((ntcpstreams-1) downto 0):= (others=>'0');
+    tcp_tx_cts        : out std_logic_vector((ntcpstreams-1) downto 0);
+
+    cfg_slave_in      : in  t_wishbone_slave_in;
+    cfg_slave_out     : out t_wishbone_slave_out
+);
+end component;
+
+component user_udp_demo is
+port(
+	clk_i 				   	      : in std_logic;
+	rst_n_i 					      : in std_logic;
+
+	udp_rx_data         		: in std_logic_vector(7 downto 0);
+	udp_rx_data_valid   		: in std_logic;
+	udp_rx_sof          		: in std_logic;
+	udp_rx_eof          		: in std_logic;
+
+	udp_tx_data         		: out std_logic_vector(7 downto 0);
+	udp_tx_data_valid   		: out std_logic;
+	udp_tx_sof          		: out std_logic;
+	udp_tx_eof          		: out std_logic;
+	udp_tx_cts          		: in std_logic;
+	udp_tx_ack          		: in std_logic;
+	udp_tx_nak          		: in std_logic;
+	udp_tx_dest_ip_addr			: out std_logic_vector(127 downto 0);
+	udp_tx_dest_port_no			: out std_logic_vector(15 downto 0)
+);
+end component;
+
+    constant c_ip_config_sdb : t_sdb_device := (
+    abi_class     => x"0000",              -- undocumented device
+    abi_ver_major => x"01",
+    abi_ver_minor => x"01",
+    wbd_endian    => c_sdb_endian_big,
+    wbd_width     => x"4",                 -- 8/16/32-bit port granularity
+    sdb_component => (
+    addr_first  => x"0000000000000000",
+    addr_last   => x"00000000000000ff",
+    product     => (
+    vendor_id => x"0000000000001103",  -- THU
+    device_id => x"c0413599",
+    version   => x"00000001",
+    date      => x"20160424",
+    name      => "WR-IP-CONFIG       ")));
+
+    constant c_null_sdb : t_sdb_device := (
+    abi_class     => x"0000",              -- undocumented device
+    abi_ver_major => x"01",
+    abi_ver_minor => x"01",
+    wbd_endian    => c_sdb_endian_big,
+    wbd_width     => x"7",                 -- 8/16/32-bit port granularity
+    sdb_component => (
+    addr_first  => x"0000000000000000",
+    addr_last   => x"00000000000000ff",
+    product     => (
+    vendor_id => x"0000000000001103",  -- THU
+    device_id => x"c0403598",
+    version   => x"00000001",
+    date      => x"20160324",
+    name      => "WR-NULL            ")));
 
   ------------------------------------------------------------------------------
   -- Signals declaration
@@ -120,14 +210,17 @@ end component;
   signal pllout_clk_62_5,pllout_clk_125:std_logic;
   signal pllout_clk_fb_ref,pllout_clk_fb_dmtd:std_logic;
   signal pllout_clk_dmtd:std_logic;
-  
+
   signal ext_wb_out    : t_wishbone_master_out;
   signal ext_wb_in     : t_wishbone_master_in;
 
-  signal ext_src_out : t_wrf_source_out;
-  signal ext_src_in  : t_wrf_source_in;
-  signal ext_snk_out : t_wrf_sink_out;
-  signal ext_snk_in  : t_wrf_sink_in;
+  signal ipconfig_slave_in    : t_wishbone_slave_in;
+  signal ipconfig_slave_out   : t_wishbone_slave_out;
+
+  signal com5402_src_out : t_wrf_source_out;
+  signal com5402_src_in  : t_wrf_source_in;
+  signal com5402_snk_out : t_wrf_sink_out;
+  signal com5402_snk_in  : t_wrf_sink_in;
 
   signal wrc_slave_i : t_wishbone_slave_in;
   signal wrc_slave_o : t_wishbone_slave_out;
@@ -150,7 +243,7 @@ end component;
   signal dac_dpll_load_p1 : std_logic;
   signal dac_hpll_data    : std_logic_vector(15 downto 0);
   signal dac_dpll_data    : std_logic_vector(15 downto 0);
-  
+
   signal etherbone_rst_n   : std_logic;
   signal etherbone_src_out : t_wrf_source_out;
   signal etherbone_src_in  : t_wrf_source_in;
@@ -194,12 +287,26 @@ end component;
   signal phy1_prbs_sel     : std_logic_vector(2 downto 0);
   signal phy1_rdy          : std_logic;
 
+  signal udp_tx_data: std_logic_vector(7 downto 0) := (others => '0');
+  signal udp_tx_data_valid: std_logic := '0';
+  signal udp_tx_sof: std_logic := '0';
+  signal udp_tx_eof: std_logic := '0';
+  signal udp_tx_cts: std_logic;
+  signal udp_tx_ack: std_logic;
+  signal udp_tx_nak: std_logic;
+
+  signal udp_rx_data: std_logic_vector(7 downto 0);
+  signal udp_rx_data_valid: std_logic;
+  signal udp_rx_sof: std_logic;
+  signal udp_rx_eof: std_logic;
+
+  signal udp_tx_dest_ip_addr:     std_logic_vector(127 downto 0);
+  signal udp_tx_dest_port_no:     std_logic_vector(15 downto 0);
 begin
 
 U_Reset_Gen : cute_reset_gen
 port map (
     clk_sys_i        => clk_sys_i,
-    rst_pcie_n_a_i   => '1',
     rst_button_n_a_i => usr_button_i,
     rst_n_o          => local_reset_n
 );
@@ -315,7 +422,7 @@ port map (
     O => clk_sys_i,
     I => pllout_clk_62_5
 );
-   
+
 cmd_clk_ref_buf: BUFG
 port map(
     O => clk_ref_i,
@@ -330,7 +437,7 @@ cmp_clk_dmtd_buf : BUFG
 
 ------------------------------------------------------------------------------
 -- Dedicated clock for GTP
-------------------------------------------------------------------------------  
+------------------------------------------------------------------------------
   fpga_scl_b  <= '0' when fpga_scl_o = '0' else 'Z';
   fpga_sda_b  <= '0' when fpga_sda_o = '0' else 'Z';
   fpga_scl_i  <= fpga_scl_b;
@@ -365,23 +472,23 @@ U_WR_CORE : xcute_core
       g_pcs_16bit                 => false,
       g_dpram_initf               => "",
       g_etherbone_cfg_sdb         => c_etherbone_sdb,
-      g_aux1_sdb                  => c_etherbone_sdb,
-      g_aux2_sdb                  => c_etherbone_sdb,
+      g_aux1_sdb                  => c_ip_config_sdb,
+      g_aux2_sdb                  => c_null_sdb,
       g_dpram_size                => 131072/4,
       g_interface_mode            => PIPELINED,
       g_address_granularity       => BYTE)
     port map (
-      clk_sys_i     => clk_sys_i,
-      clk_dmtd_i    => clk_dmtd_i,
-      clk_ref_i     => clk_ref_i,
-      clk_aux_i     => (others => '0'),
-      clk_ext_i     => '0',
-      clk_ext_mul_i => '0',
-      clk_ext_mul_locked_i => '1',
-      clk_ext_stopped_i    => '0',
-      clk_ext_rst_o        => open,
-      pps_ext_i     => '0',
-      rst_n_i       => local_reset_n,
+      clk_sys_i             => clk_sys_i,
+      clk_dmtd_i            => clk_dmtd_i,
+      clk_ref_i             => clk_ref_i,
+      clk_aux_i             => (others => '0'),
+      clk_ext_i             => '0',
+      clk_ext_mul_i         => '0',
+      clk_ext_mul_locked_i  => '1',
+      clk_ext_stopped_i     => '0',
+      clk_ext_rst_o         => open,
+      pps_ext_i             => '0',
+      rst_n_i               => local_reset_n,
 
       dac_hpll_load_p1_o => dac_hpll_load_p1,
       dac_hpll_data_o    => dac_hpll_data,
@@ -445,8 +552,8 @@ U_WR_CORE : xcute_core
       sfp_sda_i  => sfp1_mod_def2_i,
       sfp_det_i  => sfp1_mod_def0_i,
 
-      btn1_i     => open,
-      btn2_i     => open,
+      btn1_i      => open,
+      btn2_i      => open,
       spi_sclk_o  => open,
       spi_ncs_o   => open,
       spi_mosi_o  => open,
@@ -461,8 +568,8 @@ U_WR_CORE : xcute_core
       wrc_slave_i => wrc_slave_i,
       wrc_slave_o => wrc_slave_o,
 
-      aux1_master_o => open,
-      aux1_master_i => open,
+      aux1_master_o => ipconfig_slave_in,
+      aux1_master_i => ipconfig_slave_out,
 
       aux2_master_o => open,
       aux2_master_i => open,
@@ -475,11 +582,11 @@ U_WR_CORE : xcute_core
       etherbone_snk_o => etherbone_src_in,
       etherbone_snk_i => etherbone_src_out,
 
-      ext_src_o => open,
-      ext_src_i => open,
-      ext_snk_o => open,
-      ext_snk_i => open,
-      
+      ext_src_o         => com5402_snk_in,
+      ext_src_i         => com5402_snk_out,
+      ext_snk_o         => com5402_src_in,
+      ext_snk_i         => com5402_src_out,
+
       tm_dac_value_o       => open,
       tm_dac_wr_o          => open,
       tm_clk_aux_lock_en_i => (others => '0'),
@@ -566,14 +673,14 @@ U_WR_CORE : xcute_core
      -- ch0_rx_bitslide_o  => phy0_rx_bitslide,
      -- ch0_rst_i          => phy0_rst,
      -- ch0_loopen_i       => phy0_loopen,
-     -- ch0_loopen_vec_i   => phy0_loopen_vec,	  
+     -- ch0_loopen_vec_i   => phy0_loopen_vec,
      -- ch0_tx_prbs_sel_i  => phy0_prbs_sel,
 	    --ch0_rdy_o          => phy0_rdy,
      -- pad_txn0_o         => sfp0_txn_o,
      -- pad_txp0_o         => sfp0_txp_o,
      -- pad_rxn0_i         => sfp0_rxn_i,
      -- pad_rxp0_i         => sfp0_rxp_i,
-	     
+
       ch1_ref_clk_i      => clk_ref_i,
       ch1_tx_data_i      => phy1_tx_data,
       ch1_tx_k_i         => phy1_tx_k(0),
@@ -586,7 +693,7 @@ U_WR_CORE : xcute_core
       ch1_rx_bitslide_o  => phy1_rx_bitslide,
       ch1_rst_i          => phy1_rst,
       ch1_loopen_i       => phy1_loopen,
-      ch1_loopen_vec_i   => phy1_loopen_vec,    
+      ch1_loopen_vec_i   => phy1_loopen_vec,
       ch1_tx_prbs_sel_i  => phy1_prbs_sel,
       ch1_rdy_o          => phy1_rdy,
       pad_txn1_o         => sfp1_txn_o,
@@ -634,7 +741,55 @@ U_WR_CORE : xcute_core
       --pad_rxn1_i         => '0',
       --pad_rxp1_i         => '0'
 );
-    	
+
+Inst_xwb_com5402 : xwb_com5402
+port map(
+    clk_ref_i         => clk_ref_i,
+    clk_sys_i         => clk_sys_i,
+    rst_n_i           => local_reset_n,
+    snk_i             => com5402_snk_in,
+    snk_o             => com5402_snk_out,
+    src_o             => com5402_src_out,
+    src_i             => com5402_src_in,
+
+    udp_rx_data       => udp_rx_data,
+    udp_rx_data_valid => udp_rx_data_valid,
+    udp_rx_sof        => udp_rx_sof,
+    udp_rx_eof        => udp_rx_eof,
+
+    udp_tx_data       => udp_tx_data,
+    udp_tx_data_valid => udp_tx_data_valid,
+    udp_tx_sof        => udp_tx_sof,
+    udp_tx_eof        => udp_tx_eof,
+    udp_tx_cts        => udp_tx_cts,
+    udp_tx_ack        => udp_tx_ack,
+    udp_tx_nak        => udp_tx_nak,
+
+    udp_tx_dest_ip_addr   => udp_tx_dest_ip_addr,
+    udp_tx_dest_port_no   => udp_tx_dest_port_no,
+
+    cfg_slave_in      => ipconfig_slave_in,
+    cfg_slave_out     => ipconfig_slave_out
+);
+
+inst_udp_demo: user_udp_demo
+port map(
+    clk_i                 => clk_ref_i,
+    rst_n_i               => local_reset_n,
+    udp_rx_data           => udp_rx_data,
+    udp_rx_data_valid     => udp_rx_data_valid,
+    udp_rx_sof            => udp_rx_sof,
+    udp_rx_eof            => udp_rx_eof,
+
+    udp_tx_data           => udp_tx_data,
+    udp_tx_data_valid     => udp_tx_data_valid,
+    udp_tx_sof            => udp_tx_sof,
+    udp_tx_eof            => udp_tx_eof,
+    udp_tx_cts            => udp_tx_cts,
+    udp_tx_ack            => udp_tx_ack,
+    udp_tx_nak            => udp_tx_nak,
+    udp_tx_dest_ip_addr   => udp_tx_dest_ip_addr,
+    udp_tx_dest_port_no   => udp_tx_dest_port_no
+);
+
 end rtl;
-
-
