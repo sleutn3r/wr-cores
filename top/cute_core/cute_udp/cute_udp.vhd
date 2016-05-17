@@ -21,8 +21,8 @@ use work.wishbone_pkg.all;
 entity cute_udp is
   generic
     (
-      TAR_ADDR_WDTH : integer := 13     -- not used for this project
-      );
+      g_etherbone_enable: boolean:= False
+     );
   port
     (
       clk_sys_i     : in std_logic;     -- 62.5M system clock, from PLL drived by clk_125m_pllref
@@ -31,44 +31,6 @@ entity cute_udp is
       clk_gtp_i     : in std_logic;     -- Dedicated clock for Xilinx GTP transceiver
 
       rst_n_i  		: in std_logic;
-
-      -- From GN4124 Local bus, not used in cute
-      --L_CLKp : in std_logic;  -- Local bus clock (frequency set in GN4124 config registers)
-      --L_CLKn : in std_logic;  -- Local bus clock (frequency set in GN4124 config registers)
-
-      --L_RST_N : in std_logic;           -- Reset from GN4124 (RSTOUT18_N)
-
-      -- General Purpose Interface
-      --GPIO : inout std_logic_vector(1 downto 0);  -- GPIO[0] -> GN4124 GPIO8
-                                                  -- GPIO[1] -> GN4124 GPIO9
-
-      -- PCIe to Local [Inbound Data] - RX
-      --P2L_RDY    : out std_logic;       -- Rx Buffer Full Flag
-      --P2L_CLKn   : in  std_logic;       -- Receiver Source Synchronous Clock-
-      --P2L_CLKp   : in  std_logic;       -- Receiver Source Synchronous Clock+
-      --P2L_DATA   : in  std_logic_vector(15 downto 0);  -- Parallel receive data
-      --P2L_DFRAME : in  std_logic;       -- Receive Frame
-      --P2L_VALID  : in  std_logic;       -- Receive Data Valid
-
-      -- Inbound Buffer Request/Status
-      --P_WR_REQ : in  std_logic_vector(1 downto 0);  -- PCIe Write Request
-      --P_WR_RDY : out std_logic_vector(1 downto 0);  -- PCIe Write Ready
-      --RX_ERROR : out std_logic;                     -- Receive Error
-
-      -- Local to Parallel [Outbound Data] - TX
-      --L2P_DATA   : out std_logic_vector(15 downto 0);  -- Parallel transmit data
-      --L2P_DFRAME : out std_logic;       -- Transmit Data Frame
-      --L2P_VALID  : out std_logic;       -- Transmit Data Valid
-      --L2P_CLKn   : out std_logic;  -- Transmitter Source Synchronous Clock-
-      --L2P_CLKp   : out std_logic;  -- Transmitter Source Synchronous Clock+
-      --L2P_EDB    : out std_logic;       -- Packet termination and discard
-
-      -- Outbound Buffer Status
-      --L2P_RDY    : in std_logic;        -- Tx Buffer Full Flag
-      --L_WR_RDY   : in std_logic_vector(1 downto 0);  -- Local-to-PCIe Write
-      --P_RD_D_RDY : in std_logic_vector(1 downto 0);  -- PCIe-to-Local Read Response Data Ready
-      --TX_ERROR   : in std_logic;        -- Transmit Error
-      --VC_RDY     : in std_logic_vector(1 downto 0);  -- Channel ready
 
       -- font panel leds
       led_red   : out std_logic;
@@ -129,24 +91,14 @@ entity cute_udp is
       uart_rxd_i : in  std_logic;
       uart_txd_o : out std_logic;
 
-      ---------------------------------------
-      -- EXT udp interface
-      ---------------------------------------
-      udp_rx_data: out std_logic_vector(7 downto 0);
-      udp_rx_data_valid: out std_logic;
-      udp_rx_sof: out std_logic;
-      udp_rx_eof: out std_logic;
+      ext_snk_i : in  t_wrf_sink_in;
+      ext_snk_o : out t_wrf_sink_out;
 
-      udp_tx_data: in std_logic_vector(7 downto 0);
-      udp_tx_data_valid: in std_logic;
-      udp_tx_sof: in std_logic;
-      udp_tx_eof: in std_logic;
-      udp_tx_cts: out std_logic;
-      udp_tx_ack: out std_logic;
-      udp_tx_nak: out std_logic;
+      ext_src_o : out t_wrf_source_out;
+      ext_src_i : in  t_wrf_source_in;
 
-      udp_tx_dest_ip_addr:    in std_logic_vector(127 downto 0);
-      udp_tx_dest_port_no:    in std_logic_vector(15 downto 0)
+      ext_cfg_master_in : in t_wishbone_master_in;
+      ext_cfg_master_out : out t_wishbone_master_out
       );
 
 end cute_udp;
@@ -169,23 +121,12 @@ architecture rtl of cute_udp is
   -- Signals declaration
   ------------------------------------------------------------------------------
 
-  -- LCLK from GN4124 used as system clock
-  --signal l_clk : std_logic;
-
   -- Dedicated clock for GTP transceiver
   signal gtp_dedicated_clk : std_logic;
-
-  -- P2L colck PLL status
-  --signal p2l_pll_locked : std_logic;
 
   -- Reset
   signal rst_a : std_logic;
   signal rst   : std_logic;
-
-  --signal ram_we      : std_logic_vector(0 downto 0);
-  --signal ddr_dma_adr : std_logic_vector(29 downto 0);
-
-  --signal irq_to_gn4124 : std_logic;
 
   -- SPI
   signal spi_slave_select : std_logic_vector(7 downto 0);
@@ -236,20 +177,8 @@ architecture rtl of cute_udp is
   signal phy_prbs_sel     : std_logic_vector(2 downto 0);
   signal phy_rdy          : std_logic;
 
-  --signal dio_in  : std_logic_vector(4 downto 0);
-  --signal dio_out : std_logic_vector(4 downto 0);
-  --signal dio_clk : std_logic;
-
   signal local_reset_n  : std_logic;
   --signal button1_synced : std_logic_vector(2 downto 0);
-
-  signal ext_cfg_slave_out    : t_wishbone_slave_out;
-  signal ext_cfg_slave_in     : t_wishbone_slave_in;
-
-  signal ext_src_out : t_wrf_source_out;
-  signal ext_src_in  : t_wrf_source_in;
-  signal ext_snk_out : t_wrf_sink_out;
-  signal ext_snk_in  : t_wrf_sink_in;
 
   signal wrc_slave_i : t_wishbone_slave_in;
   signal wrc_slave_o : t_wishbone_slave_out;
@@ -291,51 +220,6 @@ constant c_ext_sdb : t_sdb_device := (
     version   => x"00000001",
     date      => x"20160424",
     name      => "WR-EXT-CONFIG      ")));
-
-component xwb_udp_core is
-port(
-    clk_ref : in std_logic;
-    clk_sys  : in std_logic;
-    rst_n_i : IN std_logic;
-
-    snk_i : in  t_wrf_sink_in;
-    snk_o : out t_wrf_sink_out;
-    udp_rx_data: out std_logic_vector(7 downto 0);
-    udp_rx_data_valid: out std_logic;
-    udp_rx_sof: out std_logic;
-    udp_rx_eof: out std_logic;
-
-    src_o : out t_wrf_source_out;
-    src_i : in  t_wrf_source_in;
-
-    udp_tx_data: in std_logic_vector(7 downto 0);
-    udp_tx_data_valid: in std_logic;
-    udp_tx_sof: in std_logic;
-    udp_tx_eof: in std_logic;
-    udp_tx_cts: out std_logic;
-    udp_tx_ack: out std_logic;
-    udp_tx_nak: out std_logic;
-
-    udp_tx_dest_ip_addr:    in std_logic_vector(127 downto 0);
-    udp_tx_dest_port_no:    in std_logic_vector(15 downto 0);
-
-    ext_cfg_slave_in : in t_wishbone_slave_in;
-    ext_cfg_slave_out : out t_wishbone_slave_out
-);
-end component;
-
-  signal xwb_udp_tx_data: std_logic_vector(7 downto 0) := (others => '0');
-  signal xwb_udp_tx_data_valid: std_logic := '0';
-  signal xwb_udp_tx_sof: std_logic := '0';
-  signal xwb_udp_tx_eof: std_logic := '0';
-  signal xwb_udp_tx_cts: std_logic;
-  signal xwb_udp_tx_ack: std_logic;
-  signal xwb_udp_tx_nak: std_logic;
-
-  signal xwb_udp_rx_data: std_logic_vector(7 downto 0);
-  signal xwb_udp_rx_data_valid: std_logic;
-  signal xwb_udp_rx_sof: std_logic;
-  signal xwb_udp_rx_eof: std_logic;
 
   constant c_null_sdb : t_sdb_device := (
     abi_class     => x"0000",              -- undocumented device
@@ -505,100 +389,6 @@ clk_dmtd          <= clk_dmtd_i;
 gtp_dedicated_clk <= clk_gtp_i;
 clk_125m_pllref   <= clk_ref_i;
 
-  ------------------------------------------------------------------------------
-  -- Active high reset
-  ------------------------------------------------------------------------------
-  --rst <= not(L_RST_N);
-
-  ------------------------------------------------------------------------------
-  -- GN4124 interface
-  ------------------------------------------------------------------------------
-  --cmp_gn4124_core : gn4124_core
-  --  port map
-  --  (
-  --    ---------------------------------------------------------
-  --    -- Control and status
-  --    rst_n_a_i => L_RST_N,
-  --    status_o  => open,
-
-  --    ---------------------------------------------------------
-  --    -- P2L Direction
-  --    --
-  --    -- Source Sync DDR related signals
-  --    p2l_clk_p_i  => P2L_CLKp,
-  --    p2l_clk_n_i  => P2L_CLKn,
-  --    p2l_data_i   => P2L_DATA,
-  --    p2l_dframe_i => P2L_DFRAME,
-  --    p2l_valid_i  => P2L_VALID,
-  --    -- P2L Control
-  --    p2l_rdy_o    => P2L_RDY,
-  --    p_wr_req_i   => P_WR_REQ,
-  --    p_wr_rdy_o   => P_WR_RDY,
-  --    rx_error_o   => RX_ERROR,
-  --    vc_rdy_i     => VC_RDY,
-
-  --    ---------------------------------------------------------
-  --    -- L2P Direction
-  --    --
-  --    -- Source Sync DDR related signals
-  --    l2p_clk_p_o  => L2P_CLKp,
-  --    l2p_clk_n_o  => L2P_CLKn,
-  --    l2p_data_o   => L2P_DATA,
-  --    l2p_dframe_o => L2P_DFRAME,
-  --    l2p_valid_o  => L2P_VALID,
-  --    -- L2P Control
-  --    l2p_edb_o    => L2P_EDB,
-  --    l2p_rdy_i    => L2P_RDY,
-  --    l_wr_rdy_i   => L_WR_RDY,
-  --    p_rd_d_rdy_i => P_RD_D_RDY,
-  --    tx_error_i   => TX_ERROR,
-
-  --    ---------------------------------------------------------
-  --    -- Interrupt interface
-  --    dma_irq_o => open,
-  --    irq_p_i   => '0',
-  --    irq_p_o   => GPIO(0),
-
-  --    ---------------------------------------------------------
-  --    -- DMA registers wishbone interface (slave classic)
-  --    dma_reg_clk_i => clk_sys,
-  --    dma_reg_adr_i => (others=>'0'),
-  --    dma_reg_dat_i => (others=>'0'),
-  --    dma_reg_sel_i => (others=>'0'),
-  --    dma_reg_stb_i => '0',
-  --    dma_reg_we_i  => '0',
-  --    dma_reg_cyc_i => '0',
-
-  --    ---------------------------------------------------------
-  --    -- CSR wishbone interface (master pipelined)
-  --    csr_clk_i   => clk_sys,
-  --    csr_adr_o   => wb_adr,
-  --    csr_dat_o   => genum_wb_out.dat,
-  --    csr_sel_o   => genum_wb_out.sel,
-  --    csr_stb_o   => genum_wb_out.stb,
-  --    csr_we_o    => genum_wb_out.we,
-  --    csr_cyc_o   => genum_wb_out.cyc,
-  --    csr_dat_i   => genum_wb_in.dat,
-  --    csr_ack_i   => genum_wb_in.ack,
-  --    csr_stall_i => genum_wb_in.stall,
-  --    csr_err_i   => genum_wb_in.err,
-  --    csr_rty_i   => genum_wb_in.rty,
-  --    csr_int_i   => genum_wb_in.int,
-
-  --    ---------------------------------------------------------
-  --    -- L2P DMA Interface (Pipelined Wishbone master)
-  --    dma_clk_i => clk_sys,
-  --    dma_dat_i => (others=>'0'),
-  --    dma_ack_i => '1',
-  --    dma_stall_i => '0',
-  --    dma_err_i => '0',
-  --    dma_rty_i => '0',
-  --    dma_int_i => '0');
-
-  --genum_wb_out.adr(1 downto 0)   <= (others => '0');
-  --genum_wb_out.adr(18 downto 2)  <= wb_adr(16 downto 0);
-  --genum_wb_out.adr(31 downto 19) <= (others => '0');
-
 led_test <= led_divider(23);
 
 process(clk_sys)
@@ -721,13 +511,13 @@ port map (
     etherbone_snk_o => etherbone_src_in,
     etherbone_snk_i => etherbone_src_out,
 
-    ext_cfg_master_o=> ext_cfg_slave_in,
-    ext_cfg_master_i=> ext_cfg_slave_out,
+    ext_cfg_master_o=> ext_cfg_master_out,
+    ext_cfg_master_i=> ext_cfg_master_in,
 
-    ext_src_o => ext_snk_in,
-    ext_src_i => ext_snk_out,
-    ext_snk_o => ext_src_in,
-    ext_snk_i => ext_src_out,
+    ext_src_o => ext_src_o,
+    ext_src_i => ext_src_i,
+    ext_snk_o => ext_snk_o,
+    ext_snk_i => ext_snk_i,
 
     tm_dac_value_o       => open,
     tm_dac_wr_o          => open,
@@ -742,6 +532,7 @@ port map (
     rst_aux_n_o => etherbone_rst_n
 );
 
+Etherbone_GEN: if (g_etherbone_enable = True) generate
 Etherbone : eb_slave_core
 generic map (
     g_sdb_address => x"0000000000030000")
@@ -773,6 +564,7 @@ port map (
     slave_o(0)  => etherbone_wb_in,
     master_i(0) => wrc_slave_o,
     master_o(0) => wrc_slave_i);
+end generate;
 
   ---------------------
 
@@ -840,114 +632,5 @@ port map (
     dac_sclk_o    => dac_sclk_o,
     dac_din_o     => dac_din_o
 );
-
-
-  --U_Extend_PPS : gc_extend_pulse
-  --  generic map (
-  --    g_width => 10000000)
-  --  port map (
-  --    clk_i      => clk_125m_pllref,
-  --    rst_n_i    => local_reset_n,
-  --    pulse_i    => pps_led,
-  --    extended_o => dio_led_top_o);
-
-
-  --gen_dio_iobufs : for i in 0 to 4 generate
-  --  U_ibuf : IBUFDS
-  --    generic map (
-  --      DIFF_TERM => true)
-  --    port map (
-  --      O  => dio_in(i),
-  --      I  => dio_p_i(i),
-  --      IB => dio_n_i(i)
-  --      );
-
-  --  U_obuf : OBUFDS
-  --    port map (
-  --      I  => dio_out(i),
-  --      O  => dio_p_o(i),
-  --      OB => dio_n_o(i)
-  --      );
-  --end generate gen_dio_iobufs;
-
-  --U_input_buffer : IBUFGDS
-  --  generic map (
-  --    DIFF_TERM => true)
-  --  port map (
-  --    O  => clk_ext,
-  --    I  => dio_clk_p_i,
-  --    IB => dio_clk_n_i
-  --    );
-
-  --dio_led_bot_o <= '0';
-
-  --process(clk_125m_pllref)
-  --begin
-  --  if rising_edge(clk_125m_pllref) then
-  --    clk_ref_div2 <= not clk_ref_div2;
-  --  end if;
-  --end process;
-
-  --dio_out(0) <= pps;
-  --dio_out(1) <= clk_ref_div2;
-
-  --dio_oe_n_o(0)          <= '0';
-  --dio_oe_n_o(2 downto 1) <= (others => '0');
-  --dio_oe_n_o(3)          <= '1';        -- for external 1-PPS
-  --dio_oe_n_o(4)          <= '1';        -- for external 10MHz clock
-
-  --dio_onewire_b <= '0' when owr_en(1) = '1' else 'Z';
-  --owr_i(1)      <= dio_onewire_b;
-
-  --dio_term_en_o <= (others => '0');
-
-  --dio_sdn_ck_n_o <= '1';
-  --dio_sdn_n_o    <= '1';
-
---------------------------------------------------------------------------
---  -- udp core modules --
---------------------------------------------------------------------------
-Inst_wb_udp_core : xwb_udp_core
-port map(
-    clk_ref     => clk_ref_i,
-    clk_sys     => clk_sys_i,
-    rst_n_i     => local_reset_n,
-    ext_cfg_slave_in => ext_cfg_slave_in,
-    ext_cfg_slave_out => ext_cfg_slave_out,
-    snk_i       => ext_snk_in,
-    snk_o       => ext_snk_out,
-    src_o       => ext_src_out,
-    src_i       => ext_src_in,
-
-    udp_rx_data       => xwb_udp_rx_data,
-    udp_rx_data_valid => xwb_udp_rx_data_valid,
-    udp_rx_sof        => xwb_udp_rx_sof,
-    udp_rx_eof        => xwb_udp_rx_eof,
-
-    udp_tx_data       => xwb_udp_tx_data,
-    udp_tx_data_valid => xwb_udp_tx_data_valid,
-    udp_tx_sof        => xwb_udp_tx_sof,
-    udp_tx_eof        => xwb_udp_tx_eof,
-    udp_tx_cts        => xwb_udp_tx_cts,
-    udp_tx_ack        => xwb_udp_tx_ack,
-    udp_tx_nak        => xwb_udp_tx_nak,
-
-    udp_tx_dest_ip_addr   => udp_tx_dest_ip_addr,
-    udp_tx_dest_port_no   => udp_tx_dest_port_no
-);
-
-    udp_rx_data         <= xwb_udp_rx_data;
-    udp_rx_data_valid   <= xwb_udp_rx_data_valid;
-    udp_rx_sof          <= xwb_udp_rx_sof;
-    udp_rx_eof          <= xwb_udp_rx_eof;
-
-
-    xwb_udp_tx_data       <= udp_tx_data;
-    xwb_udp_tx_data_valid <= udp_tx_data_valid;
-    xwb_udp_tx_sof        <= udp_tx_sof;
-    xwb_udp_tx_eof        <= udp_tx_eof;
-    udp_tx_cts            <= xwb_udp_tx_cts;
-    udp_tx_ack            <= xwb_udp_tx_ack;
-    udp_tx_nak            <= xwb_udp_tx_nak;
 
 end rtl;
