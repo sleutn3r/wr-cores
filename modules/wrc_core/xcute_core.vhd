@@ -208,40 +208,37 @@ entity xcute_core is
     -----------------------------------------
     -- Auxillary WB master
     -----------------------------------------
-    aux1_master_o   : out t_wishbone_master_out;
-    aux1_master_i	   : in t_wishbone_master_in;
-	
-	  aux2_master_o   : out t_wishbone_master_out;
-    aux2_master_i	   : in t_wishbone_master_in;
+    aux_master_o   : out t_wishbone_master_out;
+    aux_master_i	   : in t_wishbone_master_in:=cc_unused_master_in;
 	
 	  -----------------------------------------
     -- EtherBone cfg
     -----------------------------------------	
     etherbone_cfg_master_o   : out t_wishbone_master_out;
-    etherbone_cfg_master_i   : in t_wishbone_master_in;
+    etherbone_cfg_master_i   : in t_wishbone_master_in:=cc_unused_master_in;
 
     -----------------------------------------
     -- EtherBone Fabric I/F
     -----------------------------------------
-    etherbone_snk_i   : in t_wrf_sink_in;
+    etherbone_snk_i   : in t_wrf_sink_in:=c_dummy_snk_in;
     etherbone_snk_o   : out t_wrf_sink_out;
 
-    etherbone_src_i   : in  t_wrf_source_in;
+    etherbone_src_i   : in  t_wrf_source_in:=c_dummy_src_in;
     etherbone_src_o   : out t_wrf_source_out;
 
 	  -----------------------------------------
     -- External cfg
     -----------------------------------------	
     ext_cfg_master_o   : out t_wishbone_master_out;
-    ext_cfg_master_i   : in  t_wishbone_master_in;
+    ext_cfg_master_i   : in  t_wishbone_master_in:=cc_unused_master_in;
     
     -----------------------------------------
     -- External Fabric I/F
     -----------------------------------------
-    ext_snk_i   : in t_wrf_sink_in;
+    ext_snk_i   : in t_wrf_sink_in:=c_dummy_snk_in;
     ext_snk_o   : out t_wrf_sink_out;
 
-    ext_src_i   : in  t_wrf_source_in;
+    ext_src_i   : in  t_wrf_source_in:=c_dummy_src_in;
     ext_src_o   : out t_wrf_source_out;
 
     -----------------------------------------
@@ -377,7 +374,7 @@ architecture struct of xcute_core is
   -----------------------------------------------------------------------------
   --WB Secondary Crossbar
   -----------------------------------------------------------------------------
-  constant c_nr_slaves_secbar : natural := 10;
+  constant c_nr_slaves_secbar : natural := 9;
   constant c_secbar_layout : t_sdb_record_array(c_nr_slaves_secbar-1 downto 0) :=
     (0 => f_sdb_embed_device(c_xwr_mini_nic_sdb, x"00000000"),
      1 => f_sdb_embed_device(c_xwr_endpoint_sdb, x"00000100"),
@@ -386,9 +383,9 @@ architecture struct of xcute_core is
      4 => f_sdb_embed_device(c_wrc_periph0_sdb, x"00000400"),  -- Syscon
      5 => f_sdb_embed_device(c_wrc_periph1_sdb, x"00000500"),  -- UART
      6 => f_sdb_embed_device(c_wrc_periph2_sdb, x"00000600"),  -- 1-Wire
-     7 => f_sdb_embed_device(g_ext_cfg_sdb, x"00000700"),    -- ext cfg
-     8 => f_sdb_embed_device(g_aux1_sdb, x"00000800"),          -- aux1 WB bus 
-	 9 => f_sdb_embed_device(g_aux2_sdb, x"00000900")          -- aux2 WB bus 
+--     7 => f_sdb_embed_device(g_etherbone_cfg_sdb, x"00000700"),    -- etherbone cfg
+		 7 => f_sdb_embed_device(g_ext_cfg_sdb, x"00000700"),    -- ext cfg
+     8 => f_sdb_embed_device(g_aux1_sdb, x"00000800")          -- aux1 WB bus 
      );
 
   constant c_secbar_sdb_address : t_wishbone_address := x"00001000";
@@ -938,11 +935,8 @@ begin
   ext_cfg_master_o <= secbar_master_o(7);
   secbar_master_i(7)   <= ext_cfg_master_i;
   
-  aux1_master_o <= secbar_master_o(8);
-  secbar_master_i(8)   <= aux1_master_i;
-  
-  aux2_master_o <= secbar_master_o(9);
-  secbar_master_i(9)   <= aux2_master_i;
+  aux_master_o <= secbar_master_o(8);
+  secbar_master_i(8)   <= aux_master_i;
 
   --secbar_master_i(6).err <= '0';
   --secbar_master_i(5).err <= '0';

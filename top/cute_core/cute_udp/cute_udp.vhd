@@ -97,8 +97,10 @@ entity cute_udp is
       ext_src_o : out t_wrf_source_out;
       ext_src_i : in  t_wrf_source_in;
 
-      ext_cfg_master_in : in t_wishbone_master_in;
-      ext_cfg_master_out : out t_wishbone_master_out
+      ext_cfg_master_i : in t_wishbone_master_in:=cc_unused_master_in;
+      ext_cfg_master_o : out t_wishbone_master_out;
+			aux_master_i : in t_wishbone_master_in:=cc_dummy_master_in;
+      aux_master_o : out t_wishbone_master_out
       );
 
 end cute_udp;
@@ -196,7 +198,7 @@ architecture rtl of cute_udp is
   signal etherbone_wb_out  : t_wishbone_master_out;
   signal etherbone_wb_in   : t_wishbone_master_in;
   signal etherbone_cfg_slave_in  : t_wishbone_slave_in;
-  signal etherbone_cfg_slave_out : t_wishbone_slave_out;
+  signal etherbone_cfg_slave_out : t_wishbone_slave_out:=cc_unused_master_in;
 
   --signal ext_pll_reset : std_logic;
   --signal clk_ext, clk_ext_mul       : std_logic;
@@ -236,6 +238,22 @@ constant c_ext_sdb : t_sdb_device := (
         version   => x"00000001",
         date      => x"20160324",
         name      => "WR-NULL            ")));
+  
+	constant c_wrc_tdc_cm_sdb : t_sdb_device := (
+    abi_class     => x"0000",              -- undocumented device
+    abi_ver_major => x"01",
+    abi_ver_minor => x"01",
+    wbd_endian    => c_sdb_endian_big,
+    wbd_width     => x"7",                 -- 8/16/32-bit port granularity
+    sdb_component => (
+      addr_first  => x"0000000000000000",
+      addr_last   => x"00000000000000ff",
+      product     => (
+        vendor_id => x"0000000000001103",  -- THU
+        device_id => x"f0443598",
+        version   => x"00000001",
+        date      => x"20160419",
+        name      => "WR-TDC-CONTROL     ")));
 
 begin
 
@@ -428,7 +446,7 @@ generic map (
     g_dpram_initf               => "",
     g_etherbone_cfg_sdb         => c_etherbone_sdb,
     g_ext_cfg_sdb               => c_ext_sdb,
-    g_aux1_sdb                  => c_null_sdb,
+    g_aux1_sdb                  => c_wrc_tdc_cm_sdb,
     g_aux2_sdb                  => c_null_sdb,
     g_dpram_size                => 131072/4,
     g_interface_mode            => PIPELINED,
@@ -497,11 +515,8 @@ port map (
     wrc_slave_i => wrc_slave_i,
     wrc_slave_o => wrc_slave_o,
 
-    aux1_master_o => open,
-    aux1_master_i => open,
-
-    aux2_master_o => open,
-    aux2_master_i => open,
+    aux_master_o => aux_master_o,
+    aux_master_i => aux_master_i,
 
     etherbone_cfg_master_o=> etherbone_cfg_slave_in,
     etherbone_cfg_master_i=> etherbone_cfg_slave_out,
@@ -511,8 +526,8 @@ port map (
     etherbone_snk_o => etherbone_src_in,
     etherbone_snk_i => etherbone_src_out,
 
-    ext_cfg_master_o=> ext_cfg_master_out,
-    ext_cfg_master_i=> ext_cfg_master_in,
+    ext_cfg_master_o=> ext_cfg_master_o,
+    ext_cfg_master_i=> ext_cfg_master_i,
 
     ext_src_o => ext_src_o,
     ext_src_i => ext_src_i,

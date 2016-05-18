@@ -741,11 +741,8 @@ component xcute_core is
       wrc_slave_i : in  t_wishbone_slave_in := cc_dummy_slave_in;
       wrc_slave_o : out t_wishbone_slave_out;
 
-      aux1_master_o : out t_wishbone_master_out;
-      aux1_master_i : in  t_wishbone_master_in := cc_unused_master_in;
-
-      aux2_master_o : out t_wishbone_master_out;
-      aux2_master_i : in  t_wishbone_master_in := cc_unused_master_in;
+      aux_master_o : out t_wishbone_master_out;
+      aux_master_i : in  t_wishbone_master_in := cc_unused_master_in;
 
       etherbone_cfg_master_o : out t_wishbone_master_out;
       etherbone_cfg_master_i : in  t_wishbone_master_in := cc_unused_master_in;
