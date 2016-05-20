@@ -232,7 +232,7 @@ run.tcl \
 ../../../modules/wrc_core/wrc_syscon_pkg.vhd \
 ../../../modules/wr_eca/eca_queue_channel.vhd \
 ../../../modules/wr_endpoint/ep_rx_buffer.vhd \
-../../../top/cute_main/cute_wrc/cute_wrc.vhd \
+../../../top/cute_wrc/ngc_gen/cute_wrc.vhd \
 ../../../ip_cores/general-cores/platform/xilinx/wb_xil_multiboot/xwb_xil_multiboot.vhd \
 ../../../ip_cores/etherbone-core/hdl/eb_slave_core/etherbone_pkg.vhd \
 ../../../modules/wr_tcp_wb/mac_to_c5402.vhd \
