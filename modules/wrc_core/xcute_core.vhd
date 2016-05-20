@@ -2,43 +2,43 @@
 -- Project    : WhiteRabbit
 -------------------------------------------------------------------------------
 -- File       : xcute_core.vhd
--- Author     : hongming
--- Company    : tsinghua
+-- Author     : hongming 
+-- Company    : tsinghua 
 -- Created    : 2016-02-02
 -- Last update: 2016-03-15
 -- Platform   : FPGA-generics
 -- Standard   : VHDL
 -------------------------------------------------------------------------------
 -- Description:
--- WR PTP Core is a HDL module implementing a complete gigabit Ethernet
--- interface (MAC + PCS + PHY) with integrated PTP slave ordinary clock
--- compatible with White Rabbit protocol. It performs subnanosecond clock
--- synchronization via WR protocol and also acts as an Ethernet "gateway",
+-- WR PTP Core is a HDL module implementing a complete gigabit Ethernet 
+-- interface (MAC + PCS + PHY) with integrated PTP slave ordinary clock 
+-- compatible with White Rabbit protocol. It performs subnanosecond clock 
+-- synchronization via WR protocol and also acts as an Ethernet "gateway", 
 -- providing access to TX/RX interfaces of the built-in WR MAC.
 --
 -- Starting from version 2.0 all modules are interconnected with pipelined
--- wishbone interface (using wb crossbars). Separate pipelined wishbone bus is
--- used for passing packets between Endpoint, Mini-NIC and External
+-- wishbone interface (using wb crossbars). Separate pipelined wishbone bus is 
+-- used for passing packets between Endpoint, Mini-NIC and External 
 -- MAC interface.
 -------------------------------------------------------------------------------
 --
 -- Copyright (c) 2011, 2012 Elproma Elektronika
 -- Copyright (c) 2012, 2013 CERN
 --
--- This source file is free software; you can redistribute it
--- and/or modify it under the terms of the GNU Lesser General
--- Public License as published by the Free Software Foundation;
--- either version 2.1 of the License, or (at your option) any
--- later version.
+-- This source file is free software; you can redistribute it   
+-- and/or modify it under the terms of the GNU Lesser General   
+-- Public License as published by the Free Software Foundation; 
+-- either version 2.1 of the License, or (at your option) any   
+-- later version.                                               
 --
--- This source is distributed in the hope that it will be
--- useful, but WITHOUT ANY WARRANTY; without even the implied
--- warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
--- PURPOSE.  See the GNU Lesser General Public License for more
--- details.
+-- This source is distributed in the hope that it will be       
+-- useful, but WITHOUT ANY WARRANTY; without even the implied   
+-- warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR      
+-- PURPOSE.  See the GNU Lesser General Public License for more 
+-- details.                                                     
 --
--- You should have received a copy of the GNU Lesser General
--- Public License along with this source; if not, download it
+-- You should have received a copy of the GNU Lesser General    
+-- Public License along with this source; if not, download it   
 -- from http://www.gnu.org/licenses/lgpl-2.1.html
 --
 -------------------------------------------------------------------------------
@@ -63,8 +63,7 @@
 --      +0x500: UART
 --      +0x600: OneWire
 --      +0x700: Auxillary space (Etherbone config, etc)
---      >0x800: Auxillary space (Ext config)
---      +0x900: Auxillary space (others)
+--      >0x800: Auxillary space (Others)
 
 library ieee;
 use ieee.std_logic_1164.all;
@@ -81,7 +80,7 @@ use work.softpll_pkg.all;
 
 entity xcute_core is
   generic(
-    --if set to 1, then blocks in PCS use smaller calibration counter to speed
+    --if set to 1, then blocks in PCS use smaller calibration counter to speed 
     --up simulation
     g_simulation                : integer                        := 0;
     g_with_external_clock_input : boolean                        := true;
@@ -211,10 +210,10 @@ entity xcute_core is
     -----------------------------------------
     aux_master_o   : out t_wishbone_master_out;
     aux_master_i	   : in t_wishbone_master_in:=cc_unused_master_in;
-
+	
 	  -----------------------------------------
     -- EtherBone cfg
-    -----------------------------------------
+    -----------------------------------------	
     etherbone_cfg_master_o   : out t_wishbone_master_out;
     etherbone_cfg_master_i   : in t_wishbone_master_in:=cc_unused_master_in;
 
@@ -229,10 +228,10 @@ entity xcute_core is
 
 	  -----------------------------------------
     -- External cfg
-    -----------------------------------------
+    -----------------------------------------	
     ext_cfg_master_o   : out t_wishbone_master_out;
     ext_cfg_master_i   : in  t_wishbone_master_in:=cc_unused_master_in;
-
+    
     -----------------------------------------
     -- External Fabric I/F
     -----------------------------------------
@@ -386,7 +385,7 @@ architecture struct of xcute_core is
      6 => f_sdb_embed_device(c_wrc_periph2_sdb, x"00000600"),  -- 1-Wire
 --     7 => f_sdb_embed_device(g_etherbone_cfg_sdb, x"00000700"),    -- etherbone cfg
 		 7 => f_sdb_embed_device(g_ext_cfg_sdb, x"00000700"),    -- ext cfg
-     8 => f_sdb_embed_device(g_aux1_sdb, x"00000800")          -- aux1 WB bus
+     8 => f_sdb_embed_device(g_aux1_sdb, x"00000800")          -- aux1 WB bus 
      );
 
   constant c_secbar_sdb_address : t_wishbone_address := x"00001000";
@@ -717,7 +716,7 @@ begin
 
   -----------------------------------------------------------------------------
   -- LM32
-  -----------------------------------------------------------------------------
+  -----------------------------------------------------------------------------  
   LM32_CORE : xwb_lm32
     generic map(g_profile => "medium_icache_debug")
     port map(
@@ -733,7 +732,7 @@ begin
 
   -----------------------------------------------------------------------------
   -- Dual-port RAM
-  -----------------------------------------------------------------------------
+  -----------------------------------------------------------------------------  
   DPRAM : xwb_dpram
     generic map(
       g_size                  => g_dpram_size,
@@ -742,7 +741,7 @@ begin
       g_slave1_interface_mode => PIPELINED,
       g_slave2_interface_mode => PIPELINED,
       g_slave1_granularity    => BYTE,
-      g_slave2_granularity    => WORD)
+      g_slave2_granularity    => WORD)  
     port map(
       clk_sys_i => clk_sys_i,
       rst_n_i   => rst_n_i,
@@ -833,7 +832,7 @@ begin
       g_wraparound  => true,
       g_layout      => c_layout,
       g_sdb_addr    => c_sdb_address
-      )
+      )  
     port map(
       clk_sys_i => clk_sys_i,
       rst_n_i   => rst_n_i,
@@ -935,7 +934,7 @@ begin
 
   ext_cfg_master_o <= secbar_master_o(7);
   secbar_master_i(7)   <= ext_cfg_master_i;
-
+  
   aux_master_o <= secbar_master_o(8);
   secbar_master_i(8)   <= aux_master_i;
 
@@ -978,14 +977,14 @@ begin
   mux_class(0)  <= x"03";  -- class 0 => LM32  (highest priority)
   mux_class(1)  <= x"3C";  -- class 5 => EtherBone
   mux_class(2)  <= x"C0";  -- class 7 => Ext   (lowest priority)
-
-
+  
+  
   etherbone_src_o <= mux_src_out(1);
   mux_src_in(1)   <= etherbone_src_i;
 
   mux_snk_in(1) <= etherbone_snk_i;
   etherbone_snk_o   <= mux_snk_out(1);
-
+  
   ext_src_o <= mux_src_out(2);
   mux_src_in(2)   <= ext_src_i;
 
@@ -1006,7 +1005,7 @@ begin
   -- ts goes to minic
   mnic_txtsu_stb      <=  '1' when (ep_txtsu_stb = '1' and (ep_txtsu_frame_id  = x"0000")) else
                           '0';
-
+  
   ep_txtsu_ack <= timestamps_ack_i or mnic_txtsu_ack;
 
 end struct;
