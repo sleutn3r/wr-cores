@@ -670,6 +670,7 @@ component xcute_core is
       g_interface_mode            : t_wishbone_interface_mode      := PIPELINED;
       g_address_granularity       : t_wishbone_address_granularity := BYTE;
       g_etherbone_cfg_sdb         : t_sdb_device                   := c_wrc_periph3_sdb;
+      g_ext_cfg_sdb               : t_sdb_device                   := c_wrc_periph3_sdb;
       g_aux1_sdb                   : t_sdb_device                   := c_wrc_periph3_sdb;
       g_aux2_sdb                   : t_sdb_device                   := c_wrc_periph3_sdb;
       g_softpll_enable_debugger   : boolean                        := false;
@@ -740,11 +741,8 @@ component xcute_core is
       wrc_slave_i : in  t_wishbone_slave_in := cc_dummy_slave_in;
       wrc_slave_o : out t_wishbone_slave_out;
 
-      aux1_master_o : out t_wishbone_master_out;
-      aux1_master_i : in  t_wishbone_master_in := cc_unused_master_in;
-
-      aux2_master_o : out t_wishbone_master_out;
-      aux2_master_i : in  t_wishbone_master_in := cc_unused_master_in;
+      aux_master_o : out t_wishbone_master_out;
+      aux_master_i : in  t_wishbone_master_in := cc_unused_master_in;
 
       etherbone_cfg_master_o : out t_wishbone_master_out;
       etherbone_cfg_master_i : in  t_wishbone_master_in := cc_unused_master_in;
@@ -759,6 +757,9 @@ component xcute_core is
       ext_snk_o : out t_wrf_sink_out;
       ext_snk_i : in  t_wrf_sink_in   := c_dummy_snk_in;
 
+      ext_cfg_master_o	: out t_wishbone_master_out;
+      ext_cfg_master_i	: in  t_wishbone_master_in := cc_unused_master_in;
+      
       timestamps_o     : out t_txtsu_timestamp;
       timestamps_ack_i : in  std_logic := '1';
 

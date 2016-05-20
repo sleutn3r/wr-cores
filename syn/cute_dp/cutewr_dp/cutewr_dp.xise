@@ -127,7 +127,7 @@
     <property xil_pn:name="Generate Timegroups Section Post Trace" xil_pn:value="false" xil_pn:valueState="default"/>
     <property xil_pn:name="Generics, Parameters" xil_pn:value="" xil_pn:valueState="default"/>
     <property xil_pn:name="Global Optimization Goal" xil_pn:value="AllClockNets" xil_pn:valueState="default"/>
-    <property xil_pn:name="Global Optimization map spartan6" xil_pn:value="Speed" xil_pn:valueState="non-default"/>
+    <property xil_pn:name="Global Optimization map spartan6" xil_pn:value="Area" xil_pn:valueState="non-default"/>
     <property xil_pn:name="Global Set/Reset Port Name" xil_pn:value="GSR_PORT" xil_pn:valueState="default"/>
     <property xil_pn:name="Global Tristate Port Name" xil_pn:value="GTS_PORT" xil_pn:valueState="default"/>
     <property xil_pn:name="Hierarchy Separator" xil_pn:value="/" xil_pn:valueState="default"/>
@@ -759,7 +759,7 @@
       <association xil_pn:name="Implementation" xil_pn:seqID="27"/>
     </file>
     <file xil_pn:name="../../../top/cute_dp/cutewr_dp/cutewr_dp.vhd" xil_pn:type="FILE_VHDL">
-      <association xil_pn:name="Implementation" xil_pn:seqID="142"/>
+      <association xil_pn:name="Implementation" xil_pn:seqID="141"/>
     </file>
     <file xil_pn:name="../../../ip_cores/general-cores/modules/wishbone/wb_spi/spi_top.v" xil_pn:type="FILE_VERILOG">
       <association xil_pn:name="Implementation" xil_pn:seqID="0"/>
@@ -1272,11 +1272,33 @@
       <association xil_pn:name="BehavioralSimulation" xil_pn:seqID="373"/>
       <association xil_pn:name="Implementation" xil_pn:seqID="132"/>
     </file>
-    <file xil_pn:name="../../../../com5402/src/com5402/com5402pkg.vhd" xil_pn:type="FILE_VHDL">
-      <association xil_pn:name="BehavioralSimulation" xil_pn:seqID="375"/>
-      <association xil_pn:name="Implementation" xil_pn:seqID="141"/>
+    <file xil_pn:name="../../../../tdc/src/tdcpkg.vhd" xil_pn:type="FILE_VHDL">
+      <association xil_pn:name="BehavioralSimulation" xil_pn:seqID="373"/>
+      <association xil_pn:name="Implementation" xil_pn:seqID="0"/>
     </file>
-    <file xil_pn:name="../../../../com5402/syn/xwb_com5402_udp/xwb_com5402.ngc" xil_pn:type="FILE_NGC">
+    <file xil_pn:name="../../../../tdc/src/core/tdc_general_pkg.vhd" xil_pn:type="FILE_VHDL">
+      <association xil_pn:name="BehavioralSimulation" xil_pn:seqID="374"/>
+      <association xil_pn:name="Implementation" xil_pn:seqID="0"/>
+    </file>
+    <file xil_pn:name="../../../top/cute_dp/cutewr_dp/tdc_read.vhd" xil_pn:type="FILE_VHDL">
+      <association xil_pn:name="BehavioralSimulation" xil_pn:seqID="375"/>
+      <association xil_pn:name="Implementation" xil_pn:seqID="0"/>
+    </file>
+    <file xil_pn:name="../../../../../calib_node/cute-dp-tdc-core/modules/wr_tdc_cm/tdc_cm_wb.vhd" xil_pn:type="FILE_VHDL">
+      <association xil_pn:name="BehavioralSimulation" xil_pn:seqID="378"/>
+      <association xil_pn:name="Implementation" xil_pn:seqID="0"/>
+    </file>
+    <file xil_pn:name="../../../../../calib_node/cute-dp-tdc-core/modules/wr_tdc_cm/wr_tdc_cm.vhd" xil_pn:type="FILE_VHDL">
+      <association xil_pn:name="BehavioralSimulation" xil_pn:seqID="379"/>
+      <association xil_pn:name="Implementation" xil_pn:seqID="0"/>
+    </file>
+    <file xil_pn:name="/home/hm/wr/wrDPCUTE/new_calib_node/tdc/src/buffers/rom_32bx32/ipcore_dir/rom_32bx32.ngc" xil_pn:type="FILE_NGC">
+      <association xil_pn:name="Implementation" xil_pn:seqID="0"/>
+    </file>
+    <file xil_pn:name="../../../../xwb_tdc/syn/dp_tdc/tdc_top.ngc" xil_pn:type="FILE_NGC">
+      <association xil_pn:name="Implementation" xil_pn:seqID="0"/>
+    </file>
+    <file xil_pn:name="../../../../../../wrCOM5402/syn/sp6-lx45t-csg324/xwb_com5402_udp/xwb_com5402.ngc" xil_pn:type="FILE_NGC">
       <association xil_pn:name="Implementation" xil_pn:seqID="140"/>
     </file>
   </files>
