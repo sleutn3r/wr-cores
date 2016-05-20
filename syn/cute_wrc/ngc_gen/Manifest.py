@@ -12,7 +12,7 @@ syn_project = "cute_wrc.xise"
 syn_tool = "ise"
 
 modules = { "local" : 
-						[ "../../../top/cute_main/cute_wrc", 
+						[ "../../../top/cute_wrc/ngc_gen", 
 						  "../../../platform" ],
 	    "git" : 
 						[ "git://ohwr.org/hdl-core-lib/general-cores.git",

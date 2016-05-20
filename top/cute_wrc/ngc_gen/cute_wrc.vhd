@@ -1,7 +1,7 @@
 
-library IEEE;
-use IEEE.STD_LOGIC_1164.all;
-use IEEE.NUMERIC_STD.all;
+library ieee;
+use ieee.std_logic_1164.all;
+use ieee.numeric_std.all;
 
 use work.gn4124_core_pkg.all;
 use work.gencores_pkg.all;
@@ -9,10 +9,9 @@ use work.wrcore_pkg.all;
 use work.wr_fabric_pkg.all;
 use work.wr_xilinx_pkg.all;
 use work.etherbone_pkg.all;
-use work.com5402pkg.all;
 
-library UNISIM;
-use UNISIM.vcomponents.all;
+library unisim;
+use unisim.vcomponents.all;
 
 library work;
 use work.wishbone_pkg.all;
@@ -21,14 +20,14 @@ use work.wishbone_pkg.all;
 entity cute_wrc is
   generic
     (
-      g_etherbone_enable: boolean:= False
+      g_etherbone_enable: boolean:= false
      );
   port
     (
-      clk_sys_i     : in std_logic;     -- 62.5M system clock, from PLL drived by clk_125m_pllref
-      clk_dmtd_i    : in std_logic;     -- 62.5M DMTD clock, from PLL drived by clk_20m_vcxo
-      clk_ref_i     : in std_logic;     -- 125M reference clock
-      clk_gtp_i     : in std_logic;     -- Dedicated clock for Xilinx GTP transceiver
+      clk_sys_i     : in std_logic;     -- 62.5m system clock, from pll drived by clk_125m_pllref
+      clk_dmtd_i    : in std_logic;     -- 62.5m dmtd clock, from pll drived by clk_20m_vcxo
+      clk_ref_i     : in std_logic;     -- 125m reference clock
+      clk_gtp_i     : in std_logic;     -- dedicated clock for xilinx gtp transceiver
 
       rst_n_i  		: in std_logic;
 
@@ -48,19 +47,19 @@ entity cute_wrc is
       fpga_sda_i : in  std_logic;
       fpga_sda_o : out std_logic;
 
-      --button1_i : in std_logic := 'H';
-      --button2_i : in std_logic := 'H';
+      --button1_i : in std_logic := 'h';
+      --button2_i : in std_logic := 'h';
 
       --spi_sclk_o : out std_logic;
       --spi_ncs_o  : out std_logic;
       --spi_mosi_o : out std_logic;
-      --spi_miso_i : in  std_logic := 'L';
+      --spi_miso_i : in  std_logic := 'l';
 
       thermo_id_i : in  std_logic;
-      thermo_id_o : out std_logic;      -- 1-Wire interface to DS18B20
+      thermo_id_o : out std_logic;      -- 1-wire interface to ds18b20
 
       -------------------------------------------------------------------------
-      -- SFP pins
+      -- sfp pins
       -------------------------------------------------------------------------
 
       sfp_txp_o : out std_logic;
@@ -86,7 +85,7 @@ entity cute_wrc is
       tm_cycles_o          : out std_logic_vector(27 downto 0);
 
       -----------------------------------------
-      --UART
+      --uart
       -----------------------------------------
       uart_rxd_i : in  std_logic;
       uart_txd_o : out std_logic;
@@ -108,7 +107,7 @@ end cute_wrc;
 architecture rtl of cute_wrc is
 
   ------------------------------------------------------------------------------
-  -- Components declaration
+  -- components declaration
   ------------------------------------------------------------------------------
   component ext_pll_10_to_125m
     port (
@@ -120,17 +119,17 @@ architecture rtl of cute_wrc is
   end component;
 
   ------------------------------------------------------------------------------
-  -- Signals declaration
+  -- signals declaration
   ------------------------------------------------------------------------------
 
-  -- Dedicated clock for GTP transceiver
+  -- dedicated clock for gtp transceiver
   signal gtp_dedicated_clk : std_logic;
 
-  -- Reset
+  -- reset
   signal rst_a : std_logic;
   signal rst   : std_logic;
 
-  -- SPI
+  -- spi
   signal spi_slave_select : std_logic_vector(7 downto 0);
 
 
@@ -188,7 +187,7 @@ architecture rtl of cute_wrc is
   signal owr_en : std_logic_vector(1 downto 0);
   signal owr_i  : std_logic_vector(1 downto 0);
 
-  signal wb_adr : std_logic_vector(31 downto 0);  --c_BAR0_APERTURE-priv_log2_ceil(c_CSR_WB_SLAVES_NB+1)-1 downto 0);
+  signal wb_adr : std_logic_vector(31 downto 0);  --c_bar0_aperture-priv_log2_ceil(c_csr_wb_slaves_nb+1)-1 downto 0);
 
   signal etherbone_rst_n   : std_logic;
   signal etherbone_src_out : t_wrf_source_out;
@@ -217,11 +216,11 @@ constant c_ext_sdb : t_sdb_device := (
     addr_first  => x"0000000000000000",
     addr_last   => x"00000000000000ff",
     product     => (
-    vendor_id => x"0000000000001103",  -- THU
+    vendor_id => x"0000000000001103",  -- thu
     device_id => x"c0413599",
     version   => x"00000001",
     date      => x"20160424",
-    name      => "WR-EXT-CONFIG      ")));
+    name      => "wr-ext-config      ")));
 
   constant c_null_sdb : t_sdb_device := (
     abi_class     => x"0000",              -- undocumented device
@@ -233,12 +232,12 @@ constant c_ext_sdb : t_sdb_device := (
       addr_first  => x"0000000000000000",
       addr_last   => x"00000000000000ff",
       product     => (
-        vendor_id => x"0000000000001103",  -- THU
+        vendor_id => x"0000000000001103",  -- thu
         device_id => x"c0403598",
         version   => x"00000001",
         date      => x"20160324",
-        name      => "WR-NULL            ")));
-  
+        name      => "wr-null            ")));
+
 	constant c_wrc_tdc_cm_sdb : t_sdb_device := (
     abi_class     => x"0000",              -- undocumented device
     abi_ver_major => x"01",
@@ -249,15 +248,15 @@ constant c_ext_sdb : t_sdb_device := (
       addr_first  => x"0000000000000000",
       addr_last   => x"00000000000000ff",
       product     => (
-        vendor_id => x"0000000000001103",  -- THU
+        vendor_id => x"0000000000001103",  -- thu
         device_id => x"f0443598",
         version   => x"00000001",
         date      => x"20160419",
-        name      => "WR-TDC-CONTROL     ")));
+        name      => "wr-tdc-control     ")));
 
 begin
 
-  --U_Ext_PLL : ext_pll_10_to_125m
+  --u_ext_pll : ext_pll_10_to_125m
   --  port map (
   --    clk_ext_i        => clk_ext,
   --    clk_ext_mul_o    => clk_ext_mul,
@@ -265,7 +264,7 @@ begin
   --    clk_in_stopped_o => clk_ext_stopped,
   --    locked_o         => clk_ext_mul_locked);
 
-  --U_Extend_EXT_Reset : gc_extend_pulse
+  --u_extend_ext_reset : gc_extend_pulse
   --  generic map (
   --    g_width => 1000)
   --  port map (
@@ -274,71 +273,71 @@ begin
   --    pulse_i    => clk_ext_rst,
   --    extended_o => ext_pll_reset);
 
-  --cmp_sys_clk_pll : PLL_BASE
+  --cmp_sys_clk_pll : pll_base
   --  generic map (
-  --    BANDWIDTH          => "OPTIMIZED",
-  --    CLK_FEEDBACK       => "CLKFBOUT",
-  --    COMPENSATION       => "INTERNAL",
-  --    DIVCLK_DIVIDE      => 1,
-  --    CLKFBOUT_MULT      => 8,
-  --    CLKFBOUT_PHASE     => 0.000,
-  --    CLKOUT0_DIVIDE     => 16,         -- 62.5 MHz
-  --    CLKOUT0_PHASE      => 0.000,
-  --    CLKOUT0_DUTY_CYCLE => 0.500,
-  --    CLKOUT1_DIVIDE     => 16,         -- 125 MHz
-  --    CLKOUT1_PHASE      => 0.000,
-  --    CLKOUT1_DUTY_CYCLE => 0.500,
-  --    CLKOUT2_DIVIDE     => 16,
-  --    CLKOUT2_PHASE      => 0.000,
-  --    CLKOUT2_DUTY_CYCLE => 0.500,
-  --    CLKIN_PERIOD       => 8.0,
-  --    REF_JITTER         => 0.016)
+  --    bandwidth          => "optimized",
+  --    clk_feedback       => "clkfbout",
+  --    compensation       => "internal",
+  --    divclk_divide      => 1,
+  --    clkfbout_mult      => 8,
+  --    clkfbout_phase     => 0.000,
+  --    clkout0_divide     => 16,         -- 62.5 mhz
+  --    clkout0_phase      => 0.000,
+  --    clkout0_duty_cycle => 0.500,
+  --    clkout1_divide     => 16,         -- 125 mhz
+  --    clkout1_phase      => 0.000,
+  --    clkout1_duty_cycle => 0.500,
+  --    clkout2_divide     => 16,
+  --    clkout2_phase      => 0.000,
+  --    clkout2_duty_cycle => 0.500,
+  --    clkin_period       => 8.0,
+  --    ref_jitter         => 0.016)
   --  port map (
-  --    CLKFBOUT => pllout_clk_fb_pllref,
-  --    CLKOUT0  => pllout_clk_sys,
-  --    CLKOUT1  => open,
-  --    CLKOUT2  => open,
-  --    CLKOUT3  => open,
-  --    CLKOUT4  => open,
-  --    CLKOUT5  => open,
-  --    LOCKED   => open,
-  --    RST      => '0',
-  --    CLKFBIN  => pllout_clk_fb_pllref,
-  --    CLKIN    => clk_125m_pllref);
+  --    clkfbout => pllout_clk_fb_pllref,
+  --    clkout0  => pllout_clk_sys,
+  --    clkout1  => open,
+  --    clkout2  => open,
+  --    clkout3  => open,
+  --    clkout4  => open,
+  --    clkout5  => open,
+  --    locked   => open,
+  --    rst      => '0',
+  --    clkfbin  => pllout_clk_fb_pllref,
+  --    clkin    => clk_125m_pllref);
 
-  --cmp_dmtd_clk_pll : PLL_BASE
+  --cmp_dmtd_clk_pll : pll_base
   --  generic map (
-  --    BANDWIDTH          => "OPTIMIZED",
-  --    CLK_FEEDBACK       => "CLKFBOUT",
-  --    COMPENSATION       => "INTERNAL",
-  --    DIVCLK_DIVIDE      => 1,
-  --    CLKFBOUT_MULT      => 50,
-  --    CLKFBOUT_PHASE     => 0.000,
-  --    CLKOUT0_DIVIDE     => 16,         -- 62.5 MHz
-  --    CLKOUT0_PHASE      => 0.000,
-  --    CLKOUT0_DUTY_CYCLE => 0.500,
-  --    CLKOUT1_DIVIDE     => 16,         -- 62.5 MHz
-  --    CLKOUT1_PHASE      => 0.000,
-  --    CLKOUT1_DUTY_CYCLE => 0.500,
-  --    CLKOUT2_DIVIDE     => 8,
-  --    CLKOUT2_PHASE      => 0.000,
-  --    CLKOUT2_DUTY_CYCLE => 0.500,
-  --    CLKIN_PERIOD       => 50.0,
-  --    REF_JITTER         => 0.016)
+  --    bandwidth          => "optimized",
+  --    clk_feedback       => "clkfbout",
+  --    compensation       => "internal",
+  --    divclk_divide      => 1,
+  --    clkfbout_mult      => 50,
+  --    clkfbout_phase     => 0.000,
+  --    clkout0_divide     => 16,         -- 62.5 mhz
+  --    clkout0_phase      => 0.000,
+  --    clkout0_duty_cycle => 0.500,
+  --    clkout1_divide     => 16,         -- 62.5 mhz
+  --    clkout1_phase      => 0.000,
+  --    clkout1_duty_cycle => 0.500,
+  --    clkout2_divide     => 8,
+  --    clkout2_phase      => 0.000,
+  --    clkout2_duty_cycle => 0.500,
+  --    clkin_period       => 50.0,
+  --    ref_jitter         => 0.016)
   --  port map (
-  --    CLKFBOUT => pllout_clk_fb_dmtd,
-  --    CLKOUT0  => pllout_clk_dmtd,
-  --    CLKOUT1  => open,
-  --    CLKOUT2  => open,
-  --    CLKOUT3  => open,
-  --    CLKOUT4  => open,
-  --    CLKOUT5  => open,
-  --    LOCKED   => open,
-  --    RST      => '0',
-  --    CLKFBIN  => pllout_clk_fb_dmtd,
-  --    CLKIN    => clk_20m_vcxo_buf);
+  --    clkfbout => pllout_clk_fb_dmtd,
+  --    clkout0  => pllout_clk_dmtd,
+  --    clkout1  => open,
+  --    clkout2  => open,
+  --    clkout3  => open,
+  --    clkout4  => open,
+  --    clkout5  => open,
+  --    locked   => open,
+  --    rst      => '0',
+  --    clkfbin  => pllout_clk_fb_dmtd,
+  --    clkin    => clk_20m_vcxo_buf);
 
---  U_Reset_Gen : cute_reset_gen
+--  u_reset_gen : cute_reset_gen
 --    port map (
 --      clk_sys_i        => clk_sys,
 --      rst_pcie_n_a_i   => '1',
@@ -347,59 +346,59 @@ begin
 
 local_reset_n <= rst_n_i;
 
-  --cmp_clk_sys_buf : BUFG
+  --cmp_clk_sys_buf : bufg
   --  port map (
-  --    O => clk_sys,
-  --    I => pllout_clk_sys);
+  --    o => clk_sys,
+  --    i => pllout_clk_sys);
 
-  --cmp_clk_dmtd_buf : BUFG
+  --cmp_clk_dmtd_buf : bufg
   --  port map (
-  --    O => clk_dmtd,
-  --    I => pllout_clk_dmtd);
+  --    o => clk_dmtd,
+  --    i => pllout_clk_dmtd);
 
-  --cmp_clk_vcxo : BUFG
+  --cmp_clk_vcxo : bufg
   --  port map (
-  --    O => clk_20m_vcxo_buf,
-  --    I => clk_20m_vcxo_i);
+  --    o => clk_20m_vcxo_buf,
+  --    i => clk_20m_vcxo_i);
 
   --------------------------------------------------------------------------------
-  ---- Local clock from gennum LCLK
+  ---- local clock from gennum lclk
   --------------------------------------------------------------------------------
-  --cmp_l_clk_buf : IBUFDS
+  --cmp_l_clk_buf : ibufds
   --  generic map (
-  --    DIFF_TERM    => false,            -- Differential Termination
-  --    IBUF_LOW_PWR => true,  -- Low power (TRUE) vs. performance (FALSE) setting for referenced I/O standards
-  --    IOSTANDARD   => "DEFAULT")
+  --    diff_term    => false,            -- differential termination
+  --    ibuf_low_pwr => true,  -- low power (true) vs. performance (false) setting for referenced i/o standards
+  --    iostandard   => "default")
   --  port map (
-  --    O  => l_clk,                      -- Buffer output
-  --    I  => L_CLKp,  -- Diff_p buffer input (connect directly to top-level port)
-  --    IB => L_CLKn  -- Diff_n buffer input (connect directly to top-level port)
+  --    o  => l_clk,                      -- buffer output
+  --    i  => l_clkp,  -- diff_p buffer input (connect directly to top-level port)
+  --    ib => l_clkn  -- diff_n buffer input (connect directly to top-level port)
   --    );
 
-  --cmp_pllrefclk_buf : IBUFGDS
+  --cmp_pllrefclk_buf : ibufgds
   --  generic map (
-  --    DIFF_TERM    => true,             -- Differential Termination
-  --    IBUF_LOW_PWR => true,  -- Low power (TRUE) vs. performance (FALSE) setting for referenced I/O standards
-  --    IOSTANDARD   => "DEFAULT")
+  --    diff_term    => true,             -- differential termination
+  --    ibuf_low_pwr => true,  -- low power (true) vs. performance (false) setting for referenced i/o standards
+  --    iostandard   => "default")
   --  port map (
-  --    O  => clk_125m_pllref,            -- Buffer output
-  --    I  => clk_125m_pllref_p_i,  -- Diff_p buffer input (connect directly to top-level port)
-  --    IB => clk_125m_pllref_n_i  -- Diff_n buffer input (connect directly to top-level port)
+  --    o  => clk_125m_pllref,            -- buffer output
+  --    i  => clk_125m_pllref_p_i,  -- diff_p buffer input (connect directly to top-level port)
+  --    ib => clk_125m_pllref_n_i  -- diff_n buffer input (connect directly to top-level port)
   --    );
 
 
   ----------------------------------------------------------------------------------
-  ------ Dedicated clock for GTP
+  ------ dedicated clock for gtp
   ----------------------------------------------------------------------------------
-  --cmp_gtp_dedicated_clk_buf : IBUFGDS
+  --cmp_gtp_dedicated_clk_buf : ibufgds
   --  generic map(
-  --    DIFF_TERM    => true,
-  --    IBUF_LOW_PWR => true,
-  --    IOSTANDARD   => "DEFAULT")
+  --    diff_term    => true,
+  --    ibuf_low_pwr => true,
+  --    iostandard   => "default")
   --  port map (
-  --    O  => gtp_dedicated_clk,
-  --    I  => fpga_pll_ref_clk_101_p_i,
-  --    IB => fpga_pll_ref_clk_101_n_i
+  --    o  => gtp_dedicated_clk,
+  --    i  => fpga_pll_ref_clk_101_p_i,
+  --    ib => fpga_pll_ref_clk_101_n_i
   --    );
 
 clk_sys           <= clk_sys_i;
@@ -432,7 +431,7 @@ end process;
 
   pps_o <= pps;
 
-U_WR_CORE : xcute_core
+u_wr_core : xcute_core
 generic map (
     g_simulation                => 0,
     g_with_external_clock_input => true,
@@ -449,8 +448,8 @@ generic map (
     g_aux1_sdb                  => c_wrc_tdc_cm_sdb,
     g_aux2_sdb                  => c_null_sdb,
     g_dpram_size                => 131072/4,
-    g_interface_mode            => PIPELINED,
-    g_address_granularity       => BYTE)
+    g_interface_mode            => pipelined,
+    g_address_granularity       => byte)
 port map (
     clk_sys_i     => clk_sys,
     clk_dmtd_i    => clk_dmtd,
@@ -489,7 +488,7 @@ port map (
     phy_tx_prbs_sel_o  =>  phy_prbs_sel,
 
     led_act_o  => led_red,
-    led_link_o => LED_GREEN,
+    led_link_o => led_green,
     scl_o      => wrc_scl_o,
     scl_i      => wrc_scl_i,
     sda_o      => wrc_sda_o,
@@ -547,13 +546,13 @@ port map (
     rst_aux_n_o => etherbone_rst_n
 );
 
-Etherbone_GEN: if (g_etherbone_enable = True) generate
-Etherbone : eb_slave_core
+etherbone_gen: if (g_etherbone_enable = true) generate
+etherbone : eb_slave_core
 generic map (
     g_sdb_address => x"0000000000030000")
 port map (
     clk_i       => clk_sys,
-    nRst_i      => etherbone_rst_n,
+    nrst_i      => etherbone_rst_n,
     src_o       => etherbone_src_out,
     src_i       => etherbone_src_in,
     snk_o       => etherbone_snk_out,
@@ -583,7 +582,7 @@ end generate;
 
   ---------------------
 
-U_GTP : wr_gtp_phy_spartan6
+u_gtp : wr_gtp_phy_spartan6
 generic map (
     g_enable_ch0 => 0,
     g_enable_ch1 => 1,
@@ -630,7 +629,7 @@ port map (
     pad_rxp1_i         => sfp_rxp_i
 );
 
-U_DAC_ARB : cute_serial_dac_arb
+u_dac_arb : cute_serial_dac_arb
 generic map (
     g_invert_sclk    => false,
     g_num_extra_bits => 8)
