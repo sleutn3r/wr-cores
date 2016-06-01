@@ -3,7 +3,7 @@
 `ifndef __GN4124_BFM_SVH
  `define __GN4124_BFM_SVH 1
 
-`include "simdrv_defs.svh"
+`include "../../../sim/simdrv_defs.svh"
 
 interface IGN4124PCIMaster;
 

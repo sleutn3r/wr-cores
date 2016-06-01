@@ -1,6 +1,6 @@
 `timescale 1ns/1ps
 
-`include "gn4124_bfm.svh"   
+`include "gn4124_bfm/gn4124_bfm.svh"
 
 const uint64_t BASE_WRPC = 'h0080000;
 
