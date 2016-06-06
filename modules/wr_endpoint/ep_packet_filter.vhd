@@ -6,7 +6,7 @@
 -- Author     : Tomasz Włostowski
 -- Company    : CERN BE-CO-HT
 -- Created    : 2010-11-18
--- Last update: 2014-03-18
+-- Last update: 2016-03-22
 -- Platform   : FPGA-generic
 -- Standard   : VHDL'93
 -------------------------------------------------------------------------------
@@ -42,7 +42,6 @@ use ieee.numeric_std.all;
 use work.gencores_pkg.all;
 use work.genram_pkg.all;
 use work.endpoint_private_pkg.all;
-use work.endpoint_pkg.all;
 use work.ep_wbgen2_pkg.all;
 
 entity ep_packet_filter is
@@ -164,6 +163,8 @@ architecture behavioral of ep_packet_filter is
   signal r_pfcr1_mm_data_lsb : std_logic_vector(11 downto 0);
   
   signal pfcr0_enable_rxclk : std_logic;
+
+  signal rst_n_rx_d: std_logic;
   
 begin  -- behavioral
 
@@ -184,6 +185,13 @@ begin  -- behavioral
       if(regs_i.pfcr1_mm_data_lsb_wr_o = '1') then
         r_pfcr1_mm_data_lsb <= regs_i.pfcr1_mm_data_lsb_o;
       end if;
+    end if;
+  end process;
+
+  process(clk_rx_i)
+  begin
+    if rising_edge(clk_rx_i) then
+      rst_n_rx_d <= rst_n_rx_i;
     end if;
   end process;
 
@@ -220,7 +228,7 @@ begin  -- behavioral
       g_with_byte_enable => false,
       g_dual_clock       => false)
     port map (
-      rst_n_i => rst_n_rx_i,
+      rst_n_i => rst_n_rx_d,
       clka_i  => clk_rx_i,
       bwea_i  => "11",
       wea_i   => snk_fab_i.dvalid,
@@ -241,7 +249,7 @@ begin  -- behavioral
   p_pc_counter : process(clk_rx_i)
   begin
     if rising_edge(clk_rx_i) then
-      if rst_n_rx_i = '0' or snk_fab_i.eof = '1' or snk_fab_i.error = '1' or done_int = '1' then
+      if rst_n_rx_d = '0' or snk_fab_i.eof = '1' or snk_fab_i.error = '1' or done_int = '1' then
         pc     <= (others => '0');
         stage1 <= '0';
       elsif(snk_fab_i.dvalid = '1') then
@@ -256,7 +264,7 @@ begin  -- behavioral
   p_stage2 : process(clk_rx_i)
   begin
     if rising_edge(clk_rx_i) then
-      if rst_n_rx_i = '0' or done_int = '1' or snk_fab_i.error = '1' then
+      if rst_n_rx_d = '0' or done_int = '1' or snk_fab_i.error = '1' then
         stage2 <= '0';
         ir     <= (others => '0');
       else
@@ -311,7 +319,7 @@ begin  -- behavioral
   p_execute : process(clk_rx_i)
   begin
     if rising_edge(clk_rx_i) then
-      if rst_n_rx_i = '0' or snk_fab_i.eof = '1' or snk_fab_i.error = '1' or done_int = '1' then
+      if rst_n_rx_d = '0' or snk_fab_i.eof = '1' or snk_fab_i.error = '1' or done_int = '1' then
         regs <= (others => '0');
       else
         if(stage2 = '1') then
@@ -324,7 +332,7 @@ begin  -- behavioral
   p_gen_status : process(clk_rx_i)
   begin
     if rising_edge(clk_rx_i) then
-      if (rst_n_rx_i = '0' or snk_fab_i.sof = '1') then
+      if (rst_n_rx_d = '0' or snk_fab_i.sof = '1') then
         done_int <= '0';
         drop_o   <= '0';
       else
@@ -332,8 +340,7 @@ begin  -- behavioral
           done_int <= '0';
           drop_o   <= '0';
           pclass_o <= (others => '0');
-        elsif( (stage2 = '1' and insn.fin = '1') or
-               ((snk_fab_i.error = '1' or snk_fab_i.eof = '1') and done_int = '0') ) then
+        elsif((stage2 = '1' and insn.fin = '1') or snk_fab_i.error = '1' or snk_fab_i.eof = '1') then
           done_int <= '1';
           pclass_o <= regs(31 downto 24);
           drop_o   <= regs(23);
