@@ -175,6 +175,28 @@ peripheral {
         align = 13;
       };
 
+      field {
+         name = "Select FMC I2C bus";
+         prefix = "fmc_sel";
+         description = "write 1 : the fmc i2c bus is locked for this peripheral";
+         type = BIT;
+         access_bus = READ_WRITE;
+         access_dev = READ_WRITE;
+         load = LOAD_EXT;
+	 align = 14;
+       };
+  
+      field {
+         name = "FMC I2C bus locked";
+         prefix = "fmc_lck";
+         description = "read 1 : the i2c bus is locked by another peripheral";
+         type = BIT;
+         access_bus = READ_ONLY;
+         access_dev = WRITE_ONLY;
+         load = LOAD_EXT;
+	 align = 15;
+      };
+
    };
 
    reg {
@@ -249,6 +271,14 @@ peripheral {
         description = "write 1: Set SPI MOSI line to 0.";
         type = MONOSTABLE;
         align = 12;
+      };
+
+      field {
+         name = "Select FMC I2C bus";
+         prefix = "fmc_sel";
+         description = "write 1 : Set fmc i2c sel line to 0. Release i2c bus";
+         type = MONOSTABLE;
+         align = 14;
       };
 
    };
