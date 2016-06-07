@@ -6,7 +6,7 @@
 -- Author     : Grzegorz Daniluk
 -- Company    : Elproma
 -- Created    : 2011-04-04
--- Last update: 2016-05-27
+-- Last update: 2016-06-06
 -- Platform   : FPGA-generics
 -- Standard   : VHDL
 -------------------------------------------------------------------------------
@@ -62,6 +62,10 @@ entity wrc_periph is
     memsize_i   : in  std_logic_vector(3 downto 0);
     btn1_i      : in  std_logic;
     btn2_i      : in  std_logic;
+    spi_sclk_o  : out std_logic;
+    spi_ncs_o   : out std_logic;
+    spi_mosi_o  : out std_logic;
+    spi_miso_i  : in  std_logic;
 
     slave_i : in  t_wishbone_slave_in_array(0 to 2);
     slave_o : out t_wishbone_slave_out_array(0 to 2);
@@ -104,7 +108,7 @@ begin
     if rising_edge(clk_sys_i) then
       if(rst_n_i = '0') then
         rst_net_n_o <= '0';
-        rst_wrc_n_o_reg <= '0';
+        rst_wrc_n_o_reg <= '1';
       else
 
         if(sysc_regs_o.rstr_trig_wr_o = '1' and sysc_regs_o.rstr_trig_o = x"deadbee") then
@@ -217,7 +221,7 @@ begin
   sysc_regs_i.gpsr_fmc_sda_i <= sda_i;
   sysc_regs_i.gpsr_fmc_scl_i <= scl_i;
   sysc_regs_i.gpsr_fmc_lck_i <= i2c_lck_i;
-  
+
   -------------------------------------
   -- I2C - SFP
   -------------------------------------
@@ -247,6 +251,43 @@ begin
   sysc_regs_i.gpsr_sfp_scl_i <= sfp_scl_i;
 
   sysc_regs_i.gpsr_sfp_det_i <= sfp_det_i;
+
+  -------------------------------------
+  -- SPI - Flash
+  -------------------------------------
+  p_drive_spi: process(clk_sys_i)
+  begin
+    if rising_edge(clk_sys_i) then
+      if rst_n_i = '0' then
+        spi_sclk_o  <= '0';
+        spi_mosi_o  <= '0';
+        spi_ncs_o   <= '1';
+      else
+        if(sysc_regs_o.gpsr_spi_sclk_load_o = '1' and sysc_regs_o.gpsr_spi_sclk_o = '1') then
+          spi_sclk_o <= '1';
+        elsif(sysc_regs_o.gpcr_spi_sclk_o = '1') then
+          spi_sclk_o <= '0';
+        end if;
+
+        if(sysc_regs_o.gpsr_spi_ncs_load_o = '1' and sysc_regs_o.gpsr_spi_ncs_o = '1') then
+          spi_ncs_o <= '1';
+        elsif(sysc_regs_o.gpcr_spi_cs_o = '1') then
+          spi_ncs_o <= '0';
+        end if;
+
+        if(sysc_regs_o.gpsr_spi_mosi_load_o = '1' and sysc_regs_o.gpsr_spi_mosi_o = '1') then
+          spi_mosi_o <= '1';
+        elsif(sysc_regs_o.gpcr_spi_mosi_o = '1') then
+          spi_mosi_o <= '0';
+        end if;
+      end if;
+    end if;
+  end process;
+  sysc_regs_i.gpsr_spi_sclk_i <= '0';
+  sysc_regs_i.gpsr_spi_ncs_i  <= '0';
+  sysc_regs_i.gpsr_spi_mosi_i <= '0';
+  sysc_regs_i.gpsr_spi_miso_i <= spi_miso_i;
+
 
   ----------------------------------------
   -- SYSCON

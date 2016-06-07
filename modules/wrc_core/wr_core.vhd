@@ -5,7 +5,7 @@
 -- Author     : Grzegorz Daniluk
 -- Company    : Elproma
 -- Created    : 2011-02-02
--- Last update: 2016-05-27
+-- Last update: 2016-06-06
 -- Platform   : FPGA-generics
 -- Standard   : VHDL
 -------------------------------------------------------------------------------
@@ -82,21 +82,22 @@ entity wr_core is
     --if set to 1, then blocks in PCS use smaller calibration counter to speed 
     --up simulation
     g_simulation                : integer                        := 0;
-    g_with_external_clock_input : boolean                        := false;
+    g_with_external_clock_input : boolean                        := true;
     --
     g_phys_uart                 : boolean                        := true;
-    g_virtual_uart              : boolean                        := false;
-    g_aux_clks                  : integer                        := 1;
+    g_virtual_uart              : boolean                        := true;
+    g_aux_clks                  : integer                        := 0;
     g_rx_buffer_size            : integer                        := 1024;
+    g_tx_runt_padding           : boolean                        := true;
     g_dpram_initf               : string                         := "default";
-    g_dpram_size                : integer                        := 90112/4;  --in 32-bit words
+    g_dpram_size                : integer                        := 131072/4;  --in 32-bit words
     g_interface_mode            : t_wishbone_interface_mode      := PIPELINED;
-    g_address_granularity       : t_wishbone_address_granularity := WORD;
+    g_address_granularity       : t_wishbone_address_granularity := BYTE;
     g_aux_sdb                   : t_sdb_device                   := c_wrc_periph3_sdb;
     g_softpll_channels_config   : t_softpll_channel_config_array := c_softpll_default_channel_config;
     g_softpll_enable_debugger   : boolean                        := false;
-    g_vuart_fifo_size           : integer                        := 1024
-    );
+    g_vuart_fifo_size           : integer                        := 1024;
+    g_pcs_16bit                 : boolean                        := false);
   port(
     ---------------------------------------------------------------------------
     -- Clocks/resets
@@ -113,6 +114,11 @@ entity wr_core is
 
     -- Aux clocks (i.e. the FMC clock), which can be disciplined by the WR Core
     clk_aux_i : in std_logic_vector(g_aux_clks-1 downto 0) := (others => '0');
+
+    clk_ext_mul_i : in std_logic := '0';
+    clk_ext_mul_locked_i  : in  std_logic := '1';
+    clk_ext_stopped_i     : in  std_logic := '0';
+    clk_ext_rst_o         : out std_logic;
 
     -- External 10 MHz reference (cesium, GPSDO, etc.), used in Grandmaster mode
     clk_ext_i : in std_logic := '0';
@@ -134,43 +140,54 @@ entity wr_core is
     -- PHY I/f
     phy_ref_clk_i : in std_logic;
 
-    phy_tx_data_o      : out std_logic_vector(7 downto 0);
-    phy_tx_k_o         : out std_logic;
+    phy_tx_data_o      : out std_logic_vector(f_pcs_data_width(g_pcs_16bit)-1 downto 0);
+    phy_tx_k_o         : out std_logic_vector(f_pcs_k_width(g_pcs_16bit)-1 downto 0);
     phy_tx_disparity_i : in  std_logic;
     phy_tx_enc_err_i   : in  std_logic;
 
-    phy_rx_data_i     : in std_logic_vector(7 downto 0);
+    phy_rx_data_i     : in std_logic_vector(f_pcs_data_width(g_pcs_16bit)-1 downto 0);
     phy_rx_rbclk_i    : in std_logic;
-    phy_rx_k_i        : in std_logic;
+    phy_rx_k_i        : in std_logic_vector(f_pcs_k_width(g_pcs_16bit)-1 downto 0);
+    phy_rx_k16_i      : in std_logic := '0';
     phy_rx_enc_err_i  : in std_logic;
-    phy_rx_bitslide_i : in std_logic_vector(3 downto 0);
+    phy_rx_bitslide_i : in std_logic_vector(f_pcs_bts_width(g_pcs_16bit)-1 downto 0);
 
-    phy_rst_o    : out std_logic;
-    phy_loopen_o : out std_logic;
+    phy_rst_o            : out std_logic;
+    phy_rdy_i            : in  std_logic := '1';
+    phy_loopen_o         : out std_logic;
+    phy_loopen_vec_o     : out std_logic_vector(2 downto 0);
+    phy_tx_prbs_sel_o    : out std_logic_vector(2 downto 0);
+    phy_sfp_tx_fault_i   : in std_logic := '0';
+    phy_sfp_los_i        : in std_logic := '0';
+    phy_sfp_tx_disable_o : out std_logic;
 
     -----------------------------------------
     --GPIO
     -----------------------------------------
-    led_act_o    : out std_logic;
-    led_link_o   : out std_logic;
-    i2c_sel_o    : out std_logic;
-    scl_o        : out std_logic;
-    scl_i        : in  std_logic := '1';
-    sda_o        : out std_logic;
-    sda_i        : in  std_logic := '1';
-    i2c_lck_i    : in  std_logic := '1';
-    sfp_scl_o    : out std_logic;
-    sfp_scl_i    : in  std_logic := '1';
-    sfp_sda_o    : out std_logic;
-    sfp_sda_i    : in  std_logic := '1';
-    sfp_det_i    : in  std_logic := '1';
-    btn1_i       : in  std_logic := '1';
-    btn2_i       : in  std_logic := '1';
+    led_act_o  : out std_logic;
+    led_link_o : out std_logic;
+    i2c_sel_o  : out std_logic;
+    scl_o      : out std_logic;
+    scl_i      : in  std_logic := '1';
+    sda_o      : out std_logic;
+    sda_i      : in  std_logic := '1';
+    i2c_lck_i  : in  std_logic := '1';
+    sfp_scl_o  : out std_logic;
+    sfp_scl_i  : in  std_logic := '1';
+    sfp_sda_o  : out std_logic;
+    sfp_sda_i  : in  std_logic := '1';
+    sfp_det_i  : in  std_logic := '1';
+    btn1_i     : in  std_logic := '1';
+    btn2_i     : in  std_logic := '1';
+    spi_sclk_o : out std_logic;
+    spi_ncs_o  : out std_logic;
+    spi_mosi_o : out std_logic;
+    spi_miso_i : in  std_logic := '0';
 
     -----------------------------------------
     --UART
     -----------------------------------------
-    uart_rxd_i : in  std_logic := '0';
+    uart_rxd_i : in  std_logic := '1';
     uart_txd_o : out std_logic;
 
     -----------------------------------------
@@ -242,6 +259,13 @@ entity wr_core is
     txtsu_ack_i          : in  std_logic := '1';
 
     -----------------------------------------
+    -- Pause Frame Control
+    -----------------------------------------
+    fc_tx_pause_req_i   : in  std_logic                     := '0';
+    fc_tx_pause_delay_i : in  std_logic_vector(15 downto 0) := x"0000";
+    fc_tx_pause_ready_o : out std_logic;
+
+    -----------------------------------------
     -- Timecode/Servo Control
     -----------------------------------------
 
@@ -269,6 +293,15 @@ entity wr_core is
 end wr_core;
 
 architecture struct of wr_core is
+
+  function f_int_to_bool(x : integer) return boolean is
+  begin
+    if(x /= 0) then
+      return true;
+    else
+      return false;
+    end if;
+  end f_int_to_bool;
 
   function f_choose_lm32_firmware_file return string is
   begin
@@ -316,7 +349,6 @@ architecture struct of wr_core is
   -----------------------------------------------------------------------------
   --Endpoint
   -----------------------------------------------------------------------------
-
   signal ep_txtsu_port_id           : std_logic_vector(4 downto 0);
   signal ep_txtsu_frame_id          : std_logic_vector(15 downto 0);
   signal ep_txtsu_ts_value          : std_logic_vector(31 downto 0);
@@ -334,6 +366,7 @@ architecture struct of wr_core is
   signal mnic_mem_data_i : std_logic_vector(31 downto 0);
   signal mnic_mem_wr_o   : std_logic;
   signal mnic_txtsu_ack  : std_logic;
+  signal mnic_txtsu_stb  : std_logic;
 
   -----------------------------------------------------------------------------
   --Dual-port RAM
@@ -439,6 +472,27 @@ architecture struct of wr_core is
   signal clk_fb     : std_logic_vector(g_aux_clks downto 0);
   signal out_enable : std_logic_vector(g_aux_clks downto 0);
 
+  --component chipscope_ila
+  --  port (
+  --    CONTROL : inout std_logic_vector(35 downto 0);
+  --    CLK     : in    std_logic;
+  --    TRIG0   : in    std_logic_vector(31 downto 0);
+  --    TRIG1   : in    std_logic_vector(31 downto 0);
+  --    TRIG2   : in    std_logic_vector(31 downto 0);
+  --    TRIG3   : in    std_logic_vector(31 downto 0));
+  --end component;
+
+  --component chipscope_icon
+  --  port (
+  --    CONTROL0 : inout std_logic_vector (35 downto 0));
+  --end component;
+
+  --signal CONTROL : std_logic_vector(35 downto 0);
+  --signal CLK     : std_logic;
+  --signal TRIG0   : std_logic_vector(31 downto 0);
+  --signal TRIG1   : std_logic_vector(31 downto 0);
+  --signal TRIG2   : std_logic_vector(31 downto 0);
+  --signal TRIG3   : std_logic_vector(31 downto 0);
 begin
 
   rst_aux_n_o <= rst_net_n;
@@ -450,7 +504,7 @@ begin
     generic map(
       g_interface_mode       => PIPELINED,
       g_address_granularity  => BYTE,
-      g_ref_clock_rate       => 125000000,
+      g_ref_clock_rate       => f_refclk_rate(g_pcs_16bit),
       g_ext_clock_rate       => 10000000,
       g_with_ext_clock_input => g_with_external_clock_input)
     port map(
@@ -483,14 +537,15 @@ begin
     generic map(
       g_with_ext_clock_input => g_with_external_clock_input,
       g_reverse_dmtds        => false,
-      g_divide_input_by_2    => true,
+      g_divide_input_by_2    => not g_pcs_16bit,
       g_with_debug_fifo      => g_softpll_enable_debugger,
       g_tag_bits             => 22,
       g_interface_mode       => PIPELINED,
       g_address_granularity  => BYTE,
       g_num_ref_inputs       => 1,
       g_num_outputs          => 1 + g_aux_clks,
-      g_channels_config      => g_softpll_channels_config)
+      g_ref_clock_rate       => f_refclk_rate(g_pcs_16bit),
+      g_ext_clock_rate       => 10000000)
     port map(
       clk_sys_i => clk_sys_i,
       rst_n_i   => rst_net_n,
@@ -502,8 +557,14 @@ begin
       -- DMTD Offset clock
       clk_dmtd_i   => clk_dmtd_i,
 
-      clk_ext_i => clk_ext_i,
-      sync_p_i  => pps_ext_i,
+      clk_ext_i     => clk_ext_i,
+      clk_ext_mul_i => clk_ext_mul_i,
+      clk_ext_mul_locked_i => clk_ext_mul_locked_i,
+      clk_ext_stopped_i    => clk_ext_stopped_i,
+      clk_ext_rst_o        => clk_ext_rst_o,
+
+      pps_csync_p1_i => s_pps_csync,
+      pps_ext_a_i => pps_ext_i,
 
       -- DMTD oscillator drive
       dac_dmtd_data_o => dac_hpll_data_o,
@@ -522,8 +583,7 @@ begin
       slave_i => spll_wb_in,
       slave_o => spll_wb_out,
 
-      debug_o => dio_o
-      );
+      debug_o => open);
 
   clk_fb(0)                       <= clk_ref_i;
   clk_fb(g_aux_clks downto 1)     <= clk_aux_i;
@@ -559,8 +619,9 @@ begin
     generic map (
       g_interface_mode      => PIPELINED,
       g_address_granularity => BYTE,
-      g_simulation          => false,
-      g_pcs_16bit           => false,
+      g_simulation          => f_int_to_bool(g_simulation),
+      g_tx_runt_padding     => g_tx_runt_padding,
+      g_pcs_16bit           => g_pcs_16bit,
       g_rx_buffer_size      => g_rx_buffer_size,
       g_with_rx_buffer      => true,
       g_with_flow_control   => false,
@@ -568,7 +629,10 @@ begin
       g_with_dpi_classifier => true,
       g_with_vlans          => false,
       g_with_rtu            => false,
-      g_with_leds           => true)
+      g_with_leds           => true,
+      g_with_packet_injection => false,
+      g_use_new_rxcrc       => true,
+      g_use_new_txcrc       => false)
     port map (
       clk_ref_i      => clk_ref_i,
       clk_sys_i      => clk_sys_i,
@@ -577,23 +641,24 @@ begin
       pps_csync_p1_i => s_pps_csync,
       pps_valid_i    => pps_valid,
 
-      phy_rst_o                     => phy_rst_o,
-      phy_loopen_o                  => phy_loopen_o,
-      phy_ref_clk_i                 => phy_ref_clk_i,
-      phy_tx_data_o(7 downto 0)     => phy_tx_data_o,
-      phy_tx_data_o(15 downto 8)    => dummy(7 downto 0),
-      phy_tx_k_o(0)                 => phy_tx_k_o,
-      phy_tx_k_o(1)                 => dummy(8),
-      phy_tx_disparity_i            => phy_tx_disparity_i,
-      phy_tx_enc_err_i              => phy_tx_enc_err_i,
-      phy_rx_data_i(7 downto 0)     => phy_rx_data_i,
-      phy_rx_data_i(15 downto 8)    => x"00",
-      phy_rx_clk_i                  => phy_rx_rbclk_i,
-      phy_rx_k_i(0)                 => phy_rx_k_i,
-      phy_rx_k_i(1)                 => '0',
-      phy_rx_enc_err_i              => phy_rx_enc_err_i,
-      phy_rx_bitslide_i(3 downto 0) => phy_rx_bitslide_i,
-      phy_rx_bitslide_i(4)          => '0',
+      phy_rst_o            => phy_rst_o,
+      phy_rdy_i            => phy_rdy_i,
+      phy_loopen_o         => phy_loopen_o,
+      phy_loopen_vec_o     => phy_loopen_vec_o,
+      phy_tx_prbs_sel_o    => phy_tx_prbs_sel_o,
+      phy_sfp_tx_fault_i   => phy_sfp_tx_fault_i,
+      phy_sfp_los_i        => phy_sfp_los_i,
+      phy_sfp_tx_disable_o => phy_sfp_tx_disable_o,
+      phy_ref_clk_i        => phy_ref_clk_i,
+      phy_tx_data_o        => phy_tx_data_o,
+      phy_tx_k_o           => phy_tx_k_o,
+      phy_tx_disparity_i   => phy_tx_disparity_i,
+      phy_tx_enc_err_i     => phy_tx_enc_err_i,
+      phy_rx_data_i        => phy_rx_data_i,
+      phy_rx_clk_i         => phy_rx_rbclk_i,
+      phy_rx_k_i           => phy_rx_k_i,
+      phy_rx_enc_err_i     => phy_rx_enc_err_i,
+      phy_rx_bitslide_i    => phy_rx_bitslide_i,
 
       src_o => ep_src_out,
       src_i => ep_src_in,
@@ -608,10 +673,13 @@ begin
       txtsu_ack_i          => ep_txtsu_ack,
       wb_i                 => ep_wb_in,
       wb_o                 => ep_wb_out,
+      rmon_events_o        => open,
+      fc_tx_pause_req_i    => fc_tx_pause_req_i,
+      fc_tx_pause_delay_i  => fc_tx_pause_delay_i,
+      fc_tx_pause_ready_o  => fc_tx_pause_ready_o,
       led_link_o           => ep_led_link,
       led_act_o            => led_act_o);
 
-  ep_txtsu_ack <= txtsu_ack_i or mnic_txtsu_ack;
   led_link_o   <= ep_led_link;
   link_ok_o    <= ep_led_link;
 
@@ -644,7 +712,7 @@ begin
       txtsu_frame_id_i    => ep_txtsu_frame_id,
       txtsu_tsval_i       => ep_txtsu_ts_value,
       txtsu_tsincorrect_i => ep_txtsu_ts_incorrect,
-      txtsu_stb_i         => ep_txtsu_stb,
+      txtsu_stb_i         => mnic_txtsu_stb,
       txtsu_ack_o         => mnic_txtsu_ack,
 
       wb_i => minic_wb_in,
@@ -658,7 +726,7 @@ begin
   -- LM32
   -----------------------------------------------------------------------------  
   LM32_CORE : xwb_lm32
-    generic map(g_profile => "medium_icache")
+    generic map(g_profile => "medium_icache_debug")
     port map(
       clk_sys_i => clk_sys_i,
       rst_n_i   => rst_wrc_n,
@@ -731,6 +799,10 @@ begin
       memsize_i   => "0000",
       btn1_i      => btn1_i,
       btn2_i      => btn2_i,
+      spi_sclk_o  => spi_sclk_o,
+      spi_ncs_o   => spi_ncs_o,
+      spi_mosi_o  => spi_mosi_o,
+      spi_miso_i  => spi_miso_i,
 
       slave_i => periph_slave_i,
       slave_o => periph_slave_o,
@@ -957,7 +1029,14 @@ begin
   txtsu_frame_id_o     <= ep_txtsu_frame_id;
   txtsu_ts_value_o     <= ep_txtsu_ts_value;
   txtsu_ts_incorrect_o <= ep_txtsu_ts_incorrect;
+
+  -- ts goes to external I/F
   txtsu_stb_o          <= '1' when (ep_txtsu_stb = '1' and (ep_txtsu_frame_id /= x"0000")) else
-                       '0';
+                          '0';
+  -- ts goes to minic
+  mnic_txtsu_stb      <=  '1' when (ep_txtsu_stb = '1' and (ep_txtsu_frame_id  = x"0000")) else
+                          '0';
   
+  ep_txtsu_ack <= txtsu_ack_i or mnic_txtsu_ack;
+
 end struct;

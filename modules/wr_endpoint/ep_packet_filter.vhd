@@ -6,7 +6,7 @@
 -- Author     : Tomasz Włostowski
 -- Company    : CERN BE-CO-HT
 -- Created    : 2010-11-18
--- Last update: 2016-03-22
+-- Last update: 2016-06-06
 -- Platform   : FPGA-generic
 -- Standard   : VHDL'93
 -------------------------------------------------------------------------------
@@ -41,6 +41,7 @@ use ieee.numeric_std.all;
 
 use work.gencores_pkg.all;
 use work.genram_pkg.all;
+use work.endpoint_pkg.all;
 use work.endpoint_private_pkg.all;
 use work.ep_wbgen2_pkg.all;
 
