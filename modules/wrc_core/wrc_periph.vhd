@@ -6,7 +6,7 @@
 -- Author     : Grzegorz Daniluk
 -- Company    : Elproma
 -- Created    : 2011-04-04
--- Last update: 2016-06-06
+-- Last update: 2016-06-08
 -- Platform   : FPGA-generics
 -- Standard   : VHDL
 -------------------------------------------------------------------------------
@@ -37,6 +37,7 @@ entity wrc_periph is
     g_virtual_uart    : boolean := false;
     g_cntr_period     : integer := 62500;
     g_mem_words       : integer := 16384;   --in 32-bit words
+    g_with_initf      : boolean := false;
     g_vuart_fifo_size : integer := 1024
     );
   port(
@@ -108,7 +109,11 @@ begin
     if rising_edge(clk_sys_i) then
       if(rst_n_i = '0') then
         rst_net_n_o <= '0';
-        rst_wrc_n_o_reg <= '1';
+        if g_with_initf then
+          rst_wrc_n_o_reg <= '1';
+        else
+          rst_wrc_n_o_reg <= '0';
+        end if;
       else
 
         if(sysc_regs_o.rstr_trig_wr_o = '1' and sysc_regs_o.rstr_trig_o = x"deadbee") then

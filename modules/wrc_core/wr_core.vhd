@@ -5,7 +5,7 @@
 -- Author     : Grzegorz Daniluk
 -- Company    : Elproma
 -- Created    : 2011-02-02
--- Last update: 2016-06-06
+-- Last update: 2016-06-08
 -- Platform   : FPGA-generics
 -- Standard   : VHDL
 -------------------------------------------------------------------------------
@@ -776,6 +776,7 @@ begin
       g_phys_uart       => g_phys_uart,
       g_virtual_uart    => g_virtual_uart,
       g_mem_words       => g_dpram_size,
+      g_with_initf      => f_check_if_lm32_firmware_necessary,
       g_vuart_fifo_size => g_vuart_fifo_size)
     port map(
       clk_sys_i   => clk_sys_i,

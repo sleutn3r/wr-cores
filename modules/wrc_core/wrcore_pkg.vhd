@@ -195,6 +195,7 @@ package wrcore_pkg is
       g_virtual_uart    : boolean := false;
       g_cntr_period     : integer := 62500;
       g_mem_words       : integer := 16384;
+      g_with_initf      : boolean := false;
       g_vuart_fifo_size : integer := 1024
       );
     port(
