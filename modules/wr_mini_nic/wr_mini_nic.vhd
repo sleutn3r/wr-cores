@@ -764,13 +764,15 @@ begin  -- behavioral
                 if(nrx_avail /= to_unsigned(0, nrx_avail'length)) then
                   nrx_avail  <= nrx_avail - 1;
                   nrx_mem_wr <= '1';
+                  nrx_state <= RX_DATA;
+                else
+                  nrx_state <= RX_IGNORE;
+                  nrx_buf_full <= '1';
                 end if;
-
 
                 -- allow the fabric to receive the data
                 nrx_stall_mask <= '0';
 
-                nrx_state <= RX_DATA;
               end if;
 
 -------------------------------------------------------------------------------
@@ -786,21 +788,18 @@ begin  -- behavioral
               end if;
 
               -- check if we have enough space in the buffer
-              if(nrx_avail = to_unsigned(0, nrx_avail'length)) then
+              if(nrx_avail = to_unsigned(4, nrx_avail'length)) then
                 nrx_buf_full <= '1';
-              end if;
-
-              -- we've got a valid data word or end-of-frame/error condition
-              if(nrx_valid = '1' or nrx_stat_error = '1' or snk_cyc_i = '0') then
-
+                nrx_state <= RX_IGNORE;
+              elsif(nrx_valid = '1' or nrx_stat_error = '1' or snk_cyc_i = '0') then
+                -- we've got a valid data word or end-of-frame/error condition
                 -- latch the bytesel signal to support frames having odd lengths
                 if(snk_sel_i = "10") then
                   nrx_bytesel <= '1';
                 end if;
 
                 -- abort/error/end-of-frame?
-                if(nrx_stat_error = '1' or snk_cyc_i = '0' or nrx_avail = to_unsigned(0, nrx_avail'length)) then
-
+                if(nrx_stat_error = '1' or snk_cyc_i = '0') then
                   if(nrx_stat_error = '1' or nrx_avail = to_unsigned(0, nrx_avail'length)) then
                     nrx_error <= '1';
                   else
@@ -914,19 +913,13 @@ begin  -- behavioral
 -------------------------------------------------------------------------------
 
             when RX_MEM_FLUSH =>
+            
+              -- there is space in the buffer for sure
               nrx_stall_mask <= '1';
-
-              if(nrx_buf_full = '0') then
-                nrx_mem_wr <= '1';
-              end if;
-
+              nrx_mem_wr <= '1';
+ 
               if(mem_arb_rx = '0') then
-                if(nrx_buf_full = '0') then
-                  nrx_avail <= nrx_avail - 1;
-                else
-                	nrx_size <= nrx_size - 1;  --the buffer is full, last word was not written
-                	nrx_mem_a <= nrx_mem_a - 1;
-                end if;
+                nrx_avail <= nrx_avail - 1;
                 nrx_state <= RX_UPDATE_DESC;
               end if;
 
@@ -939,10 +932,6 @@ begin  -- behavioral
 
             when RX_UPDATE_DESC =>
               nrx_stall_mask <= '1';
-
-              if(nrx_avail = to_unsigned(0, nrx_avail'length)) then
-                nrx_buf_full <= '1';
-              end if;
 
               if(mem_arb_rx = '0') then
 
@@ -974,9 +963,6 @@ begin  -- behavioral
                 -- wait for another packet
                 if(snk_cyc_i = '1') then
                   nrx_state <= RX_IGNORE;
-                elsif(nrx_buf_full = '1') then
-                  nrx_state      <= RX_BUF_FULL;
-                  nrx_stall_mask <= '1';
                 else
                   -- trigger the RX interrupt and assert RX_READY flag to inform
                   -- the host that we've received something
@@ -992,6 +978,8 @@ begin  -- behavioral
               nrx_mem_wr <= '0';
               --drop the rest of the packet
               nrx_stall_mask <= '0';
+              -- reuse this DMA address
+              nrx_mem_a <= nrx_mem_a_saved;
               if(snk_cyc_i = '0') then
                 if(nrx_buf_full = '1') then
                   nrx_stall_mask <= '1';
