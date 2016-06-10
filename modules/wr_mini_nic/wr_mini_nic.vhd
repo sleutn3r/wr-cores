@@ -96,7 +96,7 @@ entity wr_mini_nic is
 
 -------------------------------------------------------------------------------
 -- Wishbone slave
--------------------------------------------------------------------------------    
+-------------------------------------------------------------------------------
 
     wb_cyc_i   : in  std_logic;
     wb_stb_i   : in  std_logic;
@@ -222,7 +222,7 @@ architecture behavioral of wr_mini_nic is
 
 -------------------------------------------------------------------------------
 -- RX FSM stuff
--------------------------------------------------------------------------------  
+-------------------------------------------------------------------------------
 
   type t_rx_fsm_state is (RX_WAIT_SOF, RX_MEM_RESYNC, RX_MEM_FLUSH, RX_ALLOCATE_DESCRIPTOR, RX_DATA, RX_UPDATE_DESC, RX_IGNORE, RX_BUF_FULL);
 
@@ -252,7 +252,7 @@ architecture behavioral of wr_mini_nic is
 
 -------------------------------------------------------------------------------
 -- Classic Wishbone slave signals
--------------------------------------------------------------------------------  
+-------------------------------------------------------------------------------
 
   signal regs_in  : t_minic_in_registers;
   signal regs_out : t_minic_out_registers;
@@ -332,7 +332,7 @@ begin  -- behavioral
 
 -------------------------------------------------------------------------------
 -- TX Path  (Host -> Fabric)
--------------------------------------------------------------------------------  
+-------------------------------------------------------------------------------
 
 -- helper signals to avoid big IF conditions in the FSM
   ntx_cntr_is_zero    <= '1' when (ntx_cntr = to_unsigned(0, ntx_cntr'length))       else '0';
@@ -465,7 +465,7 @@ begin  -- behavioral
 
 -------------------------------------------------------------------------------
 -- Start packet state: asserts CYC signal and reads first word to transmit
--------------------------------------------------------------------------------            
+-------------------------------------------------------------------------------
           when TX_START_PACKET =>
 
             src_cyc_int <= '1';
@@ -566,10 +566,10 @@ begin  -- behavioral
               src_stb_int <= '0';
               ntx_state   <= TX_END_PACKET;
             end if;
-            
-            
+
+
           when TX_OOB2 =>
-            
+
             if(src_stall_i = '0') then
               src_stb_int <= '1';
               src_adr_o   <= c_WRF_OOB;
@@ -612,7 +612,7 @@ begin  -- behavioral
     end if;
   end process;
 
--- these are never used:
+  -- these are never used:
   src_sel_o <= "11";
   src_we_o  <= '1';
   src_stb_o <= src_stb_int;
@@ -620,7 +620,7 @@ begin  -- behavioral
 
 -------------------------------------------------------------------------------
 -- RX Path (Fabric ->  Host)
--------------------------------------------------------------------------------  
+-------------------------------------------------------------------------------
 
 
 
@@ -676,12 +676,12 @@ begin  -- behavioral
         snk_err_o              <= '0';
       else
 
--- Host can modify the RX DMA registers only when the DMA engine is disabled
--- (MCR_RX_EN = 0)
+      -- Host can modify the RX DMA registers only when the DMA engine is disabled
+      -- (MCR_RX_EN = 0)
 
 
         if(regs_out.mcr_rx_en_o = '0') then
-          
+
           nrx_newpacket <= '0';
 
           -- mask out the data request line on the fabric I/F, so the endpoint
@@ -726,7 +726,7 @@ begin  -- behavioral
             --  else
             --    nrx_stall_mask <= '1';
             --  end if;
-            
+
             when RX_WAIT_SOF =>
 
               nrx_newpacket <= '0';
@@ -751,14 +751,14 @@ begin  -- behavioral
 -------------------------------------------------------------------------------
 -- State "Allocate RX descriptor": puts an empty (invalid) RX descriptor at the
 -- current location in the RX buffer and then starts receiving the data
--------------------------------------------------------------------------------              
-              
+-------------------------------------------------------------------------------
+
             when RX_ALLOCATE_DESCRIPTOR =>
 
--- wait until we have memory access
+              -- wait until we have memory access
               if(mem_arb_rx = '0') then
 
--- make sure the bit 31 is 0 (RX descriptor is invalid)
+                -- make sure the bit 31 is 0 (RX descriptor is invalid)
                 nrx_mem_d       <= (others => '0');
                 nrx_mem_a_saved <= nrx_mem_a;
                 if(nrx_avail /= to_unsigned(0, nrx_avail'length)) then
@@ -767,7 +767,7 @@ begin  -- behavioral
                 end if;
 
 
--- allow the fabric to receive the data
+                -- allow the fabric to receive the data
                 nrx_stall_mask <= '0';
 
                 nrx_state <= RX_DATA;
@@ -775,8 +775,8 @@ begin  -- behavioral
 
 -------------------------------------------------------------------------------
 -- State "Receive data". Receive data, write it into the DMA memory
--------------------------------------------------------------------------------              
-              
+-------------------------------------------------------------------------------
+
             when RX_DATA =>
 
               nrx_mem_wr <= '0';
@@ -888,7 +888,7 @@ begin  -- behavioral
 -- State "Memory resync": a "wait state" entered when the miNIC tries to write the RX
 -- payload, but the memory access is given for the TX path at the moment.
 -------------------------------------------------------------------------------
-              
+
             when RX_MEM_RESYNC =>
 
               -- check for error/abort conditions, they may appear even when
@@ -912,7 +912,7 @@ begin  -- behavioral
 -- State "Memory flush": flushes the remaining contents of RX data register
 -- into the DMA buffer after end-of-packet/error/abort
 -------------------------------------------------------------------------------
-              
+
             when RX_MEM_FLUSH =>
               nrx_stall_mask <= '1';
 
@@ -936,7 +936,7 @@ begin  -- behavioral
 -- of the frame, and marks the descriptor as valid. Also triggers the RX ready
 -- interrupt.
 -------------------------------------------------------------------------------
-              
+
             when RX_UPDATE_DESC =>
               nrx_stall_mask <= '1';
 
@@ -948,7 +948,7 @@ begin  -- behavioral
 
 
                 -- store the current write pointer as a readback value of RX_ADDR register, so
--- the host can determine the RX descriptor we're actually working on
+                -- the host can determine the RX descriptor we're actually working on
                 regs_in.rx_addr_i(g_memsize_log2+1 downto 0)                      <= std_logic_vector(nrx_mem_a_saved) & "00";
                 regs_in.rx_addr_i(regs_in.rx_addr_i'high downto g_memsize_log2+2) <= (others => '0');
 
@@ -959,7 +959,7 @@ begin  -- behavioral
                   nrx_mem_a_saved <= nrx_mem_a + 1;
                 end if;
 
--- compose the RX descriptor
+                -- compose the RX descriptor
                 nrx_mem_d(31)                      <= '1';
                 nrx_mem_d(30)                      <= nrx_error;
                 nrx_mem_d(29)                      <= nrx_has_oob;
@@ -987,7 +987,7 @@ begin  -- behavioral
               else
                 nrx_mem_wr <= '0';
               end if;
-              
+
             when RX_IGNORE =>
               nrx_mem_wr <= '0';
               --drop the rest of the packet
@@ -1012,7 +1012,7 @@ begin  -- behavioral
               else
                 nrx_stall_mask <= '1';
               end if;
-              
+
           end case;
         end if;
       end if;
@@ -1023,11 +1023,11 @@ begin  -- behavioral
 
 -------------------------------------------------------------------------------
 -- helper process for producing the RX fabric data request signal (combinatorial)
--------------------------------------------------------------------------------  
+-------------------------------------------------------------------------------
   gen_rx_dreq : process(nrx_stall_mask, nrx_state, mem_arb_rx, nrx_toggle, regs_out.mcr_rx_en_o, snk_cyc_i)
   begin
     -- make sure we don't have any incoming data when the reception is masked (e.g.
-    -- the miNIC is updating the descriptors of finishing the memory write. 
+    -- the miNIC is updating the descriptors of finishing the memory write.
     if(snk_cyc_i = '1' and nrx_state = RX_WAIT_SOF) then
       snk_stall_int <= '1';
     elsif(regs_out.mcr_rx_en_o = '0' or nrx_state = RX_ALLOCATE_DESCRIPTOR or nrx_state = RX_UPDATE_DESC or nrx_state = RX_MEM_FLUSH) then
@@ -1050,7 +1050,7 @@ begin  -- behavioral
 
 -------------------------------------------------------------------------------
 -- TX Timestamping unit
--------------------------------------------------------------------------------  
+-------------------------------------------------------------------------------
   tsu_fsm : process(clk_sys_i, rst_n_i)
   begin
     if rising_edge(clk_sys_i) then
