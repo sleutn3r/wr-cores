@@ -98,7 +98,7 @@ entity cute_wrc is
 
       ext_cfg_master_i : in t_wishbone_master_in:=cc_unused_master_in;
       ext_cfg_master_o : out t_wishbone_master_out;
-			aux_master_i : in t_wishbone_master_in:=cc_dummy_master_in;
+      aux_master_i : in t_wishbone_master_in:=cc_dummy_master_in;
       aux_master_o : out t_wishbone_master_out
       );
 
@@ -238,7 +238,7 @@ constant c_ext_sdb : t_sdb_device := (
         date      => x"20160324",
         name      => "wr-null            ")));
 
-	constant c_wrc_tdc_cm_sdb : t_sdb_device := (
+  constant c_wrc_tdc_cm_sdb : t_sdb_device := (
     abi_class     => x"0000",              -- undocumented device
     abi_ver_major => x"01",
     abi_ver_minor => x"01",
