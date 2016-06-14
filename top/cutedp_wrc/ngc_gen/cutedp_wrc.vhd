@@ -26,7 +26,7 @@ entity cutedp_wrc is
       clk_dmtd_i    : in std_logic;     -- 62.5m dmtd clock, from pll drived by clk_20m_vcxo
       clk_ref_i     : in std_logic;     -- 125m reference clock
 --      clk_gtp0_i     : in std_logic;     -- dedicated clock for xilinx gtp transceiver
-			clk_gtp1_i     : in std_logic;     -- dedicated clock for xilinx gtp transceiver
+      clk_gtp1_i     : in std_logic;     -- dedicated clock for xilinx gtp transceiver
 
       rst_n_i  		: in std_logic;
 
