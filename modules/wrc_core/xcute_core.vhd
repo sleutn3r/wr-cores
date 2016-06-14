@@ -736,8 +736,7 @@ begin
   DPRAM : xwb_dpram
     generic map(
       g_size                  => g_dpram_size,
-      g_init_file             => f_choose_lm32_firmware_file,
-      g_must_have_init_file   => f_check_if_lm32_firmware_necessary,
+      g_lm32_ram              => true,
       g_slave1_interface_mode => PIPELINED,
       g_slave2_interface_mode => PIPELINED,
       g_slave1_granularity    => BYTE,

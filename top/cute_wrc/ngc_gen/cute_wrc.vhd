@@ -215,7 +215,7 @@ constant c_ext_sdb : t_sdb_device := (
     date      => x"20160324",
     name      => "wr-null            ")));
 
-	constant c_wrc_tdc_cm_sdb : t_sdb_device := (
+  constant c_wrc_tdc_cm_sdb : t_sdb_device := (
     abi_class     => x"0000",              -- undocumented device
     abi_ver_major => x"01",
     abi_ver_minor => x"01",
