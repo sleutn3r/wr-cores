@@ -79,6 +79,7 @@ port
   clk_ext_mul_o          : out    std_logic;
   -- Status and control signals
   rst_a_i             : in     std_logic;
+  clk_in_stopped_o : out    std_logic;
   locked_o            : out    std_logic
  );
 end ext_pll_10_to_62_5m;
@@ -160,12 +161,10 @@ begin
     PSDONE              => open,
     -- Other control and status signals
     LOCKED              => locked_o,
-    CLKINSTOPPED        => open,
+    CLKINSTOPPED        => clk_in_stopped_o,
     CLKFBSTOPPED        => open,
     PWRDWN              => '0',
     RST                 => rst_a_i);
-
-
 
   clkout1_buf : BUFG
   port map
