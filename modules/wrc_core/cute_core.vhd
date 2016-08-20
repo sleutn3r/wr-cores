@@ -1,11 +1,11 @@
 -- Title      : WhiteRabbit PTP Core
 -- Project    : WhiteRabbit
 -------------------------------------------------------------------------------
--- File       : xcute_dp.vhd
--- Author     : hongming 
--- Company    : tsinghua 
--- Created    : 2016-02-02
--- Last update: 2016-03-15
+-- File       : cute_core.vhd
+-- Author     : Grzegorz Daniluk
+-- Company    : Elproma
+-- Created    : 2011-02-02
+-- Last update: 2014-07-15
 -- Platform   : FPGA-generics
 -- Standard   : VHDL
 -------------------------------------------------------------------------------
@@ -47,11 +47,10 @@
 -- 2011-02-02  1.0      greg.d          Created
 -- 2011-10-25  2.0      greg.d          Redesigned and wishbonized
 -- 2012-03-05  3.0      wterpstra       Added SDB descriptors
+-- 2016-08-20  4.0      hongming        Add wb & wbf interface
 -------------------------------------------------------------------------------
 
-
 -- Memory map:
-
 -- Master interconnect:
 --  0x00000000: I/D Memory
 --  0x00020000: Peripheral interconnect
@@ -62,8 +61,8 @@
 --      +0x400: Syscon
 --      +0x500: UART
 --      +0x600: OneWire
---      +0x700: Auxillary space (Etherbone config, etc)
---      >0x800: Auxillary space (Others)
+--      +0x700: Etherbone config
+--      +0x800: External space
 
 library ieee;
 use ieee.std_logic_1164.all;
@@ -71,16 +70,14 @@ use ieee.numeric_std.all;
 
 library work;
 use work.wrcore_pkg.all;
-use work.wrdp_pkg.all;
 use work.genram_pkg.all;
 use work.wishbone_pkg.all;
 use work.endpoint_pkg.all;
 use work.wr_fabric_pkg.all;
 use work.sysc_wbgen2_pkg.all;
-use work.syscdp_wbgen2_pkg.all;
 use work.softpll_pkg.all;
 
-entity xcute_dp is
+entity cute_core is
   generic(
     --if set to 1, then blocks in PCS use smaller calibration counter to speed 
     --up simulation
@@ -96,9 +93,9 @@ entity xcute_dp is
     g_dpram_size                : integer                        := 131072/4;  --in 32-bit words
     g_interface_mode            : t_wishbone_interface_mode      := PIPELINED;
     g_address_granularity       : t_wishbone_address_granularity := BYTE;
-    g_etherbone_cfg_sdb         : t_sdb_device                   := c_wrc_periph3_sdb;
-    g_aux1_sdb                  : t_sdb_device                   := c_wrc_periph3_sdb;
-	  g_aux2_sdb                  : t_sdb_device                   := c_wrc_periph3_sdb;
+    g_etherbone_enable          : boolean                        := true;    
+    g_etherbone_sdb             : t_sdb_device                   := c_wrc_periph3_sdb;
+    g_ext_sdb                   : t_sdb_device                   := c_wrc_periph3_sdb;
     g_softpll_channels_config   : t_softpll_channel_config_array := c_softpll_default_channel_config;
     g_softpll_enable_debugger   : boolean                        := false;
     g_vuart_fifo_size           : integer                        := 1024;
@@ -142,77 +139,50 @@ entity xcute_dp is
     dac_dpll_load_p1_o : out std_logic;
     dac_dpll_data_o    : out std_logic_vector(15 downto 0);
 
-    -- PHY0 I/f
-    phy0_ref_clk_i      : in std_logic;
+    -- PHY I/f
+    phy_ref_clk_i : in std_logic;
 
-    phy0_tx_data_o      : out std_logic_vector(f_pcs_data_width(g_pcs_16bit)-1 downto 0);
-    phy0_tx_k_o         : out std_logic_vector(f_pcs_k_width(g_pcs_16bit)-1 downto 0);
-    phy0_tx_disparity_i : in  std_logic;
-    phy0_tx_enc_err_i   : in  std_logic;
+    phy_tx_data_o      : out std_logic_vector(f_pcs_data_width(g_pcs_16bit)-1 downto 0);
+    phy_tx_k_o         : out std_logic_vector(f_pcs_k_width(g_pcs_16bit)-1 downto 0);
+    phy_tx_disparity_i : in  std_logic;
+    phy_tx_enc_err_i   : in  std_logic;
 
-    phy0_rx_data_i      : in std_logic_vector(f_pcs_data_width(g_pcs_16bit)-1 downto 0);
-    phy0_rx_rbclk_i     : in std_logic;
-    phy0_rx_k_i         : in std_logic_vector(f_pcs_k_width(g_pcs_16bit)-1 downto 0);
-    phy0_rx_k16_i       : in std_logic := '0';
-    phy0_rx_enc_err_i   : in std_logic;
-    phy0_rx_bitslide_i  : in std_logic_vector(f_pcs_bts_width(g_pcs_16bit)-1 downto 0);
+    phy_rx_data_i     : in std_logic_vector(f_pcs_data_width(g_pcs_16bit)-1 downto 0);
+    phy_rx_rbclk_i    : in std_logic;
+    phy_rx_k_i        : in std_logic_vector(f_pcs_k_width(g_pcs_16bit)-1 downto 0);
+    phy_rx_k16_i      : in std_logic := '0';
+    phy_rx_enc_err_i  : in std_logic;
+    phy_rx_bitslide_i : in std_logic_vector(f_pcs_bts_width(g_pcs_16bit)-1 downto 0);
 
-    phy0_rst_o            : out std_logic;
-    phy0_rdy_i            : in  std_logic := '1';
-    phy0_loopen_o         : out std_logic;
-    phy0_loopen_vec_o     : out std_logic_vector(2 downto 0);
-    phy0_tx_prbs_sel_o    : out std_logic_vector(2 downto 0);
-    phy0_sfp_tx_fault_i   : in std_logic := '0';
-    phy0_sfp_los_i        : in std_logic := '0';
-    phy0_sfp_tx_disable_o : out std_logic;
+    phy_rst_o            : out std_logic;
+    phy_rdy_i            : in  std_logic := '1';
+    phy_loopen_o         : out std_logic;
+    phy_loopen_vec_o     : out std_logic_vector(2 downto 0);
+    phy_tx_prbs_sel_o    : out std_logic_vector(2 downto 0);
+    phy_sfp_tx_fault_i   : in std_logic := '0';
+    phy_sfp_los_i        : in std_logic := '0';
+    phy_sfp_tx_disable_o : out std_logic;
 
-    -- PHY1 I/f
-    phy1_ref_clk_i      : in std_logic;
-
-    phy1_tx_data_o      : out std_logic_vector(f_pcs_data_width(g_pcs_16bit)-1 downto 0);
-    phy1_tx_k_o         : out std_logic_vector(f_pcs_k_width(g_pcs_16bit)-1 downto 0);
-    phy1_tx_disparity_i : in  std_logic;
-    phy1_tx_enc_err_i   : in  std_logic;
-
-    phy1_rx_data_i      : in std_logic_vector(f_pcs_data_width(g_pcs_16bit)-1 downto 0);
-    phy1_rx_rbclk_i     : in std_logic;
-    phy1_rx_k_i         : in std_logic_vector(f_pcs_k_width(g_pcs_16bit)-1 downto 0);
-    phy1_rx_k16_i       : in std_logic := '0';
-    phy1_rx_enc_err_i   : in std_logic;
-    phy1_rx_bitslide_i  : in std_logic_vector(f_pcs_bts_width(g_pcs_16bit)-1 downto 0);
-
-    phy1_rst_o            : out std_logic;
-    phy1_rdy_i            : in  std_logic := '1';
-    phy1_loopen_o         : out std_logic;
-    phy1_loopen_vec_o     : out std_logic_vector(2 downto 0);
-    phy1_tx_prbs_sel_o    : out std_logic_vector(2 downto 0);
-    phy1_sfp_tx_fault_i   : in std_logic := '0';
-    phy1_sfp_los_i        : in std_logic := '0';
-    phy1_sfp_tx_disable_o : out std_logic;
-
-    sfp0_led_o  : out std_logic;
-    sfp0_scl_o  : out std_logic;
-    sfp0_scl_i  : in  std_logic := '1';
-    sfp0_sda_o  : out std_logic;
-    sfp0_sda_i  : in  std_logic := '1';
-    sfp0_det_i  : in  std_logic := '1';
-
-    sfp1_led_o  : out std_logic;
-    sfp1_scl_o  : out std_logic;
-    sfp1_scl_i  : in  std_logic := '1';
-    sfp1_sda_o  : out std_logic;
-    sfp1_sda_i  : in  std_logic := '1';
-    sfp1_det_i  : in  std_logic := '1';
-
-    fpga_scl_o  : out std_logic;
-    fpga_scl_i  : in  std_logic := '1';
-    fpga_sda_o  : out std_logic;
-    fpga_sda_i  : in  std_logic := '1';
-
-    spi_sclk_o  : out std_logic;
-    spi_ncs_o   : out std_logic;
-    spi_mosi_o  : out std_logic;
-    spi_miso_i  : in  std_logic := '0';
+    -----------------------------------------
+    --GPIO
+    -----------------------------------------
+    led_act_o  : out std_logic;
+    led_link_o : out std_logic;
+    scl_o      : out std_logic;
+    scl_i      : in  std_logic := '1';
+    sda_o      : out std_logic;
+    sda_i      : in  std_logic := '1';
+    sfp_scl_o  : out std_logic;
+    sfp_scl_i  : in  std_logic := '1';
+    sfp_sda_o  : out std_logic;
+    sfp_sda_i  : in  std_logic := '1';
+    sfp_det_i  : in  std_logic := '1';
+    btn1_i     : in  std_logic := '1';
+    btn2_i     : in  std_logic := '1';
+    spi_sclk_o : out std_logic;
+    spi_ncs_o  : out std_logic;
+    spi_mosi_o : out std_logic;
+    spi_miso_i : in  std_logic := '0';
 
     -----------------------------------------
     --UART
@@ -230,39 +200,99 @@ entity xcute_dp is
     -----------------------------------------
     --External WB interface
     -----------------------------------------
-    wrc_slave_i : in  t_wishbone_slave_in := cc_dummy_slave_in;
-    wrc_slave_o : out t_wishbone_slave_out;
+    wb_adr_i   : in  std_logic_vector(c_wishbone_address_width-1 downto 0)   := (others => '0');
+    wb_dat_i   : in  std_logic_vector(c_wishbone_data_width-1 downto 0)      := (others => '0');
+    wb_dat_o   : out std_logic_vector(c_wishbone_data_width-1 downto 0);
+    wb_sel_i   : in  std_logic_vector(c_wishbone_address_width/8-1 downto 0) := (others => '0');
+    wb_we_i    : in  std_logic                                               := '0';
+    wb_cyc_i   : in  std_logic                                               := '0';
+    wb_stb_i   : in  std_logic                                               := '0';
+    wb_ack_o   : out std_logic;
+    wb_err_o   : out std_logic;
+    wb_rty_o   : out std_logic;
+    wb_stall_o : out std_logic;
 
     -----------------------------------------
-    -- Auxillary WB master
+    -- Etherbone WB master
     -----------------------------------------
-    aux1_master_o   : out t_wishbone_master_out;
-    aux1_master_i	   : in t_wishbone_master_in;
-	
-	  aux2_master_o   : out t_wishbone_master_out;
-    aux2_master_i	   : in t_wishbone_master_in;
-	
-	-----------------------------------------
-    -- EtherBone cfg
-    -----------------------------------------	
-    etherbone_cfg_master_o   : out t_wishbone_master_out;
-    etherbone_cfg_master_i   : in t_wishbone_master_in;
+    etherbone_adr_o   : out std_logic_vector(c_wishbone_address_width-1 downto 0);
+    etherbone_dat_o   : out std_logic_vector(c_wishbone_data_width-1 downto 0);
+    etherbone_dat_i   : in  std_logic_vector(c_wishbone_data_width-1 downto 0);
+    etherbone_sel_o   : out std_logic_vector(c_wishbone_address_width/8-1 downto 0);
+    etherbone_we_o    : out std_logic;
+    etherbone_cyc_o   : out std_logic;
+    etherbone_stb_o   : out std_logic;
+    etherbone_ack_i   : in  std_logic := '1';
+    etherbone_stall_i : in  std_logic := '0';
 
     -----------------------------------------
-    -- EtherBone Fabric I/F
+    -- Etherbone Fabric I/F
     -----------------------------------------
-    etherbone_snk_i   : in t_wrf_sink_in;
-    etherbone_snk_o   : out t_wrf_sink_out;
-    etherbone_src_i   : in  t_wrf_source_in;
-    etherbone_src_o   : out t_wrf_source_out;
+    etherbone_snk_adr_i   : in  std_logic_vector(1 downto 0)  := "00";
+    etherbone_snk_dat_i   : in  std_logic_vector(15 downto 0) := x"0000";
+    etherbone_snk_sel_i   : in  std_logic_vector(1 downto 0)  := "00";
+    etherbone_snk_cyc_i   : in  std_logic                     := '0';
+    etherbone_snk_we_i    : in  std_logic                     := '0';
+    etherbone_snk_stb_i   : in  std_logic                     := '0';
+    etherbone_snk_ack_o   : out std_logic;
+    etherbone_snk_err_o   : out std_logic;
+    etherbone_snk_stall_o : out std_logic;
+
+    etherbone_src_adr_o   : out std_logic_vector(1 downto 0);
+    etherbone_src_dat_o   : out std_logic_vector(15 downto 0);
+    etherbone_src_sel_o   : out std_logic_vector(1 downto 0);
+    etherbone_src_cyc_o   : out std_logic;
+    etherbone_src_stb_o   : out std_logic;
+    etherbone_src_we_o    : out std_logic;
+    etherbone_src_ack_i   : in  std_logic := '1';
+    etherbone_src_err_i   : in  std_logic := '0';
+    etherbone_src_stall_i : in  std_logic := '0';
+
+    -----------------------------------------
+    -- External WB master
+    -----------------------------------------
+    ext_adr_o   : out std_logic_vector(c_wishbone_address_width-1 downto 0);
+    ext_dat_o   : out std_logic_vector(c_wishbone_data_width-1 downto 0);
+    ext_dat_i   : in  std_logic_vector(c_wishbone_data_width-1 downto 0);
+    ext_sel_o   : out std_logic_vector(c_wishbone_address_width/8-1 downto 0);
+    ext_we_o    : out std_logic;
+    ext_cyc_o   : out std_logic;
+    ext_stb_o   : out std_logic;
+    ext_ack_i   : in  std_logic := '1';
+    ext_stall_i : in  std_logic := '0';
 
     -----------------------------------------
     -- External Fabric I/F
     -----------------------------------------
-    ext_snk_i   : in t_wrf_sink_in;
-    ext_snk_o   : out t_wrf_sink_out;
-    ext_src_i   : in  t_wrf_source_in;
-    ext_src_o   : out t_wrf_source_out;
+    ext_snk_adr_i   : in  std_logic_vector(1 downto 0)  := "00";
+    ext_snk_dat_i   : in  std_logic_vector(15 downto 0) := x"0000";
+    ext_snk_sel_i   : in  std_logic_vector(1 downto 0)  := "00";
+    ext_snk_cyc_i   : in  std_logic                     := '0';
+    ext_snk_we_i    : in  std_logic                     := '0';
+    ext_snk_stb_i   : in  std_logic                     := '0';
+    ext_snk_ack_o   : out std_logic;
+    ext_snk_err_o   : out std_logic;
+    ext_snk_stall_o : out std_logic;
+
+    ext_src_adr_o   : out std_logic_vector(1 downto 0);
+    ext_src_dat_o   : out std_logic_vector(15 downto 0);
+    ext_src_sel_o   : out std_logic_vector(1 downto 0);
+    ext_src_cyc_o   : out std_logic;
+    ext_src_stb_o   : out std_logic;
+    ext_src_we_o    : out std_logic;
+    ext_src_ack_i   : in  std_logic := '1';
+    ext_src_err_i   : in  std_logic := '0';
+    ext_src_stall_i : in  std_logic := '0';
+
+    ------------------------------------------
+    -- External TX Timestamp I/F
+    ------------------------------------------
+    txtsu_port_id_o      : out std_logic_vector(4 downto 0);
+    txtsu_frame_id_o     : out std_logic_vector(15 downto 0);
+    txtsu_ts_value_o     : out std_logic_vector(31 downto 0);
+    txtsu_ts_incorrect_o : out std_logic;
+    txtsu_stb_o          : out std_logic;
+    txtsu_ack_i          : in  std_logic := '1';
 
     -----------------------------------------
     -- Pause Frame Control
@@ -274,6 +304,7 @@ entity xcute_dp is
     -----------------------------------------
     -- Timecode/Servo Control
     -----------------------------------------
+
     tm_link_up_o         : out std_logic;
     -- DAC Control
     tm_dac_value_o       : out std_logic_vector(23 downto 0);
@@ -290,11 +321,14 @@ entity xcute_dp is
     pps_p_o              : out std_logic;
     pps_led_o            : out std_logic;
 
-    rst_aux_n_o : out std_logic
-);
-end xcute_dp;
+    dio_o       : out std_logic_vector(3 downto 0);
+    rst_aux_n_o : out std_logic;
 
-architecture struct of xcute_dp is
+    link_ok_o : out std_logic
+    );
+end cute_core;
+
+architecture struct of cute_core is
 
   function f_int_to_bool(x : integer) return boolean is
   begin
@@ -381,12 +415,13 @@ architecture struct of xcute_dp is
   -----------------------------------------------------------------------------
   signal periph_slave_i : t_wishbone_slave_in_array(0 to 2);
   signal periph_slave_o : t_wishbone_slave_out_array(0 to 2);
+  signal sysc_in_regs   : t_sysc_in_registers;
+  signal sysc_out_regs  : t_sysc_out_registers;
 
   -----------------------------------------------------------------------------
   --WB Secondary Crossbar
   -----------------------------------------------------------------------------
-  constant c_nr_slaves_secbar : natural := 10;
-  constant c_secbar_layout : t_sdb_record_array(c_nr_slaves_secbar-1 downto 0) :=
+  constant c_secbar_layout : t_sdb_record_array(8 downto 0) :=
     (0 => f_sdb_embed_device(c_xwr_mini_nic_sdb, x"00000000"),
      1 => f_sdb_embed_device(c_xwr_endpoint_sdb, x"00000100"),
      2 => f_sdb_embed_device(c_xwr_softpll_ng_sdb, x"00000200"),
@@ -394,17 +429,16 @@ architecture struct of xcute_dp is
      4 => f_sdb_embed_device(c_wrc_periph0_sdb, x"00000400"),  -- Syscon
      5 => f_sdb_embed_device(c_wrc_periph1_sdb, x"00000500"),  -- UART
      6 => f_sdb_embed_device(c_wrc_periph2_sdb, x"00000600"),  -- 1-Wire
-     7 => f_sdb_embed_device(g_etherbone_cfg_sdb, x"00000700"),    -- etherbone cfg
-     8 => f_sdb_embed_device(g_aux1_sdb, x"00000800"),          -- aux1 WB bus 
-	 9 => f_sdb_embed_device(g_aux2_sdb, x"00000900")          -- aux2 WB bus 
+     7 => f_sdb_embed_device(g_etherbone_sdb, x"00000700"),    -- etherbone
+     8 => f_sdb_embed_device(g_ext_sdb, x"00000800")           -- ext
      );
 
   constant c_secbar_sdb_address : t_wishbone_address := x"00001000";
   constant c_secbar_bridge_sdb  : t_sdb_bridge       :=
     f_xwb_bridge_layout_sdb(true, c_secbar_layout, c_secbar_sdb_address);
 
-  signal secbar_master_i : t_wishbone_master_in_array(c_nr_slaves_secbar-1 downto 0);
-  signal secbar_master_o : t_wishbone_master_out_array(c_nr_slaves_secbar-1 downto 0);
+  signal secbar_master_i : t_wishbone_master_in_array(8 downto 0);
+  signal secbar_master_o : t_wishbone_master_out_array(8 downto 0);
 
   -----------------------------------------------------------------------------
   --WB intercon
@@ -554,7 +588,7 @@ begin
       rst_n_i   => rst_net_n,
 
       -- Reference inputs (i.e. the RX clocks recovered by the PHYs)
-      clk_ref_i(0) => phy0_rx_rbclk_i,
+      clk_ref_i(0) => phy_rx_rbclk_i,
       -- Feedback clocks (i.e. the outputs of the main or aux oscillator)
       clk_fb_i     => clk_fb,
       -- DMTD Offset clock
@@ -644,24 +678,24 @@ begin
       pps_csync_p1_i => s_pps_csync,
       pps_valid_i    => pps_valid,
 
-      phy_rst_o            => phy0_rst_o,
-      phy_rdy_i            => phy0_rdy_i,
-      phy_loopen_o         => phy0_loopen_o,
-      phy_loopen_vec_o     => phy0_loopen_vec_o,
-      phy_tx_prbs_sel_o    => phy0_tx_prbs_sel_o,
-      phy_sfp_tx_fault_i   => phy0_sfp_tx_fault_i,
-      phy_sfp_los_i        => phy0_sfp_los_i,
-      phy_sfp_tx_disable_o => phy0_sfp_tx_disable_o,
-      phy_ref_clk_i        => phy0_ref_clk_i,
-      phy_tx_data_o        => phy0_tx_data_o,
-      phy_tx_k_o           => phy0_tx_k_o,
-      phy_tx_disparity_i   => phy0_tx_disparity_i,
-      phy_tx_enc_err_i     => phy0_tx_enc_err_i,
-      phy_rx_data_i        => phy0_rx_data_i,
-      phy_rx_clk_i         => phy0_rx_rbclk_i,
-      phy_rx_k_i           => phy0_rx_k_i,
-      phy_rx_enc_err_i     => phy0_rx_enc_err_i,
-      phy_rx_bitslide_i    => phy0_rx_bitslide_i,
+      phy_rst_o            => phy_rst_o,
+      phy_rdy_i            => phy_rdy_i,
+      phy_loopen_o         => phy_loopen_o,
+      phy_loopen_vec_o     => phy_loopen_vec_o,
+      phy_tx_prbs_sel_o    => phy_tx_prbs_sel_o,
+      phy_sfp_tx_fault_i   => phy_sfp_tx_fault_i,
+      phy_sfp_los_i        => phy_sfp_los_i,
+      phy_sfp_tx_disable_o => phy_sfp_tx_disable_o,
+      phy_ref_clk_i        => phy_ref_clk_i,
+      phy_tx_data_o        => phy_tx_data_o,
+      phy_tx_k_o           => phy_tx_k_o,
+      phy_tx_disparity_i   => phy_tx_disparity_i,
+      phy_tx_enc_err_i     => phy_tx_enc_err_i,
+      phy_rx_data_i        => phy_rx_data_i,
+      phy_rx_clk_i         => phy_rx_rbclk_i,
+      phy_rx_k_i           => phy_rx_k_i,
+      phy_rx_enc_err_i     => phy_rx_enc_err_i,
+      phy_rx_bitslide_i    => phy_rx_bitslide_i,
 
       src_o => ep_src_out,
       src_i => ep_src_in,
@@ -681,7 +715,12 @@ begin
       fc_tx_pause_delay_i  => fc_tx_pause_delay_i,
       fc_tx_pause_ready_o  => fc_tx_pause_ready_o,
       led_link_o           => ep_led_link,
-      led_act_o            => open);
+      led_act_o            => led_act_o);
+
+  led_link_o   <= ep_led_link;
+  link_ok_o    <= ep_led_link;
+
+  tm_link_up_o <= ep_led_link;
 
   -----------------------------------------------------------------------------
   -- Mini-NIC
@@ -742,8 +781,7 @@ begin
   DPRAM : xwb_dpram
     generic map(
       g_size                  => g_dpram_size,
-      g_init_file             => f_choose_lm32_firmware_file,
-      g_must_have_init_file   => f_check_if_lm32_firmware_necessary,
+      g_lm32_ram              => true,
       g_slave1_interface_mode => PIPELINED,
       g_slave2_interface_mode => PIPELINED,
       g_slave1_granularity    => BYTE,
@@ -769,7 +807,7 @@ begin
   -----------------------------------------------------------------------------
   -- WB Peripherials
   -----------------------------------------------------------------------------
-  PERIPH : wrdp_periph
+  PERIPH : wrc_periph
     generic map(
       g_phys_uart       => g_phys_uart,
       g_virtual_uart    => g_virtual_uart,
@@ -781,37 +819,34 @@ begin
       rst_net_n_o => rst_net_n,
       rst_wrc_n_o => rst_wrc_n,
 
-      led_link_o   => open,              --led_red_o,
-      led_stat_o   => open,              --led_green_o,
-      fpga_scl_o   => fpga_scl_o,
-      fpga_scl_i   => fpga_scl_i,
-      fpga_sda_o   => fpga_sda_o,
-      fpga_sda_i   => fpga_sda_i,
-      sfp0_scl_o   => sfp0_scl_o,
-      sfp0_scl_i   => sfp0_scl_i,
-      sfp0_sda_o   => sfp0_sda_o,
-      sfp0_sda_i   => sfp0_sda_i,
-      sfp0_det_i   => sfp0_det_i,
-      sfp1_scl_o   => sfp1_scl_o,
-      sfp1_scl_i   => sfp1_scl_i,
-      sfp1_sda_o   => sfp1_sda_o,
-      sfp1_sda_i   => sfp1_sda_i,
-      sfp1_det_i   => sfp1_det_i,
-      memsize_i    => "0000",
-      spi_sclk_o   => spi_sclk_o,
-      spi_ncs_o    => spi_ncs_o,
-      spi_mosi_o   => spi_mosi_o,
-      spi_miso_i   => spi_miso_i,
+      led_red_o   => open,              --led_red_o,
+      led_green_o => open,              --led_green_o,
+      scl_o       => scl_o,
+      scl_i       => scl_i,
+      sda_o       => sda_o,
+      sda_i       => sda_i,
+      sfp_scl_o   => sfp_scl_o,
+      sfp_scl_i   => sfp_scl_i,
+      sfp_sda_o   => sfp_sda_o,
+      sfp_sda_i   => sfp_sda_i,
+      sfp_det_i   => sfp_det_i,
+      memsize_i   => "0000",
+      btn1_i      => btn1_i,
+      btn2_i      => btn2_i,
+      spi_sclk_o  => spi_sclk_o,
+      spi_ncs_o   => spi_ncs_o,
+      spi_mosi_o  => spi_mosi_o,
+      spi_miso_i  => spi_miso_i,
 
-      slave_i      => periph_slave_i,
-      slave_o      => periph_slave_o,
+      slave_i => periph_slave_i,
+      slave_o => periph_slave_o,
 
-      uart_rxd_i   => uart_rxd_i,
-      uart_txd_o   => uart_txd_o,
+      uart_rxd_i => uart_rxd_i,
+      uart_txd_o => uart_txd_o,
 
-      owr_pwren_o  => owr_pwren_o,
-      owr_en_o     => owr_en_o,
-      owr_i        => owr_i
+      owr_pwren_o => owr_pwren_o,
+      owr_en_o    => owr_en_o,
+      owr_i       => owr_i
       );
 
   U_Adapter : wb_slave_adapter
@@ -819,7 +854,7 @@ begin
       g_master_use_struct  => true,
       g_master_mode        => PIPELINED,
       g_master_granularity => BYTE,
-      g_slave_use_struct   => true,
+      g_slave_use_struct   => false,
       g_slave_mode         => g_interface_mode,
       g_slave_granularity  => g_address_granularity)
     port map (
@@ -827,8 +862,17 @@ begin
       rst_n_i    => rst_n_i,
       master_i   => ext_wb_out,
       master_o   => ext_wb_in,
-      slave_i    => wrc_slave_i,
-      slave_o    => wrc_slave_o);
+      sl_adr_i   => wb_adr_i,
+      sl_dat_i   => wb_dat_i,
+      sl_sel_i   => wb_sel_i,
+      sl_cyc_i   => wb_cyc_i,
+      sl_stb_i   => wb_stb_i,
+      sl_we_i    => wb_we_i,
+      sl_dat_o   => wb_dat_o,
+      sl_ack_o   => wb_ack_o,
+      sl_err_o   => wb_err_o,
+      sl_rty_o   => wb_rty_o,
+      sl_stall_o => wb_stall_o);
 
   -----------------------------------------------------------------------------
   -- WB intercon
@@ -904,7 +948,7 @@ begin
   WB_SECONDARY_CON : xwb_sdb_crossbar
     generic map(
       g_num_masters => 1,
-      g_num_slaves  => c_nr_slaves_secbar,
+      g_num_slaves  => 9,
       g_registered  => true,
       g_wraparound  => true,
       g_layout      => c_secbar_layout,
@@ -938,14 +982,31 @@ begin
   periph_slave_i(2)  <= secbar_master_o(6);
 
 
-  etherbone_cfg_master_o <= secbar_master_o(7);
-  secbar_master_i(7)   <= etherbone_cfg_master_i;
+  etherbone_adr_o <= secbar_master_o(7).adr;
+  etherbone_dat_o <= secbar_master_o(7).dat;
+  etherbone_sel_o <= secbar_master_o(7).sel;
+  etherbone_cyc_o <= secbar_master_o(7).cyc;
+  etherbone_stb_o <= secbar_master_o(7).stb;
+  etherbone_we_o  <= secbar_master_o(7).we;
 
-  aux1_master_o <= secbar_master_o(8);
-  secbar_master_i(8)   <= aux1_master_i;
-  
-  aux2_master_o <= secbar_master_o(9);
-  secbar_master_i(9)   <= aux2_master_i;
+  secbar_master_i(7).dat   <= etherbone_dat_i;
+  secbar_master_i(7).ack   <= etherbone_ack_i;
+  secbar_master_i(7).stall <= etherbone_stall_i;
+  secbar_master_i(7).err   <= '0';
+  secbar_master_i(7).rty   <= '0';
+
+  ext_adr_o <= secbar_master_o(8).adr;
+  ext_dat_o <= secbar_master_o(8).dat;
+  ext_sel_o <= secbar_master_o(8).sel;
+  ext_cyc_o <= secbar_master_o(8).cyc;
+  ext_stb_o <= secbar_master_o(8).stb;
+  ext_we_o  <= secbar_master_o(8).we;
+
+  secbar_master_i(8).dat   <= ext_dat_i;
+  secbar_master_i(8).ack   <= ext_ack_i;
+  secbar_master_i(8).stall <= ext_stall_i;
+  secbar_master_i(8).err   <= '0';
+  secbar_master_i(8).rty   <= '0';
 
   --secbar_master_i(6).err <= '0';
   --secbar_master_i(5).err <= '0';
@@ -963,11 +1024,17 @@ begin
   --secbar_master_i(1).rty <= '0';
   --secbar_master_i(0).rty <= '0';
 
-
   -----------------------------------------------------------------------------
   -- WBP MUX
   -----------------------------------------------------------------------------
-  U_WBP_Mux : xwrf_mux
+
+  U_etherbone_gen:if (g_etherbone_enable = true) generate
+
+    mux_class(0)  <= x"0f";
+    mux_class(1)  <= x"30";
+    mux_class(2)  <= x"c0";
+
+    U_WBP_Mux : xwrf_mux
     generic map(
       g_muxed_ports => 3)
     port map (
@@ -982,28 +1049,108 @@ begin
       mux_snk_o   => mux_snk_out,
       mux_snk_i   => mux_snk_in,
       mux_class_i => mux_class);
+    
+    etherbone_src_adr_o <= mux_src_out(1).adr;
+    etherbone_src_dat_o <= mux_src_out(1).dat;
+    etherbone_src_stb_o <= mux_src_out(1).stb;
+    etherbone_src_cyc_o <= mux_src_out(1).cyc;
+    etherbone_src_sel_o <= mux_src_out(1).sel;
+    etherbone_src_we_o  <= '1';
+    etherbone_snk_ack_o   <= mux_snk_out(1).ack;
+    etherbone_snk_err_o   <= mux_snk_out(1).err;
+    etherbone_snk_stall_o <= mux_snk_out(1).stall;
+    
+    mux_snk_in(1).adr <= etherbone_snk_adr_i;
+    mux_snk_in(1).dat <= etherbone_snk_dat_i;
+    mux_snk_in(1).stb <= etherbone_snk_stb_i;
+    mux_snk_in(1).cyc <= etherbone_snk_cyc_i;
+    mux_snk_in(1).sel <= etherbone_snk_sel_i;
+    mux_snk_in(1).we  <= etherbone_snk_we_i;
+    mux_src_in(1).ack   <= etherbone_src_ack_i;
+    mux_src_in(1).stall <= etherbone_src_stall_i;
+    mux_src_in(1).err   <= etherbone_src_err_i;
 
-  mux_class(0)  <= x"03";  -- class 0 => LM32  (highest priority)
-  mux_class(1)  <= x"3C";  -- class 5 => EtherBone
-  mux_class(2)  <= x"C0";  -- class 7 => Ext   (lowest priority)
+    ext_src_adr_o <= mux_src_out(2).adr;
+    ext_src_dat_o <= mux_src_out(2).dat;
+    ext_src_stb_o <= mux_src_out(2).stb;
+    ext_src_cyc_o <= mux_src_out(2).cyc;
+    ext_src_sel_o <= mux_src_out(2).sel;
+    ext_src_we_o  <= '1';
+    ext_snk_ack_o   <= mux_snk_out(2).ack;
+    ext_snk_err_o   <= mux_snk_out(2).err;
+    ext_snk_stall_o <= mux_snk_out(2).stall;
+
+    mux_snk_in(2).adr <= ext_snk_adr_i;
+    mux_snk_in(2).dat <= ext_snk_dat_i;
+    mux_snk_in(2).stb <= ext_snk_stb_i;
+    mux_snk_in(2).cyc <= ext_snk_cyc_i;
+    mux_snk_in(2).sel <= ext_snk_sel_i;
+    mux_snk_in(2).we  <= ext_snk_we_i;
+    mux_src_in(2).ack   <= ext_src_ack_i;
+    mux_src_in(2).stall <= ext_src_stall_i;
+    mux_src_in(2).err   <= ext_src_err_i;
+
+  end generate ;
+
+  U_not_etherbone_gen:if (g_etherbone_enable = false) generate
+
+
+    mux_class(0)  <= x"0f";
+    mux_class(1)  <= x"f0";
+
+    U_WBP_Mux : xwrf_mux
+    generic map(
+      g_muxed_ports => 2)
+    port map (
+      clk_sys_i   => clk_sys_i,
+      rst_n_i     => rst_n_i,
+      ep_src_o    => ep_snk_in,
+      ep_src_i    => ep_snk_out,
+      ep_snk_o    => ep_src_in,
+      ep_snk_i    => ep_src_out,
+      mux_src_o   => mux_src_out(1 downto 0),
+      mux_src_i   => mux_src_in(1 downto 0),
+      mux_snk_o   => mux_snk_out(1 downto 0),
+      mux_snk_i   => mux_snk_in(1 downto 0),
+      mux_class_i => mux_class(1 downto 0));
+
+    ext_src_adr_o <= mux_src_out(1).adr;
+    ext_src_dat_o <= mux_src_out(1).dat;
+    ext_src_stb_o <= mux_src_out(1).stb;
+    ext_src_cyc_o <= mux_src_out(1).cyc;
+    ext_src_sel_o <= mux_src_out(1).sel;
+    ext_src_we_o  <= '1';
+    ext_snk_ack_o   <= mux_snk_out(1).ack;
+    ext_snk_err_o   <= mux_snk_out(1).err;
+    ext_snk_stall_o <= mux_snk_out(1).stall;
+
+    mux_snk_in(1).adr <= ext_snk_adr_i;
+    mux_snk_in(1).dat <= ext_snk_dat_i;
+    mux_snk_in(1).stb <= ext_snk_stb_i;
+    mux_snk_in(1).cyc <= ext_snk_cyc_i;
+    mux_snk_in(1).sel <= ext_snk_sel_i;
+    mux_snk_in(1).we  <= ext_snk_we_i;
+    mux_src_in(1).ack   <= ext_src_ack_i;
+    mux_src_in(1).stall <= ext_src_stall_i;
+    mux_src_in(1).err   <= ext_src_err_i;
+
+  end generate ;
   
-  
-  etherbone_src_o <= mux_src_out(1);
-  mux_src_in(1)   <= etherbone_src_i;
+  -----------------------------------------------------------------------------
+  -- External Tx Timestamping I/F
+  -----------------------------------------------------------------------------
+  txtsu_port_id_o      <= ep_txtsu_port_id;
+  txtsu_frame_id_o     <= ep_txtsu_frame_id;
+  txtsu_ts_value_o     <= ep_txtsu_ts_value;
+  txtsu_ts_incorrect_o <= ep_txtsu_ts_incorrect;
 
-  mux_snk_in(1) <= etherbone_snk_i;
-  etherbone_snk_o   <= mux_snk_out(1);
-  
-  ext_src_o <= mux_src_out(2);
-  mux_src_in(2)   <= ext_src_i;
-
-  mux_snk_in(2) <= ext_snk_i;
-  ext_snk_o <= mux_snk_out(2);
-
+  -- ts goes to external I/F
+  txtsu_stb_o          <= '1' when (ep_txtsu_stb = '1' and (ep_txtsu_frame_id /= x"0000")) else
+                          '0';
   -- ts goes to minic
   mnic_txtsu_stb      <=  '1' when (ep_txtsu_stb = '1' and (ep_txtsu_frame_id  = x"0000")) else
                           '0';
   
-  ep_txtsu_ack <= mnic_txtsu_ack;
+  ep_txtsu_ack <= txtsu_ack_i or mnic_txtsu_ack;
 
 end struct;

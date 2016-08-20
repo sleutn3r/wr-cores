@@ -1,4 +1,3 @@
-
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
@@ -18,7 +17,7 @@ use unisim.vcomponents.all;
 entity cute_wrc is
   generic
     (
-      g_etherbone_enable: boolean:= false
+      g_etherbone_enable: boolean:= true
      );
   port
     (
@@ -85,16 +84,17 @@ entity cute_wrc is
       uart_rxd_i : in  std_logic;
       uart_txd_o : out std_logic;
 
+      ------------------------------------------
+      -- external module
+      ------------------------------------------
       ext_snk_i : in  t_wrf_sink_in;
       ext_snk_o : out t_wrf_sink_out;
 
       ext_src_o : out t_wrf_source_out;
       ext_src_i : in  t_wrf_source_in;
 
-      ext_cfg_master_i : in t_wishbone_master_in:=cc_unused_master_in;
-      ext_cfg_master_o : out t_wishbone_master_out;
-      aux_master_i : in t_wishbone_master_in:=cc_dummy_master_in;
-      aux_master_o : out t_wishbone_master_out
+      ext_master_i : in t_wishbone_master_in:=cc_unused_master_in;
+      ext_master_o : out t_wishbone_master_out
       );
 
 end cute_wrc;
@@ -116,24 +116,12 @@ architecture rtl of cute_wrc is
   ------------------------------------------------------------------------------
   -- signals declaration
   ------------------------------------------------------------------------------
-
-
   -- reset
   signal rst_a : std_logic;
   signal rst   : std_logic;
 
   signal dac_rst_n        : std_logic;
   signal led_divider      : unsigned(23 downto 0);
-
-  signal wrc_scl_o : std_logic;
-  signal wrc_scl_i : std_logic;
-  signal wrc_sda_o : std_logic;
-  signal wrc_sda_i : std_logic;
-
-  signal sfp_scl_o : std_logic;
-  signal sfp_scl_i : std_logic;
-  signal sfp_sda_o : std_logic;
-  signal sfp_sda_i : std_logic;
 
   signal dac_hpll_load_p1 : std_logic;
   signal dac_dpll_load_p1 : std_logic;
@@ -199,38 +187,6 @@ constant c_ext_sdb : t_sdb_device := (
     date      => x"20160424",
     name      => "wr-ext-config      ")));
 
-  constant c_null_sdb : t_sdb_device := (
-    abi_class     => x"0000",              -- undocumented device
-    abi_ver_major => x"01",
-    abi_ver_minor => x"01",
-    wbd_endian    => c_sdb_endian_big,
-    wbd_width     => x"7",                 -- 8/16/32-bit port granularity
-    sdb_component => (
-    addr_first  => x"0000000000000000",
-    addr_last   => x"00000000000000ff",
-    product     => (
-    vendor_id => x"0000000000001103",  -- thu
-    device_id => x"c0403598",
-    version   => x"00000001",
-    date      => x"20160324",
-    name      => "wr-null            ")));
-
-  constant c_wrc_tdc_cm_sdb : t_sdb_device := (
-    abi_class     => x"0000",              -- undocumented device
-    abi_ver_major => x"01",
-    abi_ver_minor => x"01",
-    wbd_endian    => c_sdb_endian_big,
-    wbd_width     => x"7",                 -- 8/16/32-bit port granularity
-    sdb_component => (
-      addr_first  => x"0000000000000000",
-      addr_last   => x"00000000000000ff",
-      product     => (
-        vendor_id => x"0000000000001103",  -- thu
-        device_id => x"f0443598",
-        version   => x"00000001",
-        date      => x"20160419",
-        name      => "wr-tdc-control     ")));
-
 begin
 
   --u_ext_pll : ext_pll_10_to_125m
@@ -259,16 +215,6 @@ begin
   end if;
 end process;
 
-  fpga_scl_o <= wrc_scl_o;
-  fpga_sda_o <= wrc_sda_o;
-  wrc_scl_i  <= fpga_scl_i;
-  wrc_sda_i  <= fpga_sda_i;
-
-  sfp_mod_def1_o <= sfp_scl_o;
-  sfp_mod_def2_o <= sfp_sda_o;
-  sfp_scl_i      <= sfp_mod_def1_i;
-  sfp_sda_i      <= sfp_mod_def2_i;
-
   thermo_id_o <= owr_en(0);
   owr_i(0)    <= thermo_id_i;
   owr_i(1)    <= '0';
@@ -287,10 +233,9 @@ generic map (
     g_tx_runt_padding           => true,
     g_pcs_16bit                 => false,
     g_dpram_initf               => "",
-    g_etherbone_cfg_sdb         => c_etherbone_sdb,
-    g_ext_cfg_sdb               => c_ext_sdb,
-    g_aux1_sdb                  => c_wrc_tdc_cm_sdb,
-    g_aux2_sdb                  => c_null_sdb,
+    g_etherbone_enable          => g_etherbone_enable,
+    g_etherbone_sdb             => c_etherbone_sdb,
+    g_ext_sdb                   => c_ext_sdb,
     g_dpram_size                => 131072/4,
     g_interface_mode            => pipelined,
     g_address_granularity       => byte)
@@ -334,10 +279,10 @@ port map (
     led_act_o  => led_red,
     led_link_o => led_green,
 
-    scl_o      => wrc_scl_o,
-    scl_i      => wrc_scl_i,
-    sda_o      => wrc_sda_o,
-    sda_i      => wrc_sda_i,
+    scl_o      => fpga_scl_o,
+    scl_i      => fpga_scl_i,
+    sda_o      => fpga_sda_o,
+    sda_i      => fpga_sda_i,
     btn1_i     => open,
     btn2_i     => open,
     spi_sclk_o  => open,
@@ -345,10 +290,10 @@ port map (
     spi_mosi_o  => open,
     spi_miso_i  => '0',
 
-    sfp_scl_o  => sfp_scl_o,
-    sfp_scl_i  => sfp_scl_i,
-    sfp_sda_o  => sfp_sda_o,
-    sfp_sda_i  => sfp_sda_i,
+    sfp_scl_o  => sfp_mod_def1_o,
+    sfp_scl_i  => sfp_mod_def1_i,
+    sfp_sda_o  => sfp_mod_def2_o,
+    sfp_sda_i  => sfp_mod_def2_i,
     sfp_det_i  => sfp_mod_def0_i,
 
     uart_rxd_i => uart_rxd_i,
@@ -357,23 +302,18 @@ port map (
     owr_en_o => owr_en,
     owr_i    => owr_i,
 
-    wrc_slave_i => wrc_slave_i,
-    wrc_slave_o => wrc_slave_o,
+    slave_i => wrc_slave_i,
+    slave_o => wrc_slave_o,
 
-    aux_master_o => aux_master_o,
-    aux_master_i => aux_master_i,
-
-    etherbone_cfg_master_o=> etherbone_cfg_slave_i,
-    etherbone_cfg_master_i=> etherbone_cfg_slave_o,
-
+    etherbone_master_o=> etherbone_cfg_slave_i,
+    etherbone_master_i=> etherbone_cfg_slave_o,
     etherbone_src_o => etherbone_snk_i,
     etherbone_src_i => etherbone_snk_o,
     etherbone_snk_o => etherbone_src_i,
     etherbone_snk_i => etherbone_src_o,
 
-    ext_cfg_master_o=> ext_cfg_master_o,
-    ext_cfg_master_i=> ext_cfg_master_i,
-
+    ext_master_o => ext_master_o,
+    ext_master_i => ext_master_i,
     ext_src_o => ext_src_o,
     ext_src_i => ext_src_i,
     ext_snk_o => ext_snk_o,
@@ -393,37 +333,40 @@ port map (
 );
 
 etherbone_gen: if (g_etherbone_enable = true) generate
-etherbone : eb_slave_core
-generic map (
-    g_sdb_address => x"0000000000030000")
-port map (
-    clk_i       => clk_sys_i,
-    nrst_i      => etherbone_rst_n,
-    src_o       => etherbone_src_o,
-    src_i       => etherbone_src_i,
-    snk_o       => etherbone_snk_o,
-    snk_i       => etherbone_snk_i,
-    cfg_slave_o => etherbone_cfg_slave_o,
-    cfg_slave_i => etherbone_cfg_slave_i,
-    master_o    => etherbone_wb_o,
-    master_i    => etherbone_wb_i
-);
+
+  etherbone : eb_slave_core
+  generic map (
+      g_sdb_address => x"0000000000030000")
+  port map (
+      clk_i       => clk_sys_i,
+      nrst_i      => etherbone_rst_n,
+      src_o       => etherbone_src_o,
+      src_i       => etherbone_src_i,
+      snk_o       => etherbone_snk_o,
+      snk_i       => etherbone_snk_i,
+      cfg_slave_o => etherbone_cfg_slave_o,
+      cfg_slave_i => etherbone_cfg_slave_i,
+      master_o    => etherbone_wb_o,
+      master_i    => etherbone_wb_i
+  );
 
   ---------------------
-masterbar : xwb_crossbar
-generic map (
-    g_num_masters => 1,
-    g_num_slaves  => 1,
-    g_registered  => false,
-    g_address     => (0 => x"00000000"),
-    g_mask        => (0 => x"00000000"))
-port map (
-    clk_sys_i   => clk_sys_i,
-    rst_n_i     => rst_n_i,
-    slave_i(0)  => etherbone_wb_o,
-    slave_o(0)  => etherbone_wb_i,
-    master_i(0) => wrc_slave_o,
-    master_o(0) => wrc_slave_i);
+  masterbar : xwb_crossbar
+  generic map (
+      g_num_masters => 1,
+      g_num_slaves  => 1,
+      g_registered  => false,
+      g_address     => (0 => x"00000000"),
+      g_mask        => (0 => x"00000000"))
+  port map (
+      clk_sys_i   => clk_sys_i,
+      rst_n_i     => rst_n_i,
+      slave_i(0)  => etherbone_wb_o,
+      slave_o(0)  => etherbone_wb_i,
+      master_i(0) => wrc_slave_o,
+      master_o(0) => wrc_slave_i
+  );
+
 end generate;
 
   ---------------------

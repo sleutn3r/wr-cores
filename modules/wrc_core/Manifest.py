@@ -1,5 +1,4 @@
 files = [ "xwr_core.vhd",
-          "xcute_core.vhd",
           "wr_core.vhd",
           "wrc_dpram.vhd",
           "wrcore_pkg.vhd",
@@ -7,5 +6,7 @@ files = [ "xwr_core.vhd",
           "wb_reset.vhd",
           "wrc_syscon_wb.vhd",
           "wrc_syscon_pkg.vhd",
-          "xwr_syscon_wb.vhd"];
+          "xwr_syscon_wb.vhd",
+          "xcute_core.vhd",
+          "cute_core.vhd"];
 

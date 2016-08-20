@@ -1,4 +1,3 @@
-
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
@@ -18,7 +17,7 @@ use unisim.vcomponents.all;
 entity cutedp_wrc is
   generic
     (
-      g_etherbone_enable: boolean:= false
+      g_etherbone_enable: boolean:= true
      );
   port
     (
@@ -106,10 +105,8 @@ entity cutedp_wrc is
       ext_src_o : out t_wrf_source_out;
       ext_src_i : in  t_wrf_source_in;
 
-      ext_cfg_master_i : in t_wishbone_master_in:=cc_unused_master_in;
-      ext_cfg_master_o : out t_wishbone_master_out;
-      aux_master_i : in t_wishbone_master_in:=cc_dummy_master_in;
-      aux_master_o : out t_wishbone_master_out
+      ext_master_i : in t_wishbone_master_in:=cc_unused_master_in;
+      ext_master_o : out t_wishbone_master_out
       );
 
 end cutedp_wrc;
@@ -131,28 +128,12 @@ architecture rtl of cutedp_wrc is
   ------------------------------------------------------------------------------
   -- signals declaration
   ------------------------------------------------------------------------------
-
-
   -- reset
   signal rst_a : std_logic;
   signal rst   : std_logic;
 
   signal dac_rst_n        : std_logic;
   signal led_divider      : unsigned(23 downto 0);
-
-  signal wrc_scl_o : std_logic;
-  signal wrc_scl_i : std_logic;
-  signal wrc_sda_o : std_logic;
-  signal wrc_sda_i : std_logic;
-
-  signal sfp0_scl_o : std_logic;
-  signal sfp0_scl_i : std_logic;
-  signal sfp0_sda_o : std_logic;
-  signal sfp0_sda_i : std_logic;
-  signal sfp1_scl_o : std_logic;
-  signal sfp1_scl_i : std_logic;
-  signal sfp1_sda_o : std_logic;
-  signal sfp1_sda_i : std_logic;
 
   signal dac_hpll_load_p1 : std_logic;
   signal dac_dpll_load_p1 : std_logic;
@@ -164,6 +145,9 @@ architecture rtl of cutedp_wrc is
 
   signal pps     : std_logic;
   signal pps_led : std_logic;
+  
+  signal led_red : std_logic;
+  signal led_green : std_logic;
 
   --signal phy0_tx_data      : std_logic_vector(7 downto 0);
   --signal phy0_tx_k         : std_logic_vector(0 downto 0);
@@ -233,38 +217,6 @@ constant c_ext_sdb : t_sdb_device := (
     date      => x"20160424",
     name      => "wr-ext-config      ")));
 
-  constant c_null_sdb : t_sdb_device := (
-    abi_class     => x"0000",              -- undocumented device
-    abi_ver_major => x"01",
-    abi_ver_minor => x"01",
-    wbd_endian    => c_sdb_endian_big,
-    wbd_width     => x"7",                 -- 8/16/32-bit port granularity
-    sdb_component => (
-    addr_first  => x"0000000000000000",
-    addr_last   => x"00000000000000ff",
-    product     => (
-    vendor_id => x"0000000000001103",  -- thu
-    device_id => x"c0403598",
-    version   => x"00000001",
-    date      => x"20160324",
-    name      => "wr-null            ")));
-
-	constant c_wrc_tdc_cm_sdb : t_sdb_device := (
-    abi_class     => x"0000",              -- undocumented device
-    abi_ver_major => x"01",
-    abi_ver_minor => x"01",
-    wbd_endian    => c_sdb_endian_big,
-    wbd_width     => x"7",                 -- 8/16/32-bit port granularity
-    sdb_component => (
-      addr_first  => x"0000000000000000",
-      addr_last   => x"00000000000000ff",
-      product     => (
-        vendor_id => x"0000000000001103",  -- thu
-        device_id => x"f0443598",
-        version   => x"00000001",
-        date      => x"20160419",
-        name      => "wr-tdc-control     ")));
-
 begin
 
   --u_ext_pll : ext_pll_10_to_125m
@@ -291,26 +243,13 @@ begin
   end if;
 end process;
 
-  fpga_scl_o <= wrc_scl_o;
-  fpga_sda_o <= wrc_sda_o;
-  wrc_scl_i  <= fpga_scl_i;
-  wrc_sda_i  <= fpga_sda_i;
-
---  sfp0_mod_def1_o <= sfp0_scl_o;
---  sfp0_mod_def2_o <= sfp0_sda_o;
---  sfp0_scl_i      <= sfp0_mod_def1_i;
---  sfp0_sda_i      <= sfp0_mod_def2_i;
-  
-  sfp1_mod_def1_o <= sfp1_scl_o;
-  sfp1_mod_def2_o <= sfp1_sda_o;
-  sfp1_scl_i      <= sfp1_mod_def1_i;
-  sfp1_sda_i      <= sfp1_mod_def2_i;
-
   thermo_id_o <= owr_en(0);
   owr_i(0)    <= thermo_id_i;
   owr_i(1)    <= '0';
 
   pps_o <= pps;
+  sfp0_led_o <= led_red;
+  sfp1_led_o <= led_green;
 
 u_wr_core : xcute_core
 generic map (
@@ -324,10 +263,9 @@ generic map (
     g_tx_runt_padding           => true,
     g_pcs_16bit                 => false,
     g_dpram_initf               => "",
+    g_etherbone_enable          => g_etherbone_enable,    
     g_etherbone_cfg_sdb         => c_etherbone_sdb,
-    g_ext_cfg_sdb               => c_ext_sdb,
-    g_aux1_sdb                  => c_wrc_tdc_cm_sdb,
-    g_aux2_sdb                  => c_null_sdb,
+    g_ext_sdb                   => c_ext_sdb,
     g_dpram_size                => 131072/4,
     g_interface_mode            => pipelined,
     g_address_granularity       => byte)
@@ -387,13 +325,13 @@ port map (
     phy_sfp_tx_disable_o => sfp1_tx_disable_o,
     phy_tx_prbs_sel_o  =>  phy1_prbs_sel,
 
-    led_act_o  => sfp0_led_o,
-    led_link_o => sfp1_led_o,
+    led_act_o  => led_red,
+    led_link_o => led_green,
 
-    scl_o      => wrc_scl_o,
-    scl_i      => wrc_scl_i,
-    sda_o      => wrc_sda_o,
-    sda_i      => wrc_sda_i,
+    scl_o      => fpga_scl_o,
+    scl_i      => fpga_scl_i,
+    sda_o      => fpga_sda_o,
+    sda_i      => fpga_sda_i,
     btn1_i     => open,
     btn2_i     => open,
     spi_sclk_o  => open,
@@ -401,16 +339,16 @@ port map (
     spi_mosi_o  => open,
     spi_miso_i  => '0',
 
---    sfp_scl_o  => sfp0_scl_o,
---    sfp_scl_i  => sfp0_scl_i,
---    sfp_sda_o  => sfp0_sda_o,
---    sfp_sda_i  => sfp0_sda_i,
+--    sfp_scl_o  => sfp0_mod_def1_o,
+--    sfp_scl_i  => sfp0_mod_def1_i,
+--    sfp_sda_o  => sfp0_mod_def2_o,
+--    sfp_sda_i  => sfp0_mod_def2_i,
 --    sfp_det_i  => sfp0_mod_def0_i,
 
-    sfp_scl_o  => sfp1_scl_o,
-    sfp_scl_i  => sfp1_scl_i,
-    sfp_sda_o  => sfp1_sda_o,
-    sfp_sda_i  => sfp1_sda_i,
+    sfp_scl_o  => sfp1_mod_def1_o,
+    sfp_scl_i  => sfp1_mod_def1_i,
+    sfp_sda_o  => sfp1_mod_def2_o,
+    sfp_sda_i  => sfp1_mod_def2_i,
     sfp_det_i  => sfp1_mod_def0_i,
 
     uart_rxd_i => uart_rxd_i,
@@ -419,23 +357,18 @@ port map (
     owr_en_o => owr_en,
     owr_i    => owr_i,
 
-    wrc_slave_i => wrc_slave_i,
-    wrc_slave_o => wrc_slave_o,
+    slave_i => wrc_slave_i,
+    slave_o => wrc_slave_o,
 
-    aux_master_o => aux_master_o,
-    aux_master_i => aux_master_i,
-
-    etherbone_cfg_master_o=> etherbone_cfg_slave_i,
-    etherbone_cfg_master_i=> etherbone_cfg_slave_o,
-
+    etherbone_master_o=> etherbone_cfg_slave_i,
+    etherbone_master_i=> etherbone_cfg_slave_o,
     etherbone_src_o => etherbone_snk_i,
     etherbone_src_i => etherbone_snk_o,
     etherbone_snk_o => etherbone_src_i,
     etherbone_snk_i => etherbone_src_o,
 
-    ext_cfg_master_o=> ext_cfg_master_o,
-    ext_cfg_master_i=> ext_cfg_master_i,
-
+    ext_master_o => ext_master_o,
+    ext_master_i => ext_master_i,
     ext_src_o => ext_src_o,
     ext_src_i => ext_src_i,
     ext_snk_o => ext_snk_o,
@@ -490,94 +423,94 @@ end generate;
 
   ---------------------
 
-    u_gtp : wr_gtp_phy_spartan6
-    generic map (
-      g_enable_ch0 => 0,
-      g_enable_ch1 => 1,
-      g_simulation => 0)
-    port map (
---      gtp_clk_i => clk_gtp0_i,
-      gtp_clk_i => clk_gtp1_i,
+u_gtp : wr_gtp_phy_spartan6
+generic map (
+	g_enable_ch0 => 0,
+	g_enable_ch1 => 1,
+	g_simulation => 0)
+port map (
+	--      gtp_clk_i => clk_gtp0_i,
+	gtp_clk_i => clk_gtp1_i,
 
-     -- ch0_ref_clk_i      => clk_ref_i,
-     -- ch0_tx_data_i      => phy0_tx_data,
-     -- ch0_tx_k_i         => phy0_tx_k(0),
-     -- ch0_tx_disparity_o => phy0_tx_disparity,
-     -- ch0_tx_enc_err_o   => phy0_tx_enc_err,
-     -- ch0_rx_rbclk_o     => phy0_rx_rbclk,
-     -- ch0_rx_data_o      => phy0_rx_data,
-     -- ch0_rx_k_o         => phy0_rx_k(0),
-     -- ch0_rx_enc_err_o   => phy0_rx_enc_err,
-     -- ch0_rx_bitslide_o  => phy0_rx_bitslide,
-     -- ch0_rst_i          => phy0_rst,
-     -- ch0_loopen_i       => phy0_loopen,
-     -- ch0_loopen_vec_i   => phy0_loopen_vec,
-     -- ch0_tx_prbs_sel_i  => phy0_prbs_sel,
-	 -- ch0_rdy_o          => phy0_rdy,
-     -- pad_txn0_o         => sfp0_txn_o,
-     -- pad_txp0_o         => sfp0_txp_o,
-     -- pad_rxn0_i         => sfp0_rxn_i,
-     -- pad_rxp0_i         => sfp0_rxp_i,
+	-- ch0_ref_clk_i      => clk_ref_i,
+	-- ch0_tx_data_i      => phy0_tx_data,
+	-- ch0_tx_k_i         => phy0_tx_k(0),
+	-- ch0_tx_disparity_o => phy0_tx_disparity,
+	-- ch0_tx_enc_err_o   => phy0_tx_enc_err,
+	-- ch0_rx_rbclk_o     => phy0_rx_rbclk,
+	-- ch0_rx_data_o      => phy0_rx_data,
+	-- ch0_rx_k_o         => phy0_rx_k(0),
+	-- ch0_rx_enc_err_o   => phy0_rx_enc_err,
+	-- ch0_rx_bitslide_o  => phy0_rx_bitslide,
+	-- ch0_rst_i          => phy0_rst,
+	-- ch0_loopen_i       => phy0_loopen,
+	-- ch0_loopen_vec_i   => phy0_loopen_vec,
+	-- ch0_tx_prbs_sel_i  => phy0_prbs_sel,
+	-- ch0_rdy_o          => phy0_rdy,
+	-- pad_txn0_o         => sfp0_txn_o,
+	-- pad_txp0_o         => sfp0_txp_o,
+	-- pad_rxn0_i         => sfp0_rxn_i,
+	-- pad_rxp0_i         => sfp0_rxp_i,
 
-      ch1_ref_clk_i      => clk_ref_i,
-      ch1_tx_data_i      => phy1_tx_data,
-      ch1_tx_k_i         => phy1_tx_k(0),
-      ch1_tx_disparity_o => phy1_tx_disparity,
-      ch1_tx_enc_err_o   => phy1_tx_enc_err,
-      ch1_rx_rbclk_o     => phy1_rx_rbclk,
-      ch1_rx_data_o      => phy1_rx_data,
-      ch1_rx_k_o         => phy1_rx_k(0),
-      ch1_rx_enc_err_o   => phy1_rx_enc_err,
-      ch1_rx_bitslide_o  => phy1_rx_bitslide,
-      ch1_rst_i          => phy1_rst,
-      ch1_loopen_i       => phy1_loopen,
-      ch1_loopen_vec_i   => phy1_loopen_vec,
-      ch1_tx_prbs_sel_i  => phy1_prbs_sel,
-      ch1_rdy_o          => phy1_rdy,
-      pad_txn1_o         => sfp1_txn_o,
-      pad_txp1_o         => sfp1_txp_o,
-      pad_rxn1_i         => sfp1_rxn_i,
-      pad_rxp1_i         => sfp1_rxp_i,
+	ch1_ref_clk_i      => clk_ref_i,
+	ch1_tx_data_i      => phy1_tx_data,
+	ch1_tx_k_i         => phy1_tx_k(0),
+	ch1_tx_disparity_o => phy1_tx_disparity,
+	ch1_tx_enc_err_o   => phy1_tx_enc_err,
+	ch1_rx_rbclk_o     => phy1_rx_rbclk,
+	ch1_rx_data_o      => phy1_rx_data,
+	ch1_rx_k_o         => phy1_rx_k(0),
+	ch1_rx_enc_err_o   => phy1_rx_enc_err,
+	ch1_rx_bitslide_o  => phy1_rx_bitslide,
+	ch1_rst_i          => phy1_rst,
+	ch1_loopen_i       => phy1_loopen,
+	ch1_loopen_vec_i   => phy1_loopen_vec,
+	ch1_tx_prbs_sel_i  => phy1_prbs_sel,
+	ch1_rdy_o          => phy1_rdy,
+	pad_txn1_o         => sfp1_txn_o,
+	pad_txp1_o         => sfp1_txp_o,
+	pad_rxn1_i         => sfp1_rxn_i,
+	pad_rxp1_i         => sfp1_rxp_i,
 
-      ch0_ref_clk_i      => clk_ref_i,
-      ch0_tx_data_i      => x"00",
-      ch0_tx_k_i         => '0',
-      ch0_tx_disparity_o => open,
-      ch0_tx_enc_err_o   => open,
-      ch0_rx_data_o      => open,
-      ch0_rx_rbclk_o     => open,
-      ch0_rx_k_o         => open,
-      ch0_rx_enc_err_o   => open,
-      ch0_rx_bitslide_o  => open,
-      ch0_rst_i          => '1',
-      ch0_loopen_i       => '0',
-      ch0_loopen_vec_i   => (others=>'0'),
-      ch0_tx_prbs_sel_i  => (others=>'0'),
-      ch0_rdy_o          => open,
-      pad_txn0_o         => open,
-      pad_txp0_o         => open,
-      pad_rxn0_i         => '0',
-      pad_rxp0_i         => '0'
+	ch0_ref_clk_i      => clk_ref_i,
+	ch0_tx_data_i      => x"00",
+	ch0_tx_k_i         => '0',
+	ch0_tx_disparity_o => open,
+	ch0_tx_enc_err_o   => open,
+	ch0_rx_data_o      => open,
+	ch0_rx_rbclk_o     => open,
+	ch0_rx_k_o         => open,
+	ch0_rx_enc_err_o   => open,
+	ch0_rx_bitslide_o  => open,
+	ch0_rst_i          => '1',
+	ch0_loopen_i       => '0',
+	ch0_loopen_vec_i   => (others=>'0'),
+	ch0_tx_prbs_sel_i  => (others=>'0'),
+	ch0_rdy_o          => open,
+	pad_txn0_o         => open,
+	pad_txp0_o         => open,
+	pad_rxn0_i         => '0',
+	pad_rxp0_i         => '0'
 
-      --ch1_ref_clk_i      => clk_ref_i,
-      --ch1_tx_data_i      => x"00",
-      --ch1_tx_k_i         => '0',
-      --ch1_tx_disparity_o => open,
-      --ch1_tx_enc_err_o   => open,
-      --ch1_rx_data_o      => open,
-      --ch1_rx_rbclk_o     => open,
-      --ch1_rx_k_o         => open,
-      --ch1_rx_enc_err_o   => open,
-      --ch1_rx_bitslide_o  => open,
-      --ch1_rst_i          => '1',
-      --ch1_loopen_i       => '0',
-      --ch1_loopen_vec_i   => (others=>'0'),
-      --ch1_tx_prbs_sel_i  => (ot hers=>'0'),
-      --ch1_rdy_o          => open,
-      --pad_txn1_o         => open,
-      --pad_txp1_o         => open,
-      --pad_rxn1_i         => '0',
-      --pad_rxp1_i         => '0'
+	--ch1_ref_clk_i      => clk_ref_i,
+	--ch1_tx_data_i      => x"00",
+	--ch1_tx_k_i         => '0',
+	--ch1_tx_disparity_o => open,
+	--ch1_tx_enc_err_o   => open,
+	--ch1_rx_data_o      => open,
+	--ch1_rx_rbclk_o     => open,
+	--ch1_rx_k_o         => open,
+	--ch1_rx_enc_err_o   => open,
+	--ch1_rx_bitslide_o  => open,
+	--ch1_rst_i          => '1',
+	--ch1_loopen_i       => '0',
+	--ch1_loopen_vec_i   => (others=>'0'),
+	--ch1_tx_prbs_sel_i  => (ot hers=>'0'),
+	--ch1_rdy_o          => open,
+	--pad_txn1_o         => open,
+	--pad_txp1_o         => open,
+	--pad_rxn1_i         => '0',
+	--pad_rxp1_i         => '0'
 );
 
 u_dac_arb : cute_serial_dac_arb
