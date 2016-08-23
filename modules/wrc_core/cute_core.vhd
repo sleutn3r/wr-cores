@@ -446,7 +446,7 @@ architecture struct of cute_core is
      6 => f_sdb_embed_device(c_wrc_periph2_sdb, x"00000600"),  -- 1-Wire
      7 => f_sdb_embed_device(g_etherbone_sdb, x"00000700"),    -- etherbone
      8 => f_sdb_embed_device(g_ext_sdb, x"00000800"),           -- ext
-     9 => f_sdb_embed_device(g_ext_sdb, x"00000900")           -- multiboot 
+     9 => f_sdb_embed_device(g_multiboot_sdb, x"00000900")           -- multiboot 
      );
 
   constant c_secbar_sdb_address : t_wishbone_address := x"00001000";
