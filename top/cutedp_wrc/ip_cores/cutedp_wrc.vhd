@@ -17,10 +17,12 @@ use unisim.vcomponents.all;
 entity cutedp_wrc is
   generic
     (
-      g_etherbone_enable: boolean:= true
+      g_etherbone_enable: boolean:= true;
+      g_multiboot_enable: boolean:= true
      );
   port
     (
+      clk_20m_i     : in std_logic;
       clk_sys_i     : in std_logic;     -- 62.5m system clock, from pll drived by clk_125m_pllref
       clk_dmtd_i    : in std_logic;     -- 62.5m dmtd clock, from pll drived by clk_20m_vcxo
       clk_ref_i     : in std_logic;     -- 125m reference clock
@@ -47,10 +49,13 @@ entity cutedp_wrc is
       --button1_i : in std_logic := 'h';
       --button2_i : in std_logic := 'h';
 
-      --spi_sclk_o : out std_logic;
-      --spi_ncs_o  : out std_logic;
-      --spi_mosi_o : out std_logic;
-      --spi_miso_i : in  std_logic := 'l';
+      ----------------------------------------
+      -- Flash memory SPI
+      ---------------------------------------
+      fpga_prom_cclk_o       : out std_logic;
+      fpga_prom_cso_b_n_o    : out std_logic;
+      fpga_prom_mosi_o       : out std_logic;
+      fpga_prom_miso_i       : in  std_logic:='1';
 
       thermo_id_i : in  std_logic;
       thermo_id_o : out std_logic;      -- 1-wire interface to ds18b20
@@ -124,6 +129,27 @@ architecture rtl of cutedp_wrc is
       clk_in_stopped_o: out  std_logic;
       locked_o      : out std_logic);
   end component;
+
+  -- MultiBoot component
+  -- use: remotely reprogram the FPGA
+  component wb_xil_multiboot is
+    port
+    (
+      -- Clock and reset input ports
+      clk_i   : in  std_logic;
+      rst_n_i : in  std_logic;
+
+      -- Wishbone ports
+      wbs_i   : in  t_wishbone_slave_in;
+      wbs_o   : out t_wishbone_slave_out;
+
+      -- SPI ports
+      spi_cs_n_o : out std_logic;
+      spi_sclk_o : out std_logic;
+      spi_mosi_o : out std_logic;
+      spi_miso_i : in  std_logic
+    );
+  end component wb_xil_multiboot;
 
   ------------------------------------------------------------------------------
   -- signals declaration
@@ -201,6 +227,11 @@ architecture rtl of cutedp_wrc is
   --signal clk_ext_rst                : std_logic;
   --signal clk_ref_div2               : std_logic;
 
+  signal multiboot_in  : t_wishbone_slave_in;
+  signal multiboot_out : t_wishbone_slave_out;
+  signal multiboot_wb_in   : t_wishbone_master_in;
+  signal multiboot_wb_out  : t_wishbone_master_out;
+
 constant c_ext_sdb : t_sdb_device := (
     abi_class     => x"0000",              -- undocumented device
     abi_ver_major => x"01",
@@ -216,6 +247,22 @@ constant c_ext_sdb : t_sdb_device := (
     version   => x"00000001",
     date      => x"20160424",
     name      => "wr-ext-config      ")));
+
+constant c_wrc_multiboot_sdb : t_sdb_device := (
+  abi_class     => x"0000",              -- undocumented device
+  abi_ver_major => x"01",
+  abi_ver_minor => x"01",
+  wbd_endian    => c_sdb_endian_big,
+  wbd_width     => x"7",                 -- 8/16/32-bit port granularity
+  sdb_component => (
+    addr_first  => x"0000000000000000",
+    addr_last   => x"00000000000000ff",
+    product     => (
+      vendor_id => x"000000000000CE42",  -- CERN
+      device_id => x"deadbeaf",
+      version   => x"00000001",
+      date      => x"20141115",
+      name      => "SPI-flash+Multiboot")));
 
 begin
 
@@ -264,8 +311,9 @@ generic map (
     g_pcs_16bit                 => false,
     g_dpram_initf               => "",
     g_etherbone_enable          => g_etherbone_enable,    
-    g_etherbone_cfg_sdb         => c_etherbone_sdb,
+    g_etherbone_sdb             => c_etherbone_sdb,
     g_ext_sdb                   => c_ext_sdb,
+    g_multiboot_sdb             => c_wrc_multiboot_sdb,
     g_dpram_size                => 131072/4,
     g_interface_mode            => pipelined,
     g_address_granularity       => byte)
@@ -374,6 +422,9 @@ port map (
     ext_snk_o => ext_snk_o,
     ext_snk_i => ext_snk_i,
 
+    multiboot_master_o => multiboot_in,
+    multiboot_master_i => multiboot_out,
+
     tm_dac_value_o       => open,
     tm_dac_wr_o          => open,
     tm_clk_aux_lock_en_i => (others => '0'),
@@ -421,7 +472,39 @@ port map (
     master_o(0) => wrc_slave_i);
 end generate;
 
-  ---------------------
+multiboot_gen:if (g_etherbone_enable=true and g_multiboot_enable=true) generate
+
+------------------------------------------------------------------------
+      -- multiboot modules --
+------------------------------------------------------------------------
+  cmp_clock_crossing: xwb_clock_crossing
+      port map
+      (
+        slave_clk_i     => clk_sys_i,
+        slave_rst_n_i   => rst_n_i,
+        slave_i         => multiboot_in,
+        slave_o         => multiboot_out,
+
+        master_clk_i    => clk_20m_i,
+        master_rst_n_i  => rst_n_i,
+        master_i        => multiboot_wb_in,
+        master_o        => multiboot_wb_out
+      );
+
+  cmp_multiboot : xwb_xil_multiboot
+    port map
+    (
+      clk_i   => clk_20m_i,
+      rst_n_i => rst_n_i,
+      wbs_i   => multiboot_wb_out,
+      wbs_o   => multiboot_wb_in,
+      spi_cs_n_o => fpga_prom_cso_b_n_o,
+      spi_sclk_o => fpga_prom_cclk_o,
+      spi_mosi_o => fpga_prom_mosi_o,
+      spi_miso_i => fpga_prom_miso_i
+    );
+
+end generate;
 
 u_gtp : wr_gtp_phy_spartan6
 generic map (

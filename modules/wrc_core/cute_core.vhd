@@ -96,6 +96,7 @@ entity cute_core is
     g_etherbone_enable          : boolean                        := true;    
     g_etherbone_sdb             : t_sdb_device                   := c_wrc_periph3_sdb;
     g_ext_sdb                   : t_sdb_device                   := c_wrc_periph3_sdb;
+    g_multiboot_sdb             : t_sdb_device                   := c_wrc_periph3_sdb;
     g_softpll_channels_config   : t_softpll_channel_config_array := c_softpll_default_channel_config;
     g_softpll_enable_debugger   : boolean                        := false;
     g_vuart_fifo_size           : integer                        := 1024;
@@ -284,6 +285,19 @@ entity cute_core is
     ext_src_err_i   : in  std_logic := '0';
     ext_src_stall_i : in  std_logic := '0';
 
+    -----------------------------------------
+    -- Multiboot Module
+    -----------------------------------------
+    multiboot_adr_o   : out std_logic_vector(c_wishbone_address_width-1 downto 0);
+    multiboot_dat_o   : out std_logic_vector(c_wishbone_data_width-1 downto 0);
+    multiboot_dat_i   : in  std_logic_vector(c_wishbone_data_width-1 downto 0);
+    multiboot_sel_o   : out std_logic_vector(c_wishbone_address_width/8-1 downto 0);
+    multiboot_we_o    : out std_logic;
+    multiboot_cyc_o   : out std_logic;
+    multiboot_stb_o   : out std_logic;
+    multiboot_ack_i   : in  std_logic := '1';
+    multiboot_stall_i : in  std_logic := '0';
+
     ------------------------------------------
     -- External TX Timestamp I/F
     ------------------------------------------
@@ -421,7 +435,8 @@ architecture struct of cute_core is
   -----------------------------------------------------------------------------
   --WB Secondary Crossbar
   -----------------------------------------------------------------------------
-  constant c_secbar_layout : t_sdb_record_array(8 downto 0) :=
+  constant c_nr_slaves_secbar : natural := 10;
+  constant c_secbar_layout : t_sdb_record_array(c_nr_slaves_secbar-1 downto 0) :=
     (0 => f_sdb_embed_device(c_xwr_mini_nic_sdb, x"00000000"),
      1 => f_sdb_embed_device(c_xwr_endpoint_sdb, x"00000100"),
      2 => f_sdb_embed_device(c_xwr_softpll_ng_sdb, x"00000200"),
@@ -430,15 +445,16 @@ architecture struct of cute_core is
      5 => f_sdb_embed_device(c_wrc_periph1_sdb, x"00000500"),  -- UART
      6 => f_sdb_embed_device(c_wrc_periph2_sdb, x"00000600"),  -- 1-Wire
      7 => f_sdb_embed_device(g_etherbone_sdb, x"00000700"),    -- etherbone
-     8 => f_sdb_embed_device(g_ext_sdb, x"00000800")           -- ext
+     8 => f_sdb_embed_device(g_ext_sdb, x"00000800"),           -- ext
+     9 => f_sdb_embed_device(g_ext_sdb, x"00000900")           -- multiboot 
      );
 
   constant c_secbar_sdb_address : t_wishbone_address := x"00001000";
   constant c_secbar_bridge_sdb  : t_sdb_bridge       :=
     f_xwb_bridge_layout_sdb(true, c_secbar_layout, c_secbar_sdb_address);
 
-  signal secbar_master_i : t_wishbone_master_in_array(8 downto 0);
-  signal secbar_master_o : t_wishbone_master_out_array(8 downto 0);
+  signal secbar_master_i : t_wishbone_master_in_array(c_nr_slaves_secbar-1 downto 0);
+  signal secbar_master_o : t_wishbone_master_out_array(c_nr_slaves_secbar-1 downto 0);
 
   -----------------------------------------------------------------------------
   --WB intercon
@@ -948,7 +964,7 @@ begin
   WB_SECONDARY_CON : xwb_sdb_crossbar
     generic map(
       g_num_masters => 1,
-      g_num_slaves  => 9,
+      g_num_slaves  => c_nr_slaves_secbar,
       g_registered  => true,
       g_wraparound  => true,
       g_layout      => c_secbar_layout,
@@ -1007,6 +1023,19 @@ begin
   secbar_master_i(8).stall <= ext_stall_i;
   secbar_master_i(8).err   <= '0';
   secbar_master_i(8).rty   <= '0';
+
+  multiboot_adr_o <= secbar_master_o(9).adr;
+  multiboot_dat_o <= secbar_master_o(9).dat;
+  multiboot_sel_o <= secbar_master_o(9).sel;
+  multiboot_cyc_o <= secbar_master_o(9).cyc;
+  multiboot_stb_o <= secbar_master_o(9).stb;
+  multiboot_we_o  <= secbar_master_o(9).we;
+
+  secbar_master_i(9).dat   <= multiboot_dat_i;
+  secbar_master_i(9).ack   <= multiboot_ack_i;
+  secbar_master_i(9).stall <= multiboot_stall_i;
+  secbar_master_i(9).err   <= '0';
+  secbar_master_i(9).rty   <= '0';
 
   --secbar_master_i(6).err <= '0';
   --secbar_master_i(5).err <= '0';

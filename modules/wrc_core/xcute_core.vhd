@@ -81,6 +81,7 @@ entity xcute_core is
     g_etherbone_enable          : boolean                        := true;
     g_etherbone_sdb             : t_sdb_device                   := c_wrc_periph3_sdb;
     g_ext_sdb                   : t_sdb_device                   := c_wrc_periph3_sdb;
+    g_multiboot_sdb             : t_sdb_device                   := c_wrc_periph3_sdb;
     g_softpll_enable_debugger   : boolean                        := false;
     g_vuart_fifo_size           : integer                        := 1024;
     g_pcs_16bit                 : boolean                        := false);
@@ -215,6 +216,12 @@ entity xcute_core is
     ext_snk_i : in  t_wrf_sink_in   := c_dummy_snk_in;
 
     -----------------------------------------
+    --Multiboot Module
+    -----------------------------------------
+    multiboot_master_o : out t_wishbone_master_out;
+    multiboot_master_i : in  t_wishbone_master_in := cc_dummy_master_in;
+
+    -----------------------------------------
     -- External Tx Timestamping I/F
     -----------------------------------------
     timestamps_o     : out t_txtsu_timestamp;
@@ -275,6 +282,7 @@ component cute_core is
     g_etherbone_enable          : boolean                        := true;
     g_etherbone_sdb             : t_sdb_device                   := c_wrc_periph3_sdb;
     g_ext_sdb                   : t_sdb_device                   := c_wrc_periph3_sdb;
+    g_multiboot_sdb             : t_sdb_device                   := c_wrc_periph3_sdb;
     g_softpll_channels_config   : t_softpll_channel_config_array := c_softpll_default_channel_config;
     g_softpll_enable_debugger   : boolean                        := false;
     g_vuart_fifo_size           : integer                        := 1024;
@@ -462,6 +470,19 @@ component cute_core is
     ext_src_ack_i   : in  std_logic := '1';
     ext_src_err_i   : in  std_logic := '0';
     ext_src_stall_i : in  std_logic := '0';
+
+    -----------------------------------------
+    -- Multiboot WB master
+    -----------------------------------------
+    multiboot_adr_o   : out std_logic_vector(c_wishbone_address_width-1 downto 0);
+    multiboot_dat_o   : out std_logic_vector(c_wishbone_data_width-1 downto 0);
+    multiboot_dat_i   : in  std_logic_vector(c_wishbone_data_width-1 downto 0);
+    multiboot_sel_o   : out std_logic_vector(c_wishbone_address_width/8-1 downto 0);
+    multiboot_we_o    : out std_logic;
+    multiboot_cyc_o   : out std_logic;
+    multiboot_stb_o   : out std_logic;
+    multiboot_ack_i   : in  std_logic := '1';
+    multiboot_stall_i : in  std_logic := '0';
 
     ------------------------------------------
     -- External TX Timestamp I/F
@@ -660,6 +681,16 @@ begin
       ext_src_ack_i   => ext_src_i.ack,
       ext_src_err_i   => ext_src_i.err,
       ext_src_stall_i => ext_src_i.stall,
+
+      multiboot_adr_o   => multiboot_master_o.adr,
+      multiboot_dat_o   => multiboot_master_o.dat,
+      multiboot_sel_o   => multiboot_master_o.sel,
+      multiboot_cyc_o   => multiboot_master_o.cyc,
+      multiboot_stb_o   => multiboot_master_o.stb,
+      multiboot_we_o    => multiboot_master_o.we,
+      multiboot_stall_i => multiboot_master_i.stall,
+      multiboot_ack_i   => multiboot_master_i.ack,
+      multiboot_dat_i   => multiboot_master_i.dat,
 
       txtsu_port_id_o      => timestamps_o.port_id(4 downto 0),
       txtsu_frame_id_o     => timestamps_o.frame_id,
