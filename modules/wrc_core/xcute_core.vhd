@@ -546,6 +546,7 @@ begin
       g_etherbone_enable          => g_etherbone_enable,
       g_etherbone_sdb             => g_etherbone_sdb,
       g_ext_sdb                   => g_ext_sdb,
+      g_multiboot_sdb             => g_multiboot_sdb,
       g_softpll_enable_debugger   => g_softpll_enable_debugger,
       g_vuart_fifo_size           => g_vuart_fifo_size,
       g_pcs_16bit                 => g_pcs_16bit)

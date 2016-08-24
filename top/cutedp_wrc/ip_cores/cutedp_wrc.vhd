@@ -246,7 +246,7 @@ constant c_ext_sdb : t_sdb_device := (
     device_id => x"c0413599",
     version   => x"00000001",
     date      => x"20160424",
-    name      => "wr-ext-config      ")));
+    name      => "WR-Ext-Config      ")));
 
 constant c_wrc_multiboot_sdb : t_sdb_device := (
   abi_class     => x"0000",              -- undocumented device
