@@ -55,7 +55,7 @@ entity cute_wrc is
       fpga_prom_cclk_o       : out std_logic;
       fpga_prom_cso_b_n_o    : out std_logic;
       fpga_prom_mosi_o       : out std_logic;
-      fpga_prom_miso_i       : in  std_logic;
+      fpga_prom_miso_i       : in  std_logic:='1';
 
       thermo_id_i : in  std_logic;
       thermo_id_o : out std_logic;      -- 1-wire interface to ds18b20
@@ -216,23 +216,23 @@ constant c_ext_sdb : t_sdb_device := (
     device_id => x"c0413599",
     version   => x"00000001",
     date      => x"20160424",
-    name      => "wr-ext-config      ")));
+    name      => "WR-Ext-Config      ")));
 
-  constant c_wrc_multiboot_sdb : t_sdb_device := (
-    abi_class     => x"0000",              -- undocumented device
-    abi_ver_major => x"01",
-    abi_ver_minor => x"01",
-    wbd_endian    => c_sdb_endian_big,
-    wbd_width     => x"7",                 -- 8/16/32-bit port granularity
-    sdb_component => (
-      addr_first  => x"0000000000000000",
-      addr_last   => x"00000000000000ff",
-      product     => (
-        vendor_id => x"000000000000CE42",  -- CERN
-        device_id => x"deadbeaf",
-        version   => x"00000001",
-        date      => x"20141115",
-        name      => "SPI-flash+Multiboot")));
+constant c_wrc_multiboot_sdb : t_sdb_device := (
+  abi_class     => x"0000",              -- undocumented device
+  abi_ver_major => x"01",
+  abi_ver_minor => x"01",
+  wbd_endian    => c_sdb_endian_big,
+  wbd_width     => x"7",                 -- 8/16/32-bit port granularity
+  sdb_component => (
+    addr_first  => x"0000000000000000",
+    addr_last   => x"00000000000000ff",
+    product     => (
+      vendor_id => x"000000000000CE42",  -- CERN
+      device_id => x"deadbeaf",
+      version   => x"00000001",
+      date      => x"20141115",
+      name      => "SPI-flash+Multiboot")));
 
 begin
 
@@ -283,7 +283,7 @@ generic map (
     g_etherbone_enable          => g_etherbone_enable,
     g_etherbone_sdb             => c_etherbone_sdb,
     g_ext_sdb                   => c_ext_sdb,
-    g_multiboot_sdb             => c_wrc_multiboot_sdb,
+    g_aux_sdb                   => c_wrc_multiboot_sdb,
     g_dpram_size                => 131072/4,
     g_interface_mode            => pipelined,
     g_address_granularity       => byte)
@@ -367,8 +367,8 @@ port map (
     ext_snk_o => ext_snk_o,
     ext_snk_i => ext_snk_i,
 
-    multiboot_master_o => multiboot_in,
-    multiboot_master_i => multiboot_out,
+    aux_master_o => multiboot_in,
+    aux_master_i => multiboot_out,
 
     tm_dac_value_o       => open,
     tm_dac_wr_o          => open,

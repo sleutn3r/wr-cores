@@ -672,7 +672,7 @@ package wrcore_pkg is
         g_etherbone_enable          : boolean                        := true;
         g_etherbone_sdb             : t_sdb_device                   := c_wrc_periph3_sdb;
         g_ext_sdb                   : t_sdb_device                   := c_wrc_periph3_sdb;
-        g_multiboot_sdb             : t_sdb_device                   := c_wrc_periph3_sdb;
+        g_aux_sdb                   : t_sdb_device                   := c_wrc_periph3_sdb;
         g_softpll_enable_debugger   : boolean                        := false;
         g_vuart_fifo_size           : integer                        := 1024;
         g_pcs_16bit                 : boolean                        := false);
@@ -807,10 +807,10 @@ package wrcore_pkg is
         ext_snk_i : in  t_wrf_sink_in   := c_dummy_snk_in;
         
         -----------------------------------------
-        --Multiboot Module
+        --aux Module
         -----------------------------------------
-        multiboot_master_o : out t_wishbone_master_out;
-        multiboot_master_i : in  t_wishbone_master_in := cc_dummy_master_in;
+        aux_master_o : out t_wishbone_master_out;
+        aux_master_i : in  t_wishbone_master_in := cc_dummy_master_in;
 
         -----------------------------------------
         -- External Tx Timestamping I/F

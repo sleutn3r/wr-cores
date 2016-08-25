@@ -96,7 +96,7 @@ entity cute_core is
     g_etherbone_enable          : boolean                        := true;    
     g_etherbone_sdb             : t_sdb_device                   := c_wrc_periph3_sdb;
     g_ext_sdb                   : t_sdb_device                   := c_wrc_periph3_sdb;
-    g_multiboot_sdb             : t_sdb_device                   := c_wrc_periph3_sdb;
+    g_aux_sdb                   : t_sdb_device                   := c_wrc_periph3_sdb;
     g_softpll_channels_config   : t_softpll_channel_config_array := c_softpll_default_channel_config;
     g_softpll_enable_debugger   : boolean                        := false;
     g_vuart_fifo_size           : integer                        := 1024;
@@ -286,17 +286,17 @@ entity cute_core is
     ext_src_stall_i : in  std_logic := '0';
 
     -----------------------------------------
-    -- Multiboot Module
+    -- aux Module
     -----------------------------------------
-    multiboot_adr_o   : out std_logic_vector(c_wishbone_address_width-1 downto 0);
-    multiboot_dat_o   : out std_logic_vector(c_wishbone_data_width-1 downto 0);
-    multiboot_dat_i   : in  std_logic_vector(c_wishbone_data_width-1 downto 0);
-    multiboot_sel_o   : out std_logic_vector(c_wishbone_address_width/8-1 downto 0);
-    multiboot_we_o    : out std_logic;
-    multiboot_cyc_o   : out std_logic;
-    multiboot_stb_o   : out std_logic;
-    multiboot_ack_i   : in  std_logic := '1';
-    multiboot_stall_i : in  std_logic := '0';
+    aux_adr_o   : out std_logic_vector(c_wishbone_address_width-1 downto 0);
+    aux_dat_o   : out std_logic_vector(c_wishbone_data_width-1 downto 0);
+    aux_dat_i   : in  std_logic_vector(c_wishbone_data_width-1 downto 0);
+    aux_sel_o   : out std_logic_vector(c_wishbone_address_width/8-1 downto 0);
+    aux_we_o    : out std_logic;
+    aux_cyc_o   : out std_logic;
+    aux_stb_o   : out std_logic;
+    aux_ack_i   : in  std_logic := '1';
+    aux_stall_i : in  std_logic := '0';
 
     ------------------------------------------
     -- External TX Timestamp I/F
@@ -446,7 +446,7 @@ architecture struct of cute_core is
      6 => f_sdb_embed_device(c_wrc_periph2_sdb, x"00000600"),  -- 1-Wire
      7 => f_sdb_embed_device(g_etherbone_sdb, x"00000700"),    -- etherbone
      8 => f_sdb_embed_device(g_ext_sdb, x"00000800"),           -- ext
-     9 => f_sdb_embed_device(g_multiboot_sdb, x"00000900")           -- multiboot 
+     9 => f_sdb_embed_device(g_aux_sdb, x"00000900")           -- aux 
      );
 
   constant c_secbar_sdb_address : t_wishbone_address := x"00001000";
@@ -1024,16 +1024,16 @@ begin
   secbar_master_i(8).err   <= '0';
   secbar_master_i(8).rty   <= '0';
 
-  multiboot_adr_o <= secbar_master_o(9).adr;
-  multiboot_dat_o <= secbar_master_o(9).dat;
-  multiboot_sel_o <= secbar_master_o(9).sel;
-  multiboot_cyc_o <= secbar_master_o(9).cyc;
-  multiboot_stb_o <= secbar_master_o(9).stb;
-  multiboot_we_o  <= secbar_master_o(9).we;
+  aux_adr_o <= secbar_master_o(9).adr;
+  aux_dat_o <= secbar_master_o(9).dat;
+  aux_sel_o <= secbar_master_o(9).sel;
+  aux_cyc_o <= secbar_master_o(9).cyc;
+  aux_stb_o <= secbar_master_o(9).stb;
+  aux_we_o  <= secbar_master_o(9).we;
 
-  secbar_master_i(9).dat   <= multiboot_dat_i;
-  secbar_master_i(9).ack   <= multiboot_ack_i;
-  secbar_master_i(9).stall <= multiboot_stall_i;
+  secbar_master_i(9).dat   <= aux_dat_i;
+  secbar_master_i(9).ack   <= aux_ack_i;
+  secbar_master_i(9).stall <= aux_stall_i;
   secbar_master_i(9).err   <= '0';
   secbar_master_i(9).rty   <= '0';
 
