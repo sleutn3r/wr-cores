@@ -1,0 +1,1 @@
+files = ["pcn_coincidence.vhd"]

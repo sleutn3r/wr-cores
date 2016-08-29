@@ -14,6 +14,7 @@ modules =  {"local" :
 												"modules/wr_tlu",
 												"modules/wrc_core",
 												"modules/wr_streamers",
-                                                "modules/wr_lhaaso_ed",
+												"modules/wr_lhaaso_ed",
+												"modules/wr_pcn",
 												"platform"]
 						}
