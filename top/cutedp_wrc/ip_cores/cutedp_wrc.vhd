@@ -235,8 +235,6 @@ architecture rtl of cutedp_wrc is
   --signal clk_ext_rst                : std_logic;
   --signal clk_ref_div2               : std_logic;
 
-signal g_aux_sdb : t_sdb_device;
-
 constant c_ext_sdb : t_sdb_device := (
     abi_class     => x"0000",              -- undocumented device
     abi_ver_major => x"01",
@@ -318,7 +316,7 @@ generic map (
     g_etherbone_enable          => g_etherbone_enable,
     g_etherbone_sdb             => c_etherbone_sdb,
     g_ext_sdb                   => c_ext_sdb,
-    g_aux_sdb                   => g_aux_sdb,
+    g_aux_sdb                   => c_wrc_multiboot_sdb,
     g_dpram_size                => 131072/4,
     g_interface_mode            => pipelined,
     g_address_granularity       => byte)
@@ -484,10 +482,7 @@ multiboot_gen:if (g_etherbone_enable=true and g_multiboot_enable=true) generate
 
 ------------------------------------------------------------------------
       -- multiboot modules --
-------------------------------------------------------------------------
-  
-  g_aux_sdb <= c_wrc_multiboot_sdb;
-  
+------------------------------------------------------------------------  
   cmp_clock_crossing: xwb_clock_crossing
       port map
       (
