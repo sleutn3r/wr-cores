@@ -1,0 +1,96 @@
+-- -*- Mode: LUA; tab-width: 2 -*-
+
+peripheral {
+	name ="PCN Wishbone Slave";
+	prefix="pcn";
+	hdl_entity="pcn_wb_slave";
+	
+-- PCN CR
+	reg {
+		name = "PCN Control Register";
+		prefix = "cr";
+		description = "General PCN control register";
+
+		field {
+			name = "Reset PCN module";
+			description = "write 1: resets the PCN module";
+			prefix = "rst";
+			type = MONOSTABLE;
+		};
+    
+    field {
+      name = "PCN calibration select";
+      description = "1: select calibration signal \
+                     0: select input signal.";
+      prefix = "cal_sel";
+      type = SLV;
+      size = 2;
+    };
+
+    field {
+      name = "PCN lut build";
+      description = "write 1: start build the LUT";
+      prefix = "lut_build";
+      type = MONOSTABLE;
+    };
+
+		field {
+			name = "PCN module enable";
+			description = "1:PCN module is enabled\
+			               0:PCN module is disabled";
+			prefix = "en";
+			access_bus = READ_WRITE;
+			access_dev = READ_ONLY;
+			type = SLV;
+			size = 2;
+		};
+	};
+
+-- PCN SR
+	reg {
+		name = "PCN Status Register";
+		prefix = "sr";
+		description = "General PCN status register";
+
+		field {
+			name = "DNL table is done.";
+			description = "1: DNL table is done.\
+			               0: DNL table is doing.";
+			prefix = "dnl_done";
+			clock = "refclk_i";
+			type = SLV;
+			size = 2;
+			access_bus = READ_ONLY;
+			access_dev = WRITE_ONLY;
+		};
+
+		field {
+			name = "LUT table is done.";
+			description = "1: LUT table is done.\
+			               0: LUT table is doing.";
+			prefix = "lut_done";
+			clock = "refclk_i";
+			type = SLV;
+			size = 2;
+			access_bus = READ_ONLY;
+			access_dev = WRITE_ONLY;
+		};
+	};
+
+	fifo_reg {
+		size = 128;
+		direction = CORE_TO_BUS;
+		prefix = "tsdf";
+		name = "Timestamp Differences FIFO";
+		description = "This FIFO holds the Timestamp Differences measured by the 2-channel tdc module.";
+		flags_bus = {FIFO_FULL, FIFO_EMPTY, FIFO_COUNT};
+		flags_dev = {FIFO_FULL, FIFO_EMPTY, FIFO_COUNT};
+		
+		field {
+			name = "Timestamp difference";
+			prefix = "val";
+			type = SLV;
+			size = 18;
+		};
+	};
+};

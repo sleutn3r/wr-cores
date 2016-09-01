@@ -46,10 +46,10 @@ entity pcn_coincidence is
 -- fifo data width
     g_data_width : natural := 32;
 -- coincidence window, 16 ns * ( 2^g_windows_width -1 )
-	  g_window_width : natural := 10;
+    g_window_width : natural := 10;
 -- diff data width
     g_diff_width : natural := 18
-    );
+   );
   port (
     clk_sys_i : in std_logic:='0';
     rst_n_i	  : in std_logic:='0';
@@ -62,9 +62,9 @@ entity pcn_coincidence is
     fifob_rd_o    : out std_logic;
     fifob_data_i  : in  std_logic_vector(g_data_width-1 downto 0):=(others=>'0');
 
-    diff_wr_o   : out std_logic;
-    diff_data_o : out std_logic_vector(g_diff_width downto 0);
-    diff_full_i : in std_logic:='0'
+    diff_fifo_wr_o   : out std_logic;
+    diff_fifo_data_o : out std_logic_vector(g_diff_width downto 0);
+    diff_fifo_full_i : in std_logic:='0'
   );
 
 end pcn_coincidence;
@@ -85,8 +85,8 @@ begin
   
   fifoa_data <= unsigned('0' & fifoa_data_i(g_diff_width-1 downto 0));
   fifob_data <= unsigned('0' & fifob_data_i(g_diff_width-1 downto 0));
-  diff_wr_o <= diff_valid and (not diff_full_i);
-  diff_data_o <= std_logic_vector(diff_value);
+  diff_fifo_wr_o <= diff_valid and (not diff_fifo_full_i);
+  diff_fifo_data_o <= std_logic_vector(diff_value);
 
   g_coincidence_proc : process(clk_sys_i)
   begin

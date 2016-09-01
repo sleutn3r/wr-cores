@@ -16,12 +16,13 @@ library unisim;
 use unisim.vcomponents.all;
 
 entity cutewrdp_pcn is
-generic
-(
-  g_etherbone_enable: boolean:= False
-);
-port
-(
+  generic
+    (
+      g_etherbone_enable: boolean:= true;
+      g_multiboot_enable: boolean:= true
+     );
+  port
+  (
     -- Global ports
     clk_20m_vcxo_i : in std_logic;    -- 20MHz VCXO clock
 
@@ -84,11 +85,11 @@ port
     -- user interface
     ---------------------------------------
     -- Font panel LEDs
-    usr_button_i: in  std_logic;
+    --usr_button_i: in  std_logic;
 --    usr_led1_o  : out std_logic;
 --    usr_led2_o  : out std_logic;
     usr_lemo1_i : in  std_logic;
---    usr_lemo2_o : out std_logic
+    usr_lemo2_i : in  std_logic;
     -----------------------------------------
     --PPS
     -----------------------------------------
@@ -102,145 +103,59 @@ architecture rtl of cutewrdp_pcn is
 ------------------------------------------------------------------------------
 -- Components declaration
 ------------------------------------------------------------------------------
-component cute_reset_gen is
-port (
-    clk_sys_i : in std_logic;
-    rst_button_n_a_i : in std_logic;
-    rst_n_o : out std_logic);
-end component;
-
-component xwb_com5402 is
-  generic (
-		g_clk_frequency: integer := 125;
-		g_simulation: std_logic := '0'
-			-- 1 during simulation with wireshark .cap file, '0' otherwise
-			-- wireshark many not be able to collect offloaded checksum computations.
-			-- when simulation =  '1': (a) ip header checksum is valid if 0000,
-			-- (b) tcp checksum computation is forced to a valid 00001 irrespective of the 16-bit checksum
-			-- captured by wireshark.
-	);
-port(
-    clk_ref_i         : in std_logic;
-    clk_sys_i         : in std_logic;
-    rst_n_i           : in std_logic;
-
-    snk_i             : in  t_wrf_sink_in;
-    snk_o             : out t_wrf_sink_out;
-    udp_rx_data       : out std_logic_vector(7 downto 0);
-    udp_rx_data_valid : out std_logic;
-    udp_rx_sof        : out std_logic;
-    udp_rx_eof        : out std_logic;
-    tcp_rx_data       : out  std_logic_vector(7 downto 0):= (others=>'0');
-    tcp_rx_data_valid : out std_logic;
-    tcp_rx_rts        : out std_logic;
-		tcp_rx_cts        : in std_logic:='1';
-
-    src_o             : out t_wrf_source_out;
-    src_i             : in  t_wrf_source_in;
-    udp_tx_data       : in  std_logic_vector(7 downto 0):= (others=>'0');
-    udp_tx_data_valid : in  std_logic:= '0';
-    udp_tx_sof        : in  std_logic:= '0';
-    udp_tx_eof        : in  std_logic:= '0';
-    udp_tx_cts        : out std_logic;
-    udp_tx_ack        : out std_logic;
-    udp_tx_nak        : out std_logic;
-    udp_tx_dest_ip_addr:in  std_logic_vector(127 downto 0):= (others=>'0');
-    udp_tx_dest_port_no:in  std_logic_vector(15 downto 0):= (others=>'0');
-    tcp_tx_data       : in  std_logic_vector(7 downto 0):= (others=>'0');
-    tcp_tx_data_valid : in  std_logic:='0';
-    tcp_tx_cts        : out std_logic;
-
-    cfg_slave_in      : in  t_wishbone_slave_in;
-    cfg_slave_out     : out t_wishbone_slave_out
-);
-end component;
-
-
-component user_udp_demo is
-port(
-	clk_i 				   	      : in std_logic;
-	rst_n_i 					      : in std_logic;
-
-	udp_rx_data         		: in std_logic_vector(7 downto 0);
-	udp_rx_data_valid   		: in std_logic;
-	udp_rx_sof          		: in std_logic;
-	udp_rx_eof          		: in std_logic;
-
-	udp_tx_data         		: out std_logic_vector(7 downto 0);
-	udp_tx_data_valid   		: out std_logic;
-	udp_tx_sof          		: out std_logic;
-	udp_tx_eof          		: out std_logic;
-	udp_tx_cts          		: in std_logic;
-	udp_tx_ack          		: in std_logic;
-	udp_tx_nak          		: in std_logic;
-	udp_tx_dest_ip_addr			: out std_logic_vector(127 downto 0);
-	udp_tx_dest_port_no			: out std_logic_vector(15 downto 0)
-);
-end component;
+  component cute_reset_gen is
+  port (
+      clk_sys_i : in std_logic;
+      rst_n_o : out std_logic);
+  end component;
 	
-component tdc_top is
-	generic(
-		-- general
-		g_meas_channel_num  : integer := c_meas_channel_num;
-		g_delaychain_length : integer := c_delaychain_length;
-		g_waveunion_enable  : boolean := c_waveunion_enable;
-		-- g_hit_cnt           : integer := c_hit_cnt;
-		-- timestamp data width
-		g_fine_width        : integer := c_fine_width;
-		g_coarsecntr_width  : integer := c_coarsecntr_width;
-		-- channel buf
-		g_channel_data_width :integer := c_channel_data_width;
-		g_channel_size       :integer := c_channel_size;
-		g_channel_ready_threshold : integer := c_channel_ready_threshold;
-		-- tdc buf
-		g_tdc_buf_data_width : integer := c_tdc_buf_data_width;
-		g_tdc_buf_size       : integer := c_tdc_buf_size
-	);
-	port(
-	  clk_sys_i           : in  std_logic;
-		clk_ref_i           : in  std_logic;
-		clk_tdc_i           : in  std_logic;
-		rst_n_i             : in  std_logic;
-		
-		tdc_cal_i           : in  std_logic;
-		tdc_insig_i         : in  std_logic_vector(g_meas_channel_num-1 downto 0);
-		
-		tdc_buf_rdreq_i     : in  std_logic;
-		tdc_buf_rddata_o    : out std_logic_vector(g_tdc_buf_data_width-1 downto 0);
-		tdc_buf_rdusedw_o   : out std_logic_vector(f_log2_size(g_tdc_buf_size)-1 downto 0);
-		
-		tdc_slave_i					: in  t_wishbone_slave_in;
-    tdc_slave_o         : out t_wishbone_slave_out 
-	);
+  component xwb_pcn_module is
+  generic(
+-- fifo data width
+    g_data_width   : natural := 32;
+-- coincidence window, 16 ns * ( 2^g_windows_width -1 )
+    g_window_width : natural := 10;
+-- diff data width
+    g_diff_width   : natural := 18;
+--    g_dualedge_enable   : boolean := c_dualedge_enable;
+    g_waveunion_enable  : boolean := true;
+--    g_correction_enable : boolean := c_correction_enable;
+    g_hit_cnt           : integer := 65536;
+    -- timestamp data width = g_coarsecntr_width + g_fine_width
+    g_timestamp_width   : integer := 32;
+    g_coarsecntr_width  : integer := 24;    -- must be multiple of 8
+    g_fine_width        : integer := 8;
+    -- dnl data width = addr_width + data_width
+    g_dnl_width         : integer := 32;
+    g_dnl_addr_width    : integer := 8;
+    g_dnl_data_width    : integer := 24;    
+    g_interface_mode       : t_wishbone_interface_mode      := CLASSIC;
+    g_address_granularity  : t_wishbone_address_granularity := WORD
+    );
+  port (
+    rst_n_i   : in std_logic:='1';
+-- 62.5MHz system clock
+    clk_sys_i : in std_logic:='0';
+-- 125MHz reference clock
+    clk_ref_i : in std_logic:='0';
+-- 250MHz TDC clock
+    clk_tdc_i : in std_logic:='0';
+
+-- signals to be measured
+    tdc_insig_i : in std_logic_vector(1 downto 0);
+-- the calibration signals (< 62.5MHz)
+    tdc_cal_i  : in std_logic;
+-- utc time coming from wrpc
+    utc_i               : in  std_logic_vector(39 downto 0):=(others=>'0'); -- time (>1s)
+-- pps signal coming from wrpc
+    pps_i               : in  std_logic;  -- pps input
+
+    pcn_slave_i : in  t_wishbone_slave_in;
+    pcn_slave_o : out t_wishbone_slave_out
+    );
 end component;
-	
-component tdc_read is
-generic(
-		g_tdc_buf_data_width : integer := 8;
-		g_tdc_buf_size       : integer := 2045;
-		g_tdc_buf_ready_threshold: integer:=1024
-);
-port (
-		clk_ref_i   : in std_logic;
-		rst_n_i     : in std_logic;
 
-		tdc_buf_rdreq_o   : out std_logic;
-		tdc_buf_rddata_i  : in  std_logic_vector(g_tdc_buf_data_width-1 downto 0);
-		tdc_buf_rdusedw_i : in std_logic_vector(f_log2_size(g_tdc_buf_size)-1 downto 0);
 
-		udp_rx_data_valid       : in  std_logic;
-		udp_tx_data         : out std_logic_vector(7 downto 0);
-		udp_tx_data_valid   : out std_logic;
-		udp_tx_sof          : out std_logic;
-		udp_tx_eof          : out std_logic;
-		udp_tx_cts          : in std_logic;
-		udp_tx_ack          : in std_logic;
-		udp_tx_nak          : in std_logic;
-		udp_tx_dest_ip_addr	: out std_logic_vector(127 downto 0);
-		udp_tx_dest_port_no	: out std_logic_vector(15 downto 0)
-) ;
-end component ; -- tdc_read
-	
 constant c_ext_cfg_sdb : t_sdb_device := (
     abi_class     => x"0000",              -- undocumented device
     abi_ver_major => x"01",
@@ -255,7 +170,7 @@ constant c_ext_cfg_sdb : t_sdb_device := (
     device_id => x"c0413599",
     version   => x"00000001",
     date      => x"20160424",
-    name      => "WR-IP-CONFIG       ")));
+    name      => "WR-EXT-CONFIG      ")));
 
 constant c_null_sdb : t_sdb_device := (
     abi_class     => x"0000",              -- undocumented device
@@ -273,7 +188,7 @@ constant c_null_sdb : t_sdb_device := (
     date      => x"20160324",
     name      => "WR-NULL            ")));
 
-constant c_wrc_tdc_cm_sdb : t_sdb_device := (
+constant c_pcn_sdb : t_sdb_device := (
 	  abi_class     => x"0000",              -- undocumented device
 	  abi_ver_major => x"01",
 	  abi_ver_minor => x"01",
@@ -284,10 +199,10 @@ constant c_wrc_tdc_cm_sdb : t_sdb_device := (
 	  addr_last   => x"00000000000000ff",
 	  product     => (
 	  vendor_id => x"0000000000001103",  -- THU
-	  device_id => x"f0443598",
+	  device_id => x"f0f43591",
 	  version   => x"00000001",
 	  date      => x"20160419",
-	  name      => "WR-TDC-CONTROL     ")));
+	  name      => "WR-PCN-MODULE      ")));
 
   ------------------------------------------------------------------------------
   -- Signals declaration
@@ -306,22 +221,10 @@ constant c_wrc_tdc_cm_sdb : t_sdb_device := (
   signal pllout_clk_dmtd:std_logic;
   signal pllout_clk_calib:std_logic;	
 
-  signal ext_wb_out    : t_wishbone_master_out;
-  signal ext_wb_in     : t_wishbone_master_in;
-
-  signal ext_cfg_slave_i    : t_wishbone_slave_in;
-  signal ext_cfg_slave_o   : t_wishbone_slave_out;
-  
-  signal tdc_cm_slave_i : t_wishbone_slave_in;
-  signal tdc_cm_slave_o : t_wishbone_slave_out;
-
-  signal ext_src_o : t_wrf_source_out;
-  signal ext_src_i  : t_wrf_source_in;
-  signal ext_snk_o : t_wrf_sink_out;
-  signal ext_snk_i  : t_wrf_sink_in;
-
   signal wrc_slave_i : t_wishbone_slave_in;
   signal wrc_slave_o : t_wishbone_slave_out;
+  signal pcn_wb_slave_i: t_wishbone_slave_in;
+  signal pcn_wb_slave_o: t_wishbone_slave_out;
 
   signal fpga_scl_o : std_logic;
   signal fpga_scl_i : std_logic;
@@ -356,6 +259,11 @@ constant c_wrc_tdc_cm_sdb : t_sdb_device := (
   signal owr_en : std_logic_vector(1 downto 0);
   signal owr_i  : std_logic_vector(1 downto 0);
 
+  signal pps     : std_logic;
+  signal pps_led : std_logic;
+  
+  signal led_red : std_logic;
+  signal led_green : std_logic;
   --signal phy0_tx_data      : std_logic_vector(7 downto 0);
   --signal phy0_tx_k         : std_logic_vector(0 downto 0);
   --signal phy0_tx_disparity : std_logic;
@@ -386,62 +294,60 @@ constant c_wrc_tdc_cm_sdb : t_sdb_device := (
   signal phy1_prbs_sel     : std_logic_vector(2 downto 0);
   signal phy1_rdy          : std_logic;
 
-  signal tdc_measure: std_logic_vector(c_meas_channel_num-1 downto 0);
-  signal tdc_buf_rdreq  : std_logic;
-  signal tdc_buf_rddata : std_logic_vector(c_tdc_buf_data_width-1 downto 0);
-  signal tdc_buf_rdusedw: std_logic_vector(f_log2_size(c_tdc_buf_size)-1 downto 0);
-	
+  signal tm_tai            : std_logic_vector(39 downto 0);
+  signal tm_tai_valid      : std_logic;
+  signal tdc_measure_i     : std_logic_vector(1 downto 0);
+  signal tdc_cal_i         : std_logic;
+
 begin
 
-U_Reset_Gen : cute_reset_gen
-port map (
+  U_Reset_Gen : cute_reset_gen
+  port map (
     clk_sys_i        => clk_sys_i,
-    rst_button_n_a_i => usr_button_i,
     rst_n_o          => local_reset_n
-);
+  );
 
-cmp_refclk_buf : IBUFGDS
-generic map (
-    DIFF_TERM    => true,             -- Differential Termination
-    IBUF_LOW_PWR => true,  -- Low power (TRUE) vs. performance (FALSE) setting for referenced I/O standards
-    IOSTANDARD   => "DEFAULT")
-port map (
-    O  => fpga_clk_i,            -- Buffer output
-    I  => fpga_clk_p_i,  -- Diff_p buffer input (connect directly to top-level port)
-    IB => fpga_clk_n_i  -- Diff_n buffer input (connect directly to top-level port)
-);
+  cmp_refclk_buf : ibufgds
+  generic map (
+    diff_term    => true,             -- differential termination
+    ibuf_low_pwr => true,  -- low power (true) vs. performance (false) setting for referenced i/o standards
+    iostandard   => "default")
+  port map (
+    o  => fpga_clk_i,            -- buffer output
+    i  => fpga_clk_p_i,  -- diff_p buffer input (connect directly to top-level port)
+    ib => fpga_clk_n_i  -- diff_n buffer input (connect directly to top-level port)
+  );
 
-cmp_clk_vcxo_buf : BUFG
-port map (
-    O => clk_20m_vcxo_buf,
-    I => clk_20m_vcxo_i
-);
+  cmp_clk_vcxo_buf : bufg
+  port map (
+    o => clk_20m_vcxo_buf,
+    i => clk_20m_vcxo_i
+  );
 
-
---cmp_gtp0_dedicated_clk_buf : IBUFDS
---generic map(
+--  cmp_gtp0_dedicated_clk_buf : IBUFDS
+--  generic map(
 --    DIFF_TERM    => true,
 --    IBUF_LOW_PWR => true,
 --    IOSTANDARD   => "DEFAULT")
---port map (
+--  port map (
 --    O  => clk_gtp0_i,
 --    I  => sfp0_ref_clk_p_i,
 --    IB => sfp0_ref_clk_n_i
---);
+--  );
 
-cmp_gtp1_dedicated_clk_buf : IBUFDS
-generic map(
+  cmp_gtp1_dedicated_clk_buf : IBUFDS
+  generic map(
     DIFF_TERM    => true,
     IBUF_LOW_PWR => true,
     IOSTANDARD   => "DEFAULT")
-port map (
+  port map (
     O  => clk_gtp1_i,
     I  => sfp1_ref_clk_p_i,
     IB => sfp1_ref_clk_n_i
-);
+  );
 
-cmp_sys_clk_pll : PLL_BASE
-generic map (
+  cmp_sys_clk_pll : PLL_BASE
+  generic map (
     BANDWIDTH          => "OPTIMIZED",
     CLK_FEEDBACK       => "CLKFBOUT",
     COMPENSATION       => "INTERNAL",
@@ -459,7 +365,7 @@ generic map (
     CLKOUT2_DUTY_CYCLE => 0.500,
     CLKIN_PERIOD       => 8.0,
     REF_JITTER         => 0.016)
-port map (
+  port map (
     CLKFBOUT => pllout_clk_fb_ref,
     CLKOUT0  => pllout_clk_62_5,
     CLKOUT1  => pllout_clk_125,
@@ -471,10 +377,10 @@ port map (
     RST      => '0',
     CLKFBIN  => pllout_clk_fb_ref,
     CLKIN    => fpga_clk_i
-);
+  );
 
-cmp_dmtd_clk_pll : PLL_BASE
-generic map (
+  cmp_dmtd_clk_pll : PLL_BASE
+  generic map (
     BANDWIDTH          => "OPTIMIZED",
     CLK_FEEDBACK       => "CLKFBOUT",
     COMPENSATION       => "INTERNAL",
@@ -492,7 +398,7 @@ generic map (
     CLKOUT2_DUTY_CYCLE => 0.500,
     CLKIN_PERIOD       => 50.0,
     REF_JITTER         => 0.016)
-port map (
+  port map (
     CLKFBOUT => pllout_clk_fb_dmtd,
     CLKOUT0  => pllout_clk_dmtd,
     CLKOUT1  => pllout_clk_calib,
@@ -504,31 +410,31 @@ port map (
     RST      => '0',
     CLKFBIN  => pllout_clk_fb_dmtd,
     CLKIN    => clk_20m_vcxo_buf
-);
+  );
 
-cmp_clk_sys_buf : BUFG
-port map (
+  cmp_clk_sys_buf : BUFG
+  port map (
     O => clk_sys_i,
     I => pllout_clk_62_5
-);
+  );
 
-cmd_clk_ref_buf: BUFG
-port map(
+  cmd_clk_ref_buf: BUFG
+  port map(
     O => clk_ref_i,
     I => pllout_clk_125
-);
+  );
 
-cmd_clk_tdc_buf: BUFG
-port map(
+  cmd_clk_tdc_buf: BUFG
+  port map(
     O => clk_tdc_i,
     I => pllout_clk_250
-);
+  );
 
-cmp_clk_dmtd_buf : BUFG
+  cmp_clk_dmtd_buf : BUFG
   port map (
     O => clk_dmtd_i,
     I => pllout_clk_dmtd
-);
+  );
 
 ------------------------------------------------------------------------------
 -- Dedicated clock for GTP
@@ -551,13 +457,14 @@ cmp_clk_dmtd_buf : BUFG
   thermo_id_b <= '0' when owr_en(0) = '1' else 'Z';
   owr_i(0)  <= thermo_id_b;
   owr_i(1)  <= '0';
+  
+	sfp0_led_o <= led_red;
+	sfp1_led_o <= led_green;
 
-  --ext_clk_o <= pps;
-
-U_WR_CORE : xcute_core
+  U_WR_CORE : xcute_core
     generic map (
       g_simulation                => 0,
-      g_with_external_clock_input => false,
+      g_with_external_clock_input => true,
       --
       g_phys_uart                 => true,
       g_virtual_uart              => true,
@@ -566,12 +473,13 @@ U_WR_CORE : xcute_core
       g_tx_runt_padding           => true,
       g_pcs_16bit                 => false,
       g_dpram_initf               => "",
-      g_etherbone_cfg_sdb         => c_etherbone_sdb,
-      g_aux1_sdb                  => c_ext_cfg_sdb,
-      g_aux2_sdb                  => c_wrc_tdc_cm_sdb,
+      g_etherbone_enable          => g_etherbone_enable,
+      g_etherbone_sdb             => c_etherbone_sdb,
+      g_ext_sdb                   => c_null_sdb,
+      g_aux_sdb                   => c_pcn_sdb,
       g_dpram_size                => 131072/4,
-      g_interface_mode            => PIPELINED,
-      g_address_granularity       => BYTE)
+      g_interface_mode            => pipelined,
+      g_address_granularity       => byte)
     port map (
       clk_sys_i             => clk_sys_i,
       clk_dmtd_i            => clk_dmtd_i,
@@ -585,56 +493,61 @@ U_WR_CORE : xcute_core
       pps_ext_i             => '0',
       rst_n_i               => local_reset_n,
 
-      dac_hpll_load_p1_o => dac_hpll_load_p1,
-      dac_hpll_data_o    => dac_hpll_data,
-      dac_dpll_load_p1_o => dac_dpll_load_p1,
-      dac_dpll_data_o    => dac_dpll_data,
+      dac_hpll_load_p1_o    => dac_hpll_load_p1,
+      dac_hpll_data_o       => dac_hpll_data,
+      dac_dpll_load_p1_o    => dac_dpll_load_p1,
+      dac_dpll_data_o       => dac_dpll_data,
 
-      --phy_ref_clk_i      => clk_ref_i,
-      --phy_tx_data_o      => phy0_tx_data,
-      --phy_tx_k_o         => phy0_tx_k,
-      --phy_tx_disparity_i => phy0_tx_disparity,
-      --phy_tx_enc_err_i   => phy0_tx_enc_err,
-      --phy_rx_data_i      => phy0_rx_data,
-      --phy_rx_rbclk_i     => phy0_rx_rbclk,
-      --phy_rx_k_i         => phy0_rx_k,
-      --phy_rx_enc_err_i   => phy0_rx_enc_err,
-      --phy_rx_bitslide_i  => phy0_rx_bitslide,
-      --phy_rst_o          => phy0_rst,
-      --phy_loopen_o       => phy0_loopen,
-      --phy_loopen_vec_o   => phy0_loopen_vec,
-      --phy_rdy_i          => phy0_rdy,
-      --phy_sfp_tx_fault_i => sfp0_tx_fault_i,
-      --phy_sfp_los_i      => sfp0_los_i,
+      --phy_ref_clk_i        => clk_ref_i,
+      --phy_tx_data_o        => phy0_tx_data,
+      --phy_tx_k_o           => phy0_tx_k,
+      --phy_tx_disparity_i   => phy0_tx_disparity,
+      --phy_tx_enc_err_i     => phy0_tx_enc_err,
+      --phy_rx_data_i        => phy0_rx_data,
+      --phy_rx_rbclk_i       => phy0_rx_rbclk,
+      --phy_rx_k_i           => phy0_rx_k,
+      --phy_rx_enc_err_i     => phy0_rx_enc_err,
+      --phy_rx_bitslide_i    => phy0_rx_bitslide,
+      --phy_rst_o            => phy0_rst,
+      --phy_loopen_o         => phy0_loopen,
+      --phy_loopen_vec_o     => phy0_loopen_vec,
+      --phy_rdy_i            => phy0_rdy,
+      --phy_sfp_tx_fault_i   => sfp0_tx_fault_i,
+      --phy_sfp_los_i        => sfp0_los_i,
       --phy_sfp_tx_disable_o => sfp0_tx_disable_o,
-      --phy_tx_prbs_sel_o  =>  phy0_prbs_sel,
+      --phy_tx_prbs_sel_o    =>  phy0_prbs_sel,
 
-      phy_ref_clk_i      => clk_ref_i,
-      phy_tx_data_o      => phy1_tx_data,
-      phy_tx_k_o         => phy1_tx_k,
-      phy_tx_disparity_i => phy1_tx_disparity,
-      phy_tx_enc_err_i   => phy1_tx_enc_err,
-      phy_rx_data_i      => phy1_rx_data,
-      phy_rx_rbclk_i     => phy1_rx_rbclk,
-      phy_rx_k_i         => phy1_rx_k,
-      phy_rx_enc_err_i   => phy1_rx_enc_err,
-      phy_rx_bitslide_i  => phy1_rx_bitslide,
-      phy_rst_o          => phy1_rst,
-      phy_loopen_o       => phy1_loopen,
-      phy_loopen_vec_o   => phy1_loopen_vec,
-      phy_rdy_i          => phy1_rdy,
-      phy_sfp_tx_fault_i => sfp1_tx_fault_i,
-      phy_sfp_los_i      => sfp1_los_i,
-      phy_sfp_tx_disable_o => sfp1_tx_disable_o,
-      phy_tx_prbs_sel_o  =>  phy1_prbs_sel,
+      phy_ref_clk_i         => clk_ref_i,
+      phy_tx_data_o         => phy1_tx_data,
+      phy_tx_k_o            => phy1_tx_k,
+      phy_tx_disparity_i    => phy1_tx_disparity,
+      phy_tx_enc_err_i      => phy1_tx_enc_err,
+      phy_rx_data_i         => phy1_rx_data,
+      phy_rx_rbclk_i        => phy1_rx_rbclk,
+      phy_rx_k_i            => phy1_rx_k,
+      phy_rx_enc_err_i      => phy1_rx_enc_err,
+      phy_rx_bitslide_i     => phy1_rx_bitslide,
+      phy_rst_o             => phy1_rst,
+      phy_loopen_o          => phy1_loopen,
+      phy_loopen_vec_o      => phy1_loopen_vec,
+      phy_rdy_i             => phy1_rdy,
+      phy_sfp_tx_fault_i    => sfp1_tx_fault_i,
+      phy_sfp_los_i         => sfp1_los_i,
+      phy_sfp_tx_disable_o  => sfp1_tx_disable_o,
+      phy_tx_prbs_sel_o     => phy1_prbs_sel,
 
-      led_act_o  => sfp0_led_o,
-      led_link_o => sfp1_led_o,
+      led_act_o  => led_red,
+      led_link_o => led_green,
       scl_o      => fpga_scl_o,
       scl_i      => fpga_scl_i,
       sda_o      => fpga_sda_o,
       sda_i      => fpga_sda_i,
-
+      btn1_i     => open,
+      btn2_i     => open,
+      spi_sclk_o => open,
+      spi_ncs_o  => open,
+      spi_mosi_o => open,
+      spi_miso_i => '0',
       --sfp_scl_o  => sfp0_scl_o,
       --sfp_scl_i  => sfp0_scl_i,
       --sfp_sda_o  => sfp0_sda_o,
@@ -647,49 +560,40 @@ U_WR_CORE : xcute_core
       sfp_sda_i  => sfp1_mod_def2_i,
       sfp_det_i  => sfp1_mod_def0_i,
 
-      btn1_i      => open,
-      btn2_i      => open,
-      spi_sclk_o  => open,
-      spi_ncs_o   => open,
-      spi_mosi_o  => open,
-      spi_miso_i  => '0',
-
       uart_rxd_i => uart_rxd_i,
       uart_txd_o => uart_txd_o,
 
       owr_en_o => owr_en,
       owr_i    => owr_i,
 
-      wrc_slave_i => wrc_slave_i,
-      wrc_slave_o => wrc_slave_o,
+      slave_i => wrc_slave_i,
+      slave_o => wrc_slave_o,
 
-      aux_master_o => tdccm_slave_i,
-      aux_master_i => tdccm_slave_o,
-
-      etherbone_cfg_master_o=> etherbone_cfg_slave_i,
-      etherbone_cfg_master_i=> etherbone_cfg_slave_o,
-
+      etherbone_master_o=> etherbone_cfg_slave_i,
+      etherbone_master_i=> etherbone_cfg_slave_o,
       etherbone_src_o => etherbone_snk_i,
       etherbone_src_i => etherbone_snk_o,
       etherbone_snk_o => etherbone_src_i,
       etherbone_snk_i => etherbone_src_o,
       
-      ext_cfg_master_o=> ext_cfg_master_o,
-      ext_cfg_master_i=> ext_cfg_master_i,
-		
-      ext_src_o         => ext_snk_i,
-      ext_src_i         => ext_snk_o,
-      ext_snk_o         => ext_src_i,
-      ext_snk_i         => ext_src_o,
+      ext_master_o    => open,
+      ext_master_i    => open,
+      ext_src_o       => open,
+      ext_src_i       => open,
+      ext_snk_o       => open,
+      ext_snk_i       => open,
+
+      aux_master_o    => pcn_wb_slave_i,
+      aux_master_i    => pcn_wb_slave_o,
 
       tm_dac_value_o       => open,
       tm_dac_wr_o          => open,
       tm_clk_aux_lock_en_i => (others => '0'),
       tm_clk_aux_locked_o  => open,
-      tm_time_valid_o      => open,
-      tm_tai_o             => open,
+      tm_time_valid_o      => tm_tai_valid,
+      tm_tai_o             => tm_tai,
       tm_cycles_o          => open,
-      pps_p_o              => pps_o,
+      pps_p_o              => pps,
       pps_led_o            => open,
 
 --      dio_o       => dio_out(4 downto 1),
@@ -714,7 +618,7 @@ Etherbone_GEN: if (g_etherbone_enable = True) generate
 
   masterbar : xwb_crossbar
     generic map (
-      g_num_masters => 2,
+      g_num_masters => 1,
       g_num_slaves  => 1,
       g_registered  => false,
       g_address     => (0 => x"00000000"),
@@ -722,12 +626,11 @@ Etherbone_GEN: if (g_etherbone_enable = True) generate
     port map (
       clk_sys_i   => clk_sys_i,
       rst_n_i     => local_reset_n,
-      slave_i(0)  => ext_wb_out,
-      slave_i(1)  => etherbone_wb_out,
-      slave_o(0)  => ext_wb_in,
-      slave_o(1)  => etherbone_wb_in,
+      slave_i(0)  => etherbone_wb_out,
+      slave_o(0)  => etherbone_wb_in,
       master_i(0) => wrc_slave_o,
-      master_o(0) => wrc_slave_i);
+      master_o(0) => wrc_slave_i
+      );
 end generate;
 
   U_DAC_ARB : cute_serial_dac_arb
@@ -742,8 +645,8 @@ end generate;
       val1_i  => dac_hpll_data,
       load1_i => dac_hpll_load_p1,
 
-      val2_i  => dac_dpll_data,
-      load2_i => dac_dpll_load_p1,
+      val2_i        => dac_dpll_data,
+      load2_i       => dac_dpll_load_p1,
       dac_sync_n_o  => dac_sync_n_o,
       dac_ldac_n_o  => dac_ldac_n_o,
       dac_clr_n_o   => dac_clr_n_o,
@@ -839,64 +742,54 @@ end generate;
       --pad_rxn1_i         => '0',
       --pad_rxp1_i         => '0'
 );
+  pps_o             <= pps;
+  tdc_measure_i(0)  <= usr_lemo1_i;
+  tdc_measure_i(1)  <= usr_lemo2_i;
+  tdc_cal_i         <= pllout_clk_calib;
+  
+  u_xwb_pcn: xwb_pcn_module
+  generic map(
+-- fifo data width
+    g_data_width => 32,
+-- coincidence window, 16 ns * ( 2^g_windows_width -1 )
+    g_window_width => 10,
+-- diff data width
+    g_diff_width => 17,
+--    g_dualedge_enable   : boolean := c_dualedge_enable;
+    g_waveunion_enable  => false,
+--    g_correction_enable : boolean := c_correction_enable;
+    g_hit_cnt           => 65536,
+    -- timestamp data width = g_coarsecntr_width + g_fine_width
+    g_timestamp_width   => 32,
+    g_coarsecntr_width  => 24,
+    g_fine_width        => 8,
+    -- dnl data width = addr_width + data_width
+    g_dnl_width         => 32,
+    g_dnl_addr_width    => 8,
+    g_dnl_data_width    => 24,
+    g_interface_mode    => pipelined,
+    g_address_granularity=> byte
+  )
+  port map(
+    rst_n_i   => local_reset_n,
+-- 62.5MHz system clock
+    clk_sys_i => clk_sys_i,
+-- 125MHz reference clock
+    clk_ref_i => clk_ref_i,
+-- 250MHz TDC clock
+    clk_tdc_i => clk_tdc_i,
 
---  tdc_measure(0)  <= usr_lemo1_i;
---
---  U_tdc_core: tdc_top
---  generic map(
---    g_meas_channel_num  => c_meas_channel_num,
---    g_delaychain_length => c_delaychain_length,
-----     g_dualedge_enable   => c_dualedge_enable,
---    g_waveunion_enable  => c_waveunion_enable,
-----     g_correction_enable => c_correction_enable,
-----     g_hit_cnt           => c_hit_cnt,
---    g_coarsecntr_width  => c_coarsecntr_width,
---    g_fine_width        => c_fine_width,
---    g_channel_data_width => c_channel_data_width,
---    g_channel_size       => c_channel_size,
---    g_channel_ready_threshold => c_channel_ready_threshold,
---    -- tdc buf
---    g_tdc_buf_data_width => c_tdc_buf_data_width,
---    g_tdc_buf_size       => c_tdc_buf_size
---  )
---  port map(
---	    clk_sys_i           => clk_sys_i,
---      clk_ref_i           => clk_ref_i,
---      clk_tdc_i           => clk_tdc_i,
---      rst_n_i             => local_reset_n,
---      tdc_cal_i           => pllout_clk_calib,
---      tdc_insig_i         => tdc_measure,
---			
---      tdc_buf_rdreq_i     => tdc_buf_rdreq,
---      tdc_buf_rddata_o    => tdc_buf_rddata,
---      tdc_buf_rdusedw_o   => tdc_buf_rdusedw,
---			tdc_slave_i         => tdc_cm_slave_i,
---			tdc_slave_o         => tdc_cm_slave_o
---  );
---
---  U_tdc_read: tdc_read
---  generic map(
---      g_tdc_buf_size          => c_tdc_buf_size,
---      g_tdc_buf_data_width    => c_tdc_buf_data_width,
---      g_tdc_buf_ready_threshold=> c_tdc_buf_ready_threshold)
---  port map(
---      clk_ref_i => clk_ref_i,
---      rst_n_i   => local_reset_n,
---
---      tdc_buf_rdreq_o   		=> tdc_buf_rdreq,
---      tdc_buf_rddata_i  		=> tdc_buf_rddata,
---      tdc_buf_rdusedw_i 		=> tdc_buf_rdusedw,
---
---      udp_rx_data_valid     => udp_rx_data_valid,
---      udp_tx_data           => udp_tx_data,
---      udp_tx_data_valid     => udp_tx_data_valid,
---      udp_tx_sof            => udp_tx_sof,
---      udp_tx_eof            => udp_tx_eof,
---      udp_tx_cts            => udp_tx_cts,
---      udp_tx_ack            => udp_tx_ack,
---      udp_tx_nak            => udp_tx_nak,
---      udp_tx_dest_ip_addr   => udp_tx_dest_ip_addr,
---      udp_tx_dest_port_no   => udp_tx_dest_port_no
---  );
+-- signals to be measured
+    tdc_insig_i => tdc_measure_i,
+-- the calibration signals (< 62.5MHz)
+    tdc_cal_i  => tdc_cal_i,
+-- utc time coming from wrpc
+    utc_i      => tm_tai,
+-- pps signal coming from wrpc
+    pps_i      => pps,
+-- control & data wishbone interface
+    pcn_slave_i => pcn_wb_slave_i,
+    pcn_slave_o => pcn_wb_slave_o
+  );
 
 end rtl;

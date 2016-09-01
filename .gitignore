@@ -16,3 +16,4 @@ doc/
 *.bin
 *.elf
 Makefile
+*_bd.bmm

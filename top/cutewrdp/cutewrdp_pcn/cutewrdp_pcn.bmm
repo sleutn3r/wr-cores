@@ -16,196 +16,196 @@
 
 ADDRESS_SPACE lm32_wrpc_memory RAMB16 [0x00000000:0x0001FFFF]
   BUS_BLOCK
-    U_WR_CORE/DPRAM/U_DPRAM/gen_single_clk.U_RAM_SC/Mram_ram1 [31:0];
+    U_WR_CORE/WRPC/DPRAM/U_DPRAM/gen_lm32_single_clk.U_RAM_LM32_SC/Mram_ram1 [31:0];
   END_BUS_BLOCK;
   BUS_BLOCK
-    U_WR_CORE/DPRAM/U_DPRAM/gen_single_clk.U_RAM_SC/Mram_ram2 [31:0];
+    U_WR_CORE/WRPC/DPRAM/U_DPRAM/gen_lm32_single_clk.U_RAM_LM32_SC/Mram_ram2 [31:0];
   END_BUS_BLOCK;
   BUS_BLOCK
-    U_WR_CORE/DPRAM/U_DPRAM/gen_single_clk.U_RAM_SC/Mram_ram3 [31:0];
+    U_WR_CORE/WRPC/DPRAM/U_DPRAM/gen_lm32_single_clk.U_RAM_LM32_SC/Mram_ram3 [31:0];
   END_BUS_BLOCK;
   BUS_BLOCK
-    U_WR_CORE/DPRAM/U_DPRAM/gen_single_clk.U_RAM_SC/Mram_ram4 [31:0];
+    U_WR_CORE/WRPC/DPRAM/U_DPRAM/gen_lm32_single_clk.U_RAM_LM32_SC/Mram_ram4 [31:0];
   END_BUS_BLOCK;
   BUS_BLOCK
-    U_WR_CORE/DPRAM/U_DPRAM/gen_single_clk.U_RAM_SC/Mram_ram5 [31:0];
+    U_WR_CORE/WRPC/DPRAM/U_DPRAM/gen_lm32_single_clk.U_RAM_LM32_SC/Mram_ram5 [31:0];
   END_BUS_BLOCK;
   BUS_BLOCK
-    U_WR_CORE/DPRAM/U_DPRAM/gen_single_clk.U_RAM_SC/Mram_ram6 [31:0];
+    U_WR_CORE/WRPC/DPRAM/U_DPRAM/gen_lm32_single_clk.U_RAM_LM32_SC/Mram_ram6 [31:0];
   END_BUS_BLOCK;
   BUS_BLOCK
-    U_WR_CORE/DPRAM/U_DPRAM/gen_single_clk.U_RAM_SC/Mram_ram7 [31:0];
+    U_WR_CORE/WRPC/DPRAM/U_DPRAM/gen_lm32_single_clk.U_RAM_LM32_SC/Mram_ram7 [31:0];
   END_BUS_BLOCK;
   BUS_BLOCK
-    U_WR_CORE/DPRAM/U_DPRAM/gen_single_clk.U_RAM_SC/Mram_ram8 [31:0];
+    U_WR_CORE/WRPC/DPRAM/U_DPRAM/gen_lm32_single_clk.U_RAM_LM32_SC/Mram_ram8 [31:0];
   END_BUS_BLOCK;
   BUS_BLOCK
-    U_WR_CORE/DPRAM/U_DPRAM/gen_single_clk.U_RAM_SC/Mram_ram9 [31:0];
+    U_WR_CORE/WRPC/DPRAM/U_DPRAM/gen_lm32_single_clk.U_RAM_LM32_SC/Mram_ram9 [31:0];
   END_BUS_BLOCK;
   BUS_BLOCK
-    U_WR_CORE/DPRAM/U_DPRAM/gen_single_clk.U_RAM_SC/Mram_ram10 [31:0];
+    U_WR_CORE/WRPC/DPRAM/U_DPRAM/gen_lm32_single_clk.U_RAM_LM32_SC/Mram_ram10 [31:0];
   END_BUS_BLOCK;
   BUS_BLOCK
-    U_WR_CORE/DPRAM/U_DPRAM/gen_single_clk.U_RAM_SC/Mram_ram11 [31:0];
+    U_WR_CORE/WRPC/DPRAM/U_DPRAM/gen_lm32_single_clk.U_RAM_LM32_SC/Mram_ram11 [31:0];
   END_BUS_BLOCK;
   BUS_BLOCK
-    U_WR_CORE/DPRAM/U_DPRAM/gen_single_clk.U_RAM_SC/Mram_ram12 [31:0];
+    U_WR_CORE/WRPC/DPRAM/U_DPRAM/gen_lm32_single_clk.U_RAM_LM32_SC/Mram_ram12 [31:0];
   END_BUS_BLOCK;
   BUS_BLOCK
-    U_WR_CORE/DPRAM/U_DPRAM/gen_single_clk.U_RAM_SC/Mram_ram13 [31:0];
+    U_WR_CORE/WRPC/DPRAM/U_DPRAM/gen_lm32_single_clk.U_RAM_LM32_SC/Mram_ram13 [31:0];
   END_BUS_BLOCK;
   BUS_BLOCK
-    U_WR_CORE/DPRAM/U_DPRAM/gen_single_clk.U_RAM_SC/Mram_ram14 [31:0];
+    U_WR_CORE/WRPC/DPRAM/U_DPRAM/gen_lm32_single_clk.U_RAM_LM32_SC/Mram_ram14 [31:0];
   END_BUS_BLOCK;
   BUS_BLOCK
-    U_WR_CORE/DPRAM/U_DPRAM/gen_single_clk.U_RAM_SC/Mram_ram15 [31:0];
+    U_WR_CORE/WRPC/DPRAM/U_DPRAM/gen_lm32_single_clk.U_RAM_LM32_SC/Mram_ram15 [31:0];
   END_BUS_BLOCK;
   BUS_BLOCK
-    U_WR_CORE/DPRAM/U_DPRAM/gen_single_clk.U_RAM_SC/Mram_ram16 [31:0];
+    U_WR_CORE/WRPC/DPRAM/U_DPRAM/gen_lm32_single_clk.U_RAM_LM32_SC/Mram_ram16 [31:0];
   END_BUS_BLOCK;
   BUS_BLOCK
-    U_WR_CORE/DPRAM/U_DPRAM/gen_single_clk.U_RAM_SC/Mram_ram17 [31:0];
+    U_WR_CORE/WRPC/DPRAM/U_DPRAM/gen_lm32_single_clk.U_RAM_LM32_SC/Mram_ram17 [31:0];
   END_BUS_BLOCK;
   BUS_BLOCK
-    U_WR_CORE/DPRAM/U_DPRAM/gen_single_clk.U_RAM_SC/Mram_ram18 [31:0];
+    U_WR_CORE/WRPC/DPRAM/U_DPRAM/gen_lm32_single_clk.U_RAM_LM32_SC/Mram_ram18 [31:0];
   END_BUS_BLOCK;
   BUS_BLOCK
-    U_WR_CORE/DPRAM/U_DPRAM/gen_single_clk.U_RAM_SC/Mram_ram19 [31:0];
+    U_WR_CORE/WRPC/DPRAM/U_DPRAM/gen_lm32_single_clk.U_RAM_LM32_SC/Mram_ram19 [31:0];
   END_BUS_BLOCK;
   BUS_BLOCK
-    U_WR_CORE/DPRAM/U_DPRAM/gen_single_clk.U_RAM_SC/Mram_ram20 [31:0];
+    U_WR_CORE/WRPC/DPRAM/U_DPRAM/gen_lm32_single_clk.U_RAM_LM32_SC/Mram_ram20 [31:0];
   END_BUS_BLOCK;
   BUS_BLOCK
-    U_WR_CORE/DPRAM/U_DPRAM/gen_single_clk.U_RAM_SC/Mram_ram21 [31:0];
+    U_WR_CORE/WRPC/DPRAM/U_DPRAM/gen_lm32_single_clk.U_RAM_LM32_SC/Mram_ram21 [31:0];
   END_BUS_BLOCK;
   BUS_BLOCK
-    U_WR_CORE/DPRAM/U_DPRAM/gen_single_clk.U_RAM_SC/Mram_ram22 [31:0];
+    U_WR_CORE/WRPC/DPRAM/U_DPRAM/gen_lm32_single_clk.U_RAM_LM32_SC/Mram_ram22 [31:0];
   END_BUS_BLOCK;
   BUS_BLOCK
-    U_WR_CORE/DPRAM/U_DPRAM/gen_single_clk.U_RAM_SC/Mram_ram23 [31:0];
+    U_WR_CORE/WRPC/DPRAM/U_DPRAM/gen_lm32_single_clk.U_RAM_LM32_SC/Mram_ram23 [31:0];
   END_BUS_BLOCK;
   BUS_BLOCK
-    U_WR_CORE/DPRAM/U_DPRAM/gen_single_clk.U_RAM_SC/Mram_ram24 [31:0];
+    U_WR_CORE/WRPC/DPRAM/U_DPRAM/gen_lm32_single_clk.U_RAM_LM32_SC/Mram_ram24 [31:0];
   END_BUS_BLOCK;
   BUS_BLOCK
-    U_WR_CORE/DPRAM/U_DPRAM/gen_single_clk.U_RAM_SC/Mram_ram25 [31:0];
+    U_WR_CORE/WRPC/DPRAM/U_DPRAM/gen_lm32_single_clk.U_RAM_LM32_SC/Mram_ram25 [31:0];
   END_BUS_BLOCK;
   BUS_BLOCK
-    U_WR_CORE/DPRAM/U_DPRAM/gen_single_clk.U_RAM_SC/Mram_ram26 [31:0];
+    U_WR_CORE/WRPC/DPRAM/U_DPRAM/gen_lm32_single_clk.U_RAM_LM32_SC/Mram_ram26 [31:0];
   END_BUS_BLOCK;
   BUS_BLOCK
-    U_WR_CORE/DPRAM/U_DPRAM/gen_single_clk.U_RAM_SC/Mram_ram27 [31:0];
+    U_WR_CORE/WRPC/DPRAM/U_DPRAM/gen_lm32_single_clk.U_RAM_LM32_SC/Mram_ram27 [31:0];
   END_BUS_BLOCK;
   BUS_BLOCK
-    U_WR_CORE/DPRAM/U_DPRAM/gen_single_clk.U_RAM_SC/Mram_ram28 [31:0];
+    U_WR_CORE/WRPC/DPRAM/U_DPRAM/gen_lm32_single_clk.U_RAM_LM32_SC/Mram_ram28 [31:0];
   END_BUS_BLOCK;
   BUS_BLOCK
-    U_WR_CORE/DPRAM/U_DPRAM/gen_single_clk.U_RAM_SC/Mram_ram29 [31:0];
+    U_WR_CORE/WRPC/DPRAM/U_DPRAM/gen_lm32_single_clk.U_RAM_LM32_SC/Mram_ram29 [31:0];
   END_BUS_BLOCK;
   BUS_BLOCK
-    U_WR_CORE/DPRAM/U_DPRAM/gen_single_clk.U_RAM_SC/Mram_ram30 [31:0];
+    U_WR_CORE/WRPC/DPRAM/U_DPRAM/gen_lm32_single_clk.U_RAM_LM32_SC/Mram_ram30 [31:0];
   END_BUS_BLOCK;
   BUS_BLOCK
-    U_WR_CORE/DPRAM/U_DPRAM/gen_single_clk.U_RAM_SC/Mram_ram31 [31:0];
+    U_WR_CORE/WRPC/DPRAM/U_DPRAM/gen_lm32_single_clk.U_RAM_LM32_SC/Mram_ram31 [31:0];
   END_BUS_BLOCK;
   BUS_BLOCK
-    U_WR_CORE/DPRAM/U_DPRAM/gen_single_clk.U_RAM_SC/Mram_ram32 [31:0];
+    U_WR_CORE/WRPC/DPRAM/U_DPRAM/gen_lm32_single_clk.U_RAM_LM32_SC/Mram_ram32 [31:0];
   END_BUS_BLOCK;
   BUS_BLOCK
-    U_WR_CORE/DPRAM/U_DPRAM/gen_single_clk.U_RAM_SC/Mram_ram33 [31:0];
+    U_WR_CORE/WRPC/DPRAM/U_DPRAM/gen_lm32_single_clk.U_RAM_LM32_SC/Mram_ram33 [31:0];
   END_BUS_BLOCK;
   BUS_BLOCK
-    U_WR_CORE/DPRAM/U_DPRAM/gen_single_clk.U_RAM_SC/Mram_ram34 [31:0];
+    U_WR_CORE/WRPC/DPRAM/U_DPRAM/gen_lm32_single_clk.U_RAM_LM32_SC/Mram_ram34 [31:0];
   END_BUS_BLOCK;
   BUS_BLOCK
-    U_WR_CORE/DPRAM/U_DPRAM/gen_single_clk.U_RAM_SC/Mram_ram35 [31:0];
+    U_WR_CORE/WRPC/DPRAM/U_DPRAM/gen_lm32_single_clk.U_RAM_LM32_SC/Mram_ram35 [31:0];
   END_BUS_BLOCK;
   BUS_BLOCK
-    U_WR_CORE/DPRAM/U_DPRAM/gen_single_clk.U_RAM_SC/Mram_ram36 [31:0];
+    U_WR_CORE/WRPC/DPRAM/U_DPRAM/gen_lm32_single_clk.U_RAM_LM32_SC/Mram_ram36 [31:0];
   END_BUS_BLOCK;
   BUS_BLOCK
-    U_WR_CORE/DPRAM/U_DPRAM/gen_single_clk.U_RAM_SC/Mram_ram37 [31:0];
+    U_WR_CORE/WRPC/DPRAM/U_DPRAM/gen_lm32_single_clk.U_RAM_LM32_SC/Mram_ram37 [31:0];
   END_BUS_BLOCK;
   BUS_BLOCK
-    U_WR_CORE/DPRAM/U_DPRAM/gen_single_clk.U_RAM_SC/Mram_ram38 [31:0];
+    U_WR_CORE/WRPC/DPRAM/U_DPRAM/gen_lm32_single_clk.U_RAM_LM32_SC/Mram_ram38 [31:0];
   END_BUS_BLOCK;
   BUS_BLOCK
-    U_WR_CORE/DPRAM/U_DPRAM/gen_single_clk.U_RAM_SC/Mram_ram39 [31:0];
+    U_WR_CORE/WRPC/DPRAM/U_DPRAM/gen_lm32_single_clk.U_RAM_LM32_SC/Mram_ram39 [31:0];
   END_BUS_BLOCK;
   BUS_BLOCK
-    U_WR_CORE/DPRAM/U_DPRAM/gen_single_clk.U_RAM_SC/Mram_ram40 [31:0];
+    U_WR_CORE/WRPC/DPRAM/U_DPRAM/gen_lm32_single_clk.U_RAM_LM32_SC/Mram_ram40 [31:0];
   END_BUS_BLOCK;
   BUS_BLOCK
-    U_WR_CORE/DPRAM/U_DPRAM/gen_single_clk.U_RAM_SC/Mram_ram41 [31:0];
+    U_WR_CORE/WRPC/DPRAM/U_DPRAM/gen_lm32_single_clk.U_RAM_LM32_SC/Mram_ram41 [31:0];
   END_BUS_BLOCK;
   BUS_BLOCK
-    U_WR_CORE/DPRAM/U_DPRAM/gen_single_clk.U_RAM_SC/Mram_ram42 [31:0];
+    U_WR_CORE/WRPC/DPRAM/U_DPRAM/gen_lm32_single_clk.U_RAM_LM32_SC/Mram_ram42 [31:0];
   END_BUS_BLOCK;
   BUS_BLOCK
-    U_WR_CORE/DPRAM/U_DPRAM/gen_single_clk.U_RAM_SC/Mram_ram43 [31:0];
+    U_WR_CORE/WRPC/DPRAM/U_DPRAM/gen_lm32_single_clk.U_RAM_LM32_SC/Mram_ram43 [31:0];
   END_BUS_BLOCK;
   BUS_BLOCK
-    U_WR_CORE/DPRAM/U_DPRAM/gen_single_clk.U_RAM_SC/Mram_ram44 [31:0];
+    U_WR_CORE/WRPC/DPRAM/U_DPRAM/gen_lm32_single_clk.U_RAM_LM32_SC/Mram_ram44 [31:0];
   END_BUS_BLOCK;
   BUS_BLOCK
-    U_WR_CORE/DPRAM/U_DPRAM/gen_single_clk.U_RAM_SC/Mram_ram45 [31:0];
+    U_WR_CORE/WRPC/DPRAM/U_DPRAM/gen_lm32_single_clk.U_RAM_LM32_SC/Mram_ram45 [31:0];
   END_BUS_BLOCK;
   BUS_BLOCK
-    U_WR_CORE/DPRAM/U_DPRAM/gen_single_clk.U_RAM_SC/Mram_ram46 [31:0];
+    U_WR_CORE/WRPC/DPRAM/U_DPRAM/gen_lm32_single_clk.U_RAM_LM32_SC/Mram_ram46 [31:0];
   END_BUS_BLOCK;
   BUS_BLOCK
-    U_WR_CORE/DPRAM/U_DPRAM/gen_single_clk.U_RAM_SC/Mram_ram47 [31:0];
+    U_WR_CORE/WRPC/DPRAM/U_DPRAM/gen_lm32_single_clk.U_RAM_LM32_SC/Mram_ram47 [31:0];
   END_BUS_BLOCK;
   BUS_BLOCK
-    U_WR_CORE/DPRAM/U_DPRAM/gen_single_clk.U_RAM_SC/Mram_ram48 [31:0];
+    U_WR_CORE/WRPC/DPRAM/U_DPRAM/gen_lm32_single_clk.U_RAM_LM32_SC/Mram_ram48 [31:0];
   END_BUS_BLOCK;
   BUS_BLOCK
-    U_WR_CORE/DPRAM/U_DPRAM/gen_single_clk.U_RAM_SC/Mram_ram49 [31:0];
+    U_WR_CORE/WRPC/DPRAM/U_DPRAM/gen_lm32_single_clk.U_RAM_LM32_SC/Mram_ram49 [31:0];
   END_BUS_BLOCK;
   BUS_BLOCK
-    U_WR_CORE/DPRAM/U_DPRAM/gen_single_clk.U_RAM_SC/Mram_ram50 [31:0];
+    U_WR_CORE/WRPC/DPRAM/U_DPRAM/gen_lm32_single_clk.U_RAM_LM32_SC/Mram_ram50 [31:0];
   END_BUS_BLOCK;
   BUS_BLOCK
-    U_WR_CORE/DPRAM/U_DPRAM/gen_single_clk.U_RAM_SC/Mram_ram51 [31:0];
+    U_WR_CORE/WRPC/DPRAM/U_DPRAM/gen_lm32_single_clk.U_RAM_LM32_SC/Mram_ram51 [31:0];
   END_BUS_BLOCK;
   BUS_BLOCK
-    U_WR_CORE/DPRAM/U_DPRAM/gen_single_clk.U_RAM_SC/Mram_ram52 [31:0];
+    U_WR_CORE/WRPC/DPRAM/U_DPRAM/gen_lm32_single_clk.U_RAM_LM32_SC/Mram_ram52 [31:0];
   END_BUS_BLOCK;
   BUS_BLOCK
-    U_WR_CORE/DPRAM/U_DPRAM/gen_single_clk.U_RAM_SC/Mram_ram53 [31:0];
+    U_WR_CORE/WRPC/DPRAM/U_DPRAM/gen_lm32_single_clk.U_RAM_LM32_SC/Mram_ram53 [31:0];
   END_BUS_BLOCK;
   BUS_BLOCK
-    U_WR_CORE/DPRAM/U_DPRAM/gen_single_clk.U_RAM_SC/Mram_ram54 [31:0];
+    U_WR_CORE/WRPC/DPRAM/U_DPRAM/gen_lm32_single_clk.U_RAM_LM32_SC/Mram_ram54 [31:0];
   END_BUS_BLOCK;
   BUS_BLOCK
-    U_WR_CORE/DPRAM/U_DPRAM/gen_single_clk.U_RAM_SC/Mram_ram55 [31:0];
+    U_WR_CORE/WRPC/DPRAM/U_DPRAM/gen_lm32_single_clk.U_RAM_LM32_SC/Mram_ram55 [31:0];
   END_BUS_BLOCK;
   BUS_BLOCK
-    U_WR_CORE/DPRAM/U_DPRAM/gen_single_clk.U_RAM_SC/Mram_ram56 [31:0];
+    U_WR_CORE/WRPC/DPRAM/U_DPRAM/gen_lm32_single_clk.U_RAM_LM32_SC/Mram_ram56 [31:0];
   END_BUS_BLOCK;
   BUS_BLOCK
-    U_WR_CORE/DPRAM/U_DPRAM/gen_single_clk.U_RAM_SC/Mram_ram57 [31:0];
+    U_WR_CORE/WRPC/DPRAM/U_DPRAM/gen_lm32_single_clk.U_RAM_LM32_SC/Mram_ram57 [31:0];
   END_BUS_BLOCK;
   BUS_BLOCK
-    U_WR_CORE/DPRAM/U_DPRAM/gen_single_clk.U_RAM_SC/Mram_ram58 [31:0];
+    U_WR_CORE/WRPC/DPRAM/U_DPRAM/gen_lm32_single_clk.U_RAM_LM32_SC/Mram_ram58 [31:0];
   END_BUS_BLOCK;
   BUS_BLOCK
-    U_WR_CORE/DPRAM/U_DPRAM/gen_single_clk.U_RAM_SC/Mram_ram59 [31:0];
+    U_WR_CORE/WRPC/DPRAM/U_DPRAM/gen_lm32_single_clk.U_RAM_LM32_SC/Mram_ram59 [31:0];
   END_BUS_BLOCK;
   BUS_BLOCK
-    U_WR_CORE/DPRAM/U_DPRAM/gen_single_clk.U_RAM_SC/Mram_ram60 [31:0];
+    U_WR_CORE/WRPC/DPRAM/U_DPRAM/gen_lm32_single_clk.U_RAM_LM32_SC/Mram_ram60 [31:0];
   END_BUS_BLOCK;
   BUS_BLOCK
-    U_WR_CORE/DPRAM/U_DPRAM/gen_single_clk.U_RAM_SC/Mram_ram61 [31:0];
+    U_WR_CORE/WRPC/DPRAM/U_DPRAM/gen_lm32_single_clk.U_RAM_LM32_SC/Mram_ram61 [31:0];
   END_BUS_BLOCK;
   BUS_BLOCK
-    U_WR_CORE/DPRAM/U_DPRAM/gen_single_clk.U_RAM_SC/Mram_ram62 [31:0];
+    U_WR_CORE/WRPC/DPRAM/U_DPRAM/gen_lm32_single_clk.U_RAM_LM32_SC/Mram_ram62 [31:0];
   END_BUS_BLOCK;
   BUS_BLOCK
-    U_WR_CORE/DPRAM/U_DPRAM/gen_single_clk.U_RAM_SC/Mram_ram63 [31:0];
+    U_WR_CORE/WRPC/DPRAM/U_DPRAM/gen_lm32_single_clk.U_RAM_LM32_SC/Mram_ram63 [31:0];
   END_BUS_BLOCK;
   BUS_BLOCK
-    U_WR_CORE/DPRAM/U_DPRAM/gen_single_clk.U_RAM_SC/Mram_ram64 [31:0];
+    U_WR_CORE/WRPC/DPRAM/U_DPRAM/gen_lm32_single_clk.U_RAM_LM32_SC/Mram_ram64 [31:0];
   END_BUS_BLOCK;
 END_ADDRESS_SPACE;
 

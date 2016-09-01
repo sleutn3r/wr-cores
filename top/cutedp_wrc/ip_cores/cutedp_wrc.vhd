@@ -213,14 +213,14 @@ architecture rtl of cutedp_wrc is
   signal wrc_slave_i : t_wishbone_slave_in;
   signal wrc_slave_o : t_wishbone_slave_out;
 
-  signal etherbone_rst_n   : std_logic;
-  signal etherbone_src_o : t_wrf_source_out;
+  signal etherbone_rst_n  : std_logic;
+  signal etherbone_src_o  : t_wrf_source_out;
   signal etherbone_src_i  : t_wrf_source_in;
-  signal etherbone_snk_o : t_wrf_sink_out;
+  signal etherbone_snk_o  : t_wrf_sink_out;
   signal etherbone_snk_i  : t_wrf_sink_in;
-  signal etherbone_wb_o  : t_wishbone_master_out;
-  signal etherbone_wb_i   : t_wishbone_master_in;
-  signal etherbone_cfg_slave_i  : t_wishbone_slave_in;
+  signal etherbone_wb_out : t_wishbone_master_out;
+  signal etherbone_wb_in  : t_wishbone_master_in;
+  signal etherbone_cfg_slave_i : t_wishbone_slave_in;
   signal etherbone_cfg_slave_o : t_wishbone_slave_out:=cc_unused_master_in;
 
   signal multiboot_in  : t_wishbone_slave_in;
@@ -234,9 +234,6 @@ architecture rtl of cutedp_wrc is
   --signal clk_ext_stopped            : std_logic;
   --signal clk_ext_rst                : std_logic;
   --signal clk_ref_div2               : std_logic;
-
-signal g_aux_sdb : t_sdb_device;
-
 constant c_ext_sdb : t_sdb_device := (
     abi_class     => x"0000",              -- undocumented device
     abi_ver_major => x"01",
@@ -318,7 +315,7 @@ generic map (
     g_etherbone_enable          => g_etherbone_enable,
     g_etherbone_sdb             => c_etherbone_sdb,
     g_ext_sdb                   => c_ext_sdb,
-    g_aux_sdb                   => g_aux_sdb,
+    g_aux_sdb                   => c_wrc_multiboot_sdb,
     g_dpram_size                => 131072/4,
     g_interface_mode            => pipelined,
     g_address_granularity       => byte)
@@ -457,8 +454,8 @@ etherbone_gen: if (g_etherbone_enable = true) generate
       snk_i       => etherbone_snk_i,
       cfg_slave_o => etherbone_cfg_slave_o,
       cfg_slave_i => etherbone_cfg_slave_i,
-      master_o    => etherbone_wb_o,
-      master_i    => etherbone_wb_i
+      master_o    => etherbone_wb_out,
+      master_i    => etherbone_wb_in
   );
 
   ---------------------
@@ -472,8 +469,8 @@ etherbone_gen: if (g_etherbone_enable = true) generate
   port map (
       clk_sys_i   => clk_sys_i,
       rst_n_i     => rst_n_i,
-      slave_i(0)  => etherbone_wb_o,
-      slave_o(0)  => etherbone_wb_i,
+      slave_i(0)  => etherbone_wb_out,
+      slave_o(0)  => etherbone_wb_in,
       master_i(0) => wrc_slave_o,
       master_o(0) => wrc_slave_i
   );
@@ -484,10 +481,7 @@ multiboot_gen:if (g_etherbone_enable=true and g_multiboot_enable=true) generate
 
 ------------------------------------------------------------------------
       -- multiboot modules --
-------------------------------------------------------------------------
-  
-  g_aux_sdb <= c_wrc_multiboot_sdb;
-  
+------------------------------------------------------------------------  
   cmp_clock_crossing: xwb_clock_crossing
       port map
       (
