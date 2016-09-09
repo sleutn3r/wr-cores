@@ -99,36 +99,36 @@ end entity ; -- pcn_module
 architecture behavioral of pcn_module is
 
 -- component declaration
-  component pcn_coincidence is
+--  component pcn_coincidence is
 
-  generic(
+--  generic(
 -- clock frequency
-    g_clk_freq : natural := 62500000;
+--    g_clk_freq : natural := 62500000;
 -- fifo data width
-    g_data_width : natural := 32;
+--    g_data_width : natural := 32;
 -- coincidence window, 16 ns * ( 2^g_windows_width -1 )
-    g_window_width : natural := 10;
+--    g_window_width : natural := 10;
 -- diff data width
-    g_diff_width : natural := 18
-   );
-  port (
-    rst_n_i	  : in std_logic:='0';
-    clk_sys_i : in std_logic:='0';
+--    g_diff_width : natural := 18
+--   );
+--  port (
+--    rst_n_i	  : in std_logic:='0';
+--    clk_sys_i : in std_logic:='0';
     
-    fifoa_empty_i : in std_logic:='0';
-    fifoa_rd_o    : out std_logic;
-    fifoa_data_i  : in  std_logic_vector(g_data_width-1 downto 0):=(others=>'0');
+--    fifoa_empty_i : in std_logic:='0';
+--    fifoa_rd_o    : out std_logic;
+--    fifoa_rddata_i  : in  std_logic_vector(g_diff_width-1 downto 0):=(others=>'0');
     
-    fifob_empty_i : in std_logic:='0';
-    fifob_rd_o    : out std_logic;
-    fifob_data_i  : in  std_logic_vector(g_data_width-1 downto 0):=(others=>'0');
+--    fifob_empty_i : in std_logic:='0';
+--    fifob_rd_o    : out std_logic;
+--    fifob_rddata_i  : in  std_logic_vector(g_diff_width-1 downto 0):=(others=>'0');
 
-    diff_fifo_wr_o   : out std_logic;
-    diff_fifo_data_o : out std_logic_vector(g_diff_width downto 0);
-    diff_fifo_full_i : in std_logic:='0'
-  );
+--    diff_fifo_wr_o   : out std_logic;
+--    diff_fifo_wrdata_o : out std_logic_vector(g_diff_width downto 0);
+--    diff_fifo_full_i : in std_logic:='0'
+--  );
 
-end component;
+--end component;
 
 component pcn_wb_slave is
   port (
@@ -197,7 +197,7 @@ component tdc_module is
     -- select the calibration or measured signal
     tdc_cal_sel_i       : in  std_logic_vector(g_meas_channel_num-1 downto 0):=(others=>'0'); 
     -- start build the lut&dnl
-	tdc_lut_build_i     : in  std_logic_vector(g_meas_channel_num-1 downto 0):=(others=>'0');
+    tdc_lut_build_i     : in  std_logic_vector(g_meas_channel_num-1 downto 0):=(others=>'0');
     -- '1' = dnl table has been built
     tdc_dnl_done_o      : out std_logic_vector(g_meas_channel_num-1 downto 0);
     -- '1' = lut table has been built
@@ -206,22 +206,30 @@ component tdc_module is
 end component;
 
 -- signals declaration
-signal fifoa_empty : std_logic:='0';
-signal fifoa_full  : std_logic:='0';
-signal fifoa_rd    : std_logic;
-signal fifoa_data  : std_logic_vector(g_data_width-1 downto 0):=(others=>'0');
+signal fifo_select : std_logic_vector(1 downto 0);
 
-signal fifob_empty : std_logic:='0';
-signal fifob_full  : std_logic:='0';
-signal fifob_rd    : std_logic;
-signal fifob_data  : std_logic_vector(g_data_width-1 downto 0):=(others=>'0');
+--signal fifoa_empty : std_logic:='0';
+--signal fifoa_wrfull: std_logic:='0';
+--signal fifoa_wr    : std_logic;
+--signal fifoa_wrdata: std_logic_vector(g_diff_width-1 downto 0):=(others=>'0');
+--signal fifoa_rd    : std_logic;
+--signal fifoa_rdfull: std_logic:='0';
+--signal fifoa_rddata: std_logic_vector(g_diff_width-1 downto 0):=(others=>'0');
+--
+--signal fifob_empty : std_logic:='0';
+--signal fifob_wrfull: std_logic:='0';
+--signal fifob_wr    : std_logic;
+--signal fifob_wrdata: std_logic_vector(g_diff_width-1 downto 0):=(others=>'0');
+--signal fifob_rd    : std_logic;
+--signal fifob_rdfull: std_logic:='0';
+--signal fifob_rddata: std_logic_vector(g_diff_width-1 downto 0):=(others=>'0');
 
-signal diff_fifo_wr   : std_logic;
-signal diff_fifo_data : std_logic_vector(g_diff_width downto 0);
-signal diff_fifo_full : std_logic:='0';
+--signal diff_fifo_wr   : std_logic;
+--signal diff_fifo_wrdata : std_logic_vector(g_diff_width downto 0);
+--signal diff_fifo_full : std_logic:='0';
 
-signal pcb_wb_regs_in : t_pcn_in_registers;
-signal pcb_wb_regs_out : t_pcn_out_registers;
+signal pcn_wb_regs_in : t_pcn_in_registers;
+signal pcn_wb_regs_out : t_pcn_out_registers;
 
     -- tdc data fifo output
 signal tm_output_wrreq   : std_logic_vector(2-1 downto 0);
@@ -256,37 +264,37 @@ begin
     wb_we_i   => wb_we_i,
     wb_ack_o  => wb_ack_o,
     wb_stall_o=> wb_stall_o,
-    regs_i    => pcb_wb_regs_in,
-    regs_o    => pcb_wb_regs_out
+    regs_i    => pcn_wb_regs_in,
+    regs_o    => pcn_wb_regs_out
   );
 
-  u_pcn_coincidence: pcn_coincidence
-  generic map(
+--  u_pcn_coincidence: pcn_coincidence
+--  generic map(
 -- clock frequency
-    g_clk_freq => 62500000,
+--    g_clk_freq => 62500000,
 -- fifo data width
-    g_data_width => g_data_width,
+--    g_data_width => g_data_width,
 -- coincidence window, 16 ns * ( 2^g_windows_width -1 )
-    g_window_width => g_window_width,
+--    g_window_width => g_window_width,
 -- diff data width
-    g_diff_width => g_diff_width
-   )
-  port map(
-    rst_n_i      => rst_n_i,
-    clk_sys_i    => clk_sys_i,
+--    g_diff_width => g_diff_width
+--   )
+--  port map(
+--    rst_n_i      => rst_n_i,
+--    clk_sys_i    => clk_sys_i,
     
-    fifoa_empty_i=> fifoa_empty,
-    fifoa_rd_o   => fifoa_rd,
-    fifoa_data_i => fifoa_data,
+--    fifoa_empty_i=> fifoa_empty,
+--    fifoa_rd_o   => fifoa_rd,
+--    fifoa_rddata_i => fifoa_rddata,
     
-    fifob_empty_i=> fifob_empty,
-    fifob_rd_o   => fifob_rd,
-    fifob_data_i => fifob_data,
+--    fifob_empty_i=> fifob_empty,
+--    fifob_rd_o   => fifob_rd,
+--    fifob_rddata_i => fifob_rddata,
 
-    diff_fifo_wr_o    => diff_fifo_wr,
-    diff_fifo_data_o  => diff_fifo_data,
-    diff_fifo_full_i  => diff_fifo_full
-  );
+--    diff_fifo_wr_o    => diff_fifo_wr,
+--    diff_fifo_wrdata_o  => diff_fifo_wrdata,
+--    diff_fifo_full_i  => diff_fifo_full
+--  );
 
 u_tdc_module : tdc_module
   generic map(
@@ -332,65 +340,33 @@ u_tdc_module : tdc_module
     -- select the calibration or measured signal
     tdc_cal_sel_i       => tdc_cal_sel,
     -- start build the lut&dnl
-	tdc_lut_build_i     => tdc_lut_build,
+    tdc_lut_build_i     => tdc_lut_build,
     -- '1' = dnl table has been built
     tdc_dnl_done_o      => tdc_dnl_done,
     -- '1' = lut table has been built
     tdc_lut_done_o      => tdc_lut_done
   );
 
-  U_FIFOA : generic_async_fifo
-  generic map (
-    g_data_width      => g_timestamp_width,
-    g_size            => 32,
-    g_with_rd_empty   => true,
-    g_with_rd_count   => true)
-  port map (
-    rst_n_i           => tdc_rst_n,
-    clk_wr_i          => clk_ref_i,
-    d_i               => tm_output_data(g_timestamp_width-1 downto 0),
-    we_i              => tm_output_wrreq(0),
-    wr_empty_o        => open,
-    wr_full_o         => tm_output_full(0),
-    clk_rd_i          => clk_sys_i,
-    q_o               => fifoa_data,
-    rd_i              => fifoa_rd,
-    rd_empty_o        => fifoa_empty,
-    rd_full_o         => fifoa_full,
-    rd_count_o        => open
-    );
+  tm_output_full(0) <= pcn_wb_regs_out.tsdf_wr_full_o; 
 
-  U_FIFOB : generic_async_fifo
-  generic map (
-    g_data_width      => g_timestamp_width,
-    g_size            => 32,
-    g_with_rd_empty   => true,
-    g_with_rd_count   => true)
-  port map (
-    rst_n_i           => tdc_rst_n,
-    clk_wr_i          => clk_ref_i,
-    d_i               => tm_output_data(2*g_timestamp_width-1 downto g_timestamp_width),
-    we_i              => tm_output_wrreq(1),
-    wr_empty_o        => open,
-    wr_full_o         => tm_output_full(1),
-    clk_rd_i          => clk_sys_i,
-    q_o               => fifob_data,
-    rd_i              => fifob_rd,
-    rd_empty_o        => fifob_empty,
-    rd_full_o         => fifob_full,
-    rd_count_o        => open
-    );
-
-  pcb_wb_regs_in.sr_dnl_done_i <= tdc_dnl_done;
-  pcb_wb_regs_in.sr_lut_done_i <= tdc_lut_done;
-  pcb_wb_regs_in.tsdf_wr_req_i <= diff_fifo_wr;
-  pcb_wb_regs_in.tsdf_val_i    <= diff_fifo_data;
+  tm_output_full(1) <= pcn_wb_regs_out.tsdf_wr_full_o;
+	
+  pcn_wb_regs_in.tsdf_wr_req_i <= tm_output_wrreq(0) when fifo_select="01" else
+                                  tm_output_wrreq(1) when fifo_select="10" else
+                                  '0';
+																	
+  pcn_wb_regs_in.tsdf_val_i    <= tm_output_data(g_diff_width downto 0) when fifo_select="01" else
+                 tm_output_data(g_diff_width+g_timestamp_width downto g_timestamp_width) when fifo_select="10" else
+	                              (others=>'0');
+	
+  pcn_wb_regs_in.sr_dnl_done_i <= tdc_dnl_done;
+  pcn_wb_regs_in.sr_lut_done_i <= tdc_lut_done;
   
-  tdc_rst_n        <= not pcb_wb_regs_out.cr_rst_o;
-  tdc_en           <= pcb_wb_regs_out.cr_en_o;
-  tdc_cal_sel      <= pcb_wb_regs_out.cr_cal_sel_o;
-  tdc_lut_build(0) <= pcb_wb_regs_out.cr_lut_build_o;
-  tdc_lut_build(1) <= pcb_wb_regs_out.cr_lut_build_o;
-  diff_fifo_full   <= pcb_wb_regs_out.tsdf_wr_full_o;
+  fifo_select      <= pcn_wb_regs_out.cr_output_select_o;
+  tdc_rst_n        <= not pcn_wb_regs_out.cr_rst_o;
+  tdc_en           <= pcn_wb_regs_out.cr_en_o;
+  tdc_cal_sel      <= pcn_wb_regs_out.cr_cal_sel_o;
+  tdc_lut_build(0) <= pcn_wb_regs_out.cr_lut_build_o;
+  tdc_lut_build(1) <= pcn_wb_regs_out.cr_lut_build_o;
 
 end architecture ; -- behavioral

@@ -56,14 +56,14 @@ entity pcn_coincidence is
     
     fifoa_empty_i : in std_logic:='0';
     fifoa_rd_o    : out std_logic;
-    fifoa_data_i  : in  std_logic_vector(g_data_width-1 downto 0):=(others=>'0');
+    fifoa_rddata_i  : in  std_logic_vector(g_diff_width-1 downto 0):=(others=>'0');
     
     fifob_empty_i : in std_logic:='0';
     fifob_rd_o    : out std_logic;
-    fifob_data_i  : in  std_logic_vector(g_data_width-1 downto 0):=(others=>'0');
+    fifob_rddata_i  : in  std_logic_vector(g_diff_width-1 downto 0):=(others=>'0');
 
     diff_fifo_wr_o   : out std_logic;
-    diff_fifo_data_o : out std_logic_vector(g_diff_width downto 0);
+    diff_fifo_wrdata_o : out std_logic_vector(g_diff_width downto 0);
     diff_fifo_full_i : in std_logic:='0'
   );
 
@@ -77,16 +77,16 @@ architecture behavioral of pcn_coincidence is
     signal coincidence_cntr : unsigned(g_window_width-1 downto 0);
     constant C_COINCIDENCE_WINDOW: unsigned(g_window_width-1 downto 0):=(others=>'1');
 
-    signal fifoa_data,fifob_data:unsigned(g_diff_width downto 0);
+    signal fifoa_rddata,fifob_rddata:unsigned(g_diff_width downto 0);
     signal diff_value : unsigned(g_diff_width downto 0);
     signal diff_valid : std_logic;
 
 begin
   
-  fifoa_data <= unsigned('0' & fifoa_data_i(g_diff_width-1 downto 0));
-  fifob_data <= unsigned('0' & fifob_data_i(g_diff_width-1 downto 0));
+  fifoa_rddata <= unsigned('0' & fifoa_rddata_i(g_diff_width-1 downto 0));
+  fifob_rddata <= unsigned('0' & fifob_rddata_i(g_diff_width-1 downto 0));
   diff_fifo_wr_o <= diff_valid and (not diff_fifo_full_i);
-  diff_fifo_data_o <= std_logic_vector(diff_value);
+  diff_fifo_wrdata_o <= std_logic_vector(diff_value);
 
   g_coincidence_proc : process(clk_sys_i)
   begin
@@ -156,7 +156,7 @@ begin
 
           when S_CAL_DIFF =>
             diff_valid <= '1';
-            diff_value <= fifoa_data - fifob_data;
+            diff_value <= fifoa_rddata - fifob_rddata;
             coincidence_cntr <= (others=>'0');
             if (fifoa_empty_i='0') and (fifob_empty_i='0') then
               state <= S_WAIT_READ;
