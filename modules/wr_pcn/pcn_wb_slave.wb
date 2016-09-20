@@ -44,18 +44,6 @@ peripheral {
 			type = SLV;
 			size = 2;
 		};
-
-    field {
-      name = "PCN module output select";
-      description = "01   : output channel 1 \
-                     10   : output channel 2 \
-                     00/11: output null.";
-      prefix = "output_select";
-      access_bus = READ_WRITE;
-      access_dev = READ_ONLY;
-      type = SLV;
-      size = 2;
-    };
 	};
 
 -- PCN SR
@@ -92,15 +80,15 @@ peripheral {
 	fifo_reg {
 		size = 128;
 		direction = CORE_TO_BUS;
-		prefix = "tsdf";
-		name = "Timestamp Differences FIFO";
-		description = "This FIFO holds the Timestamp Differences measured by the 2-channel tdc module.";
+		prefix = "fifo";
+		name = "Channel 1 & 2 output FIFO";
+		description = "Channel 1 & 2 output FIFO";
 		flags_bus = {FIFO_FULL, FIFO_EMPTY, FIFO_COUNT};
 		flags_dev = {FIFO_FULL, FIFO_EMPTY, FIFO_COUNT};
 		
 		field {
-			name = "Timestamp difference";
-			prefix = "val";
+			name = "output FIFO";
+			prefix = "wr_data";
 			type = SLV;
 			size = 18;
 		};

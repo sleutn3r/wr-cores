@@ -234,7 +234,6 @@ signal pcn_wb_regs_out : t_pcn_out_registers;
     -- tdc data fifo output
 signal tm_output_wrreq   : std_logic_vector(2-1 downto 0);
 signal tm_output_data    : std_logic_vector(g_timestamp_width*2-1 downto 0);
-signal tm_output_full    : std_logic_vector(2-1 downto 0);
 signal tm_output_edgepol : std_logic_vector(2-1 downto 0);	
 
 signal dnl_output_wrreq  : std_logic_vector(2-1 downto 0);
@@ -346,23 +345,18 @@ u_tdc_module : tdc_module
     -- '1' = lut table has been built
     tdc_lut_done_o      => tdc_lut_done
   );
-
-  tm_output_full(0) <= pcn_wb_regs_out.tsdf_wr_full_o; 
-
-  tm_output_full(1) <= pcn_wb_regs_out.tsdf_wr_full_o;
 	
-  pcn_wb_regs_in.tsdf_wr_req_i <= tm_output_wrreq(0) when fifo_select="01" else
-                                  tm_output_wrreq(1) when fifo_select="10" else
+  pcn_wb_regs_in.fifo_wr_req_i <= tm_output_wrreq(0) when tdc_en="01" else
+                                  tm_output_wrreq(1) when tdc_en="10" else
                                   '0';
 																	
-  pcn_wb_regs_in.tsdf_val_i    <= tm_output_data(g_diff_width downto 0) when fifo_select="01" else
-                 tm_output_data(g_diff_width+g_timestamp_width downto g_timestamp_width) when fifo_select="10" else
+  pcn_wb_regs_in.fifo_wr_data_i <= tm_output_data(17 downto 0) when tdc_en="01" else
+                 tm_output_data(17+g_timestamp_width downto g_timestamp_width) when tdc_en="10" else
 	                              (others=>'0');
 	
   pcn_wb_regs_in.sr_dnl_done_i <= tdc_dnl_done;
   pcn_wb_regs_in.sr_lut_done_i <= tdc_lut_done;
   
-  fifo_select      <= pcn_wb_regs_out.cr_output_select_o;
   tdc_rst_n        <= not pcn_wb_regs_out.cr_rst_o;
   tdc_en           <= pcn_wb_regs_out.cr_en_o;
   tdc_cal_sel      <= pcn_wb_regs_out.cr_cal_sel_o;
