@@ -75,8 +75,7 @@ end xwb_pcn_module;
 
 architecture behavioral of xwb_pcn_module is
 
-  component pcn_module is
-
+component pcn_module is
   generic(
 -- fifo data width
     g_data_width        : natural := 32;
@@ -125,11 +124,11 @@ architecture behavioral of xwb_pcn_module is
     wb_ack_o            : out    std_logic;
     wb_stall_o          : out    std_logic
   );
-  end component ; -- pcn_module
+end component ; -- pcn_module
   
   signal wb_out       : t_wishbone_slave_out;
   signal wb_in        : t_wishbone_slave_in;
-
+	
 begin  -- behavioral
   
   U_Adapter : wb_slave_adapter

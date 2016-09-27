@@ -98,7 +98,74 @@ architecture rtl of cutewrdp_pcn is
     rst_n_o : out std_logic);
   end component;
 	
-  component xwb_pcn_module is
+	component xwr_com5402 is
+  generic (
+    g_use_wishbone_interface : boolean := true;
+    nudptx: integer range 0 to 1:= 1;
+    nudprx: integer range 0 to 1:= 1;
+    ntcpstreams: integer range 0 to 255 := 0;  
+    clk_frequency: integer := 120;    
+    tx_idle_timeout: integer range 0 to 50:= 50;  
+    simulation: std_logic := '0');
+  port (
+    rst_n_i           : in std_logic;
+    clk_ref_i         : in std_logic;
+    clk_sys_i         : in std_logic;
+    snk_i             : in  t_wrf_sink_in;
+    snk_o             : out t_wrf_sink_out;
+    src_o             : out t_wrf_source_out;
+    src_i             : in  t_wrf_source_in;
+    udp_rx_data       : out std_logic_vector(7 downto 0);
+    udp_rx_data_valid : out std_logic;
+    udp_rx_sof        : out std_logic;
+    udp_rx_eof        : out std_logic;
+    udp_tx_data       : in  std_logic_vector(7 downto 0):= (others=>'0');
+    udp_tx_data_valid : in  std_logic:= '0';
+    udp_tx_sof        : in  std_logic:= '0';
+    udp_tx_eof        : in  std_logic:= '0';
+    udp_tx_cts        : out std_logic;
+    udp_tx_ack        : out std_logic;
+    udp_tx_nak        : out std_logic;
+    connection_reset  : in std_logic_vector((ntcpstreams-1) downto 0):=(others=>'0');
+    tcp_rx_data       : out std_logic_vector(7 downto 0);
+    tcp_rx_data_valid : out std_logic;
+    tcp_rx_rts        : out std_logic;
+    tcp_rx_cts        : in  std_logic:='1';
+    tcp_tx_data       : in  std_logic_vector(7 downto 0):= (others=>'0');
+    tcp_tx_data_valid : in  std_logic:='0';
+    tcp_tx_cts        : out std_logic;
+    cfg_slave_in  : in t_wishbone_slave_in:=cc_dummy_slave_in;
+    cfg_slave_out : out t_wishbone_slave_out;
+    my_mac_addr   : in std_logic_vector(47 downto 0):=x"1234567890ab";
+    my_ip_addr    : in std_logic_vector(31 downto 0):=x"c0ab0008";
+    my_subnet_mask: in std_logic_vector(31 downto 0):=x"ffffff00";
+    my_gateway    : in std_logic_vector(31 downto 0):=x"c0ab0001";
+    tcp_local_port_no: in std_logic_vector(15 downto 0):=x"dcba";
+    udp_rx_dest_port_no: in std_logic_vector(15 downto 0):=x"abcd";
+    udp_tx_dest_ip_addr: in std_logic_vector(31 downto 0):=x"c0ab0201";
+    udp_tx_source_port_no: in std_logic_vector(15 downto 0):=x"abcd";
+    udp_tx_dest_port_no: in std_logic_vector(15 downto 0):=x"abcd"
+    );
+end component;
+
+component user_udp_demo is
+  port(
+    clk_i 				   	      : in std_logic;
+    rst_n_i 					      : in std_logic;
+    udp_rx_data             : out std_logic_vector(7 downto 0);
+    udp_rx_data_valid       : out std_logic;
+    udp_rx_sof              : out std_logic;
+    udp_rx_eof              : out std_logic;
+    udp_tx_data         		: out std_logic_vector(7 downto 0);
+    udp_tx_data_valid   		: out std_logic;
+    udp_tx_sof          		: out std_logic;
+    udp_tx_eof          		: out std_logic;
+    udp_tx_cts          		: in std_logic;
+    udp_tx_ack          		: in std_logic;
+    udp_tx_nak          		: in std_logic);
+end component;
+
+component xwb_pcn_module is
   generic(
 -- fifo data width
     g_data_width   : natural := 32;
@@ -284,7 +351,41 @@ constant c_pcn_sdb : t_sdb_device := (
   signal tm_tai_valid      : std_logic;
   signal tdc_measure_i     : std_logic_vector(1 downto 0);
   signal tdc_cal_i         : std_logic;
-
+  
+	signal ext_snk_i : t_wrf_sink_in;
+  signal ext_snk_o : t_wrf_sink_out;
+  signal ext_src_o : t_wrf_source_out:=c_dummy_snk_in;
+  signal ext_src_i : t_wrf_source_in;  
+  signal ext_slave_in:t_wishbone_slave_in;
+  signal ext_slave_out:t_wishbone_slave_out;
+	signal udp_rx_data: std_logic_vector(7 downto 0) := (others => '0');
+  signal udp_rx_data_valid: std_logic := '0';
+  signal udp_rx_sof: std_logic := '0';
+  signal udp_rx_eof: std_logic := '0';
+  signal udp_tx_data: std_logic_vector(7 downto 0) := (others => '0');
+  signal udp_tx_data_valid: std_logic := '0';
+  signal udp_tx_sof: std_logic := '0';
+  signal udp_tx_eof: std_logic := '0';
+  signal udp_tx_cts: std_logic;
+  signal udp_tx_ack: std_logic;
+  signal udp_tx_nak: std_logic;
+	signal tcp_rx_data       : std_logic_vector(7 downto 0):= (others=>'0');
+  signal tcp_rx_data_valid : std_logic;
+  signal tcp_rx_rts        : std_logic;
+  signal tcp_rx_cts        : std_logic;
+  signal tcp_tx_data       : std_logic_vector(7 downto 0):= (others=>'0');
+  signal tcp_tx_data_valid : std_logic;
+  signal tcp_tx_cts        : std_logic;
+	signal ext_my_mac_addr   :    std_logic_vector(47 downto 0):=x"2233076cb3b5"; -- debug mac address
+  signal ext_my_ip_addr    :    std_logic_vector(31 downto 0):=x"c0a80024";
+  signal ext_my_subnet_mask:    std_logic_vector(31 downto 0):=x"ffffff00";
+  signal ext_my_gateway    :    std_logic_vector(31 downto 0):=x"c0a80001";
+  signal ext_tcp_local_port_no: std_logic_vector(15 downto 0):=x"dcba";
+  signal ext_udp_rx_dest_port_no:  std_logic_vector(15 downto 0):=x"dcba";
+  signal ext_udp_tx_dest_ip_addr:  std_logic_vector(31 downto 0):=x"c0a80001";
+  signal ext_udp_tx_source_port_no:  std_logic_vector(15 downto 0):=x"abcd";
+  signal ext_udp_tx_dest_port_no:  std_logic_vector(15 downto 0):=x"abcd";
+	
 begin
 
   U_Reset_Gen : cute_reset_gen
@@ -541,12 +642,12 @@ begin
       etherbone_src_i       => etherbone_snk_o,
       etherbone_snk_o       => etherbone_src_i,
       etherbone_snk_i       => etherbone_src_o,
-      ext_master_o          => open,
-      ext_master_i          => open,
-      ext_src_o             => open,
-      ext_src_i                   => open,
-      ext_snk_o             => open,
-      ext_snk_i             => open,
+      ext_master_o          => ext_slave_in,
+      ext_master_i          => ext_slave_out,
+      ext_src_o             => ext_snk_i,
+      ext_src_i             => ext_snk_o,
+      ext_snk_o             => ext_src_i,
+      ext_snk_i             => ext_src_o,
       aux_master_o          => pcn_wb_slave_i,
       aux_master_i          => pcn_wb_slave_o,
       tm_dac_value_o        => open,
@@ -702,7 +803,7 @@ end generate;
   tdc_measure_i(1)  <= usr_lemo2;
   tdc_cal_i         <= pllout_clk_calib;
   
-  u_xwb_pcn: xwb_pcn_module
+u_xwb_pcn: xwb_pcn_module
   generic map(
 -- fifo data width
     g_data_width => 32,
@@ -744,5 +845,60 @@ end generate;
 -- control & data wishbone interface
     pcn_slave_i => pcn_wb_slave_i,
     pcn_slave_o => pcn_wb_slave_o);
+		
+u_xwr_com5402: xwr_com5402
+  port map(
+    rst_n_i           => local_reset_n,
+    clk_ref_i         => clk_ref_i,
+    clk_sys_i         => clk_sys_i,
+    snk_i             => ext_snk_i,
+    snk_o             => ext_snk_o,
+    src_o             => ext_src_o,
+    src_i             => ext_src_i,
+    connection_reset  => (others=>'0'),
+    udp_rx_data       => udp_rx_data,
+    udp_rx_data_valid => udp_rx_data_valid,
+    udp_rx_sof        => udp_rx_sof,
+    udp_rx_eof        => udp_rx_eof,
+    udp_tx_data       => udp_tx_data,
+    udp_tx_data_valid => udp_tx_data_valid,
+    udp_tx_sof        => udp_tx_sof,
+    udp_tx_eof        => udp_tx_eof,
+    udp_tx_cts        => udp_tx_cts,
+    udp_tx_ack        => udp_tx_ack,
+    udp_tx_nak        => udp_tx_nak,
+    tcp_rx_data       => tcp_rx_data,
+    tcp_rx_data_valid => tcp_rx_data_valid,
+    tcp_tx_data       => tcp_tx_data,
+    tcp_tx_data_valid => tcp_tx_data_valid,
+    tcp_tx_cts        => tcp_tx_cts,
+    cfg_slave_in      => ext_slave_in,
+    cfg_slave_out     => ext_slave_out,
+    my_mac_addr       => ext_my_mac_addr,
+    my_ip_addr        => ext_my_ip_addr,
+    my_subnet_mask    => ext_my_subnet_mask,
+    my_gateway        => ext_my_gateway,
+    tcp_local_port_no => ext_tcp_local_port_no,
+    udp_rx_dest_port_no  => ext_udp_rx_dest_port_no,
+    udp_tx_dest_ip_addr  => ext_udp_tx_dest_ip_addr,
+    udp_tx_source_port_no=> ext_udp_tx_source_port_no,
+    udp_tx_dest_port_no  => ext_udp_tx_dest_port_no
+);
+
+inst_udp_demo: user_udp_demo
+  port map(
+    clk_i                 => clk_ref_i,
+    rst_n_i               => local_reset_n,
+    udp_rx_data           => udp_rx_data,
+    udp_rx_data_valid     => udp_rx_data_valid,
+    udp_rx_sof            => udp_rx_sof,
+    udp_rx_eof            => udp_rx_eof,
+    udp_tx_data           => udp_tx_data,
+    udp_tx_data_valid     => udp_tx_data_valid,
+    udp_tx_sof            => udp_tx_sof,
+    udp_tx_eof            => udp_tx_eof,
+    udp_tx_cts            => udp_tx_cts,
+    udp_tx_ack            => udp_tx_ack,
+    udp_tx_nak            => udp_tx_nak);
 
 end rtl;
