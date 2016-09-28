@@ -551,7 +551,7 @@ begin
       g_dpram_initf               => "",
       g_etherbone_enable          => g_etherbone_enable,
       g_etherbone_sdb             => c_etherbone_sdb,
-      g_ext_sdb                   => c_null_sdb,
+      g_ext_sdb                   => c_ext_cfg_sdb,
       g_aux_sdb                   => c_pcn_sdb,
       g_dpram_size                => 131072/4,
       g_interface_mode            => pipelined,
