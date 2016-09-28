@@ -1275,7 +1275,7 @@
     <file xil_pn:name="../../../ip_cores/general-cores/modules/wishbone/wb_simple_pwm/simple_pwm_wb.vhd" xil_pn:type="FILE_VHDL">
       <association xil_pn:name="Implementation" xil_pn:seqID="0"/>
     </file>
-    <file xil_pn:name="../../../../../103ip_fpgaTDC/platform/sp6-lx45t-csg324-rom/rom_32bx32.ngc" xil_pn:type="FILE_NGC">
+    <file xil_pn:name="../../../ngc/rom_32bx32.ngc" xil_pn:type="FILE_NGC">
       <association xil_pn:name="Implementation" xil_pn:seqID="0"/>
     </file>
     <file xil_pn:name="../../../top/cutewrdp/cutewrdp_pcn/cutewrdp_pcn.bmm" xil_pn:type="FILE_BMM">
