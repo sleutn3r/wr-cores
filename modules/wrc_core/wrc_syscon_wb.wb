@@ -310,5 +310,93 @@ peripheral {
       };
    };
 
+   reg {
+     name = "Trigger control register";
+     prefix = "TCR";
+     
+      field {
+         name = "Enable generation";
+         prefix = "EN";
+         size = 1;
+         type = BIT;
+         access_bus = READ_WRITE;
+         access_dev = READ_ONLY;
+      };
+
+      field {
+         name = "Reset counters";
+         prefix = "RST";
+         size = 1;
+         type = MONOSTABLE;
+         access_bus = WRITE_ONLY;
+         access_dev = READ_ONLY;
+      };
+   };
+
+
+   reg {
+     name = "Trigger period";
+     prefix = "TP";
+     
+      field {
+         name = "Value";
+         size = 32;
+         type =SLV;
+         access_bus = READ_WRITE;
+         access_dev = READ_ONLY;
+      };
+   };
+
+   reg {
+     name = "TX trigger counter L";
+     prefix = "TXTL";
+     
+      field {
+         name = "Value";
+         size = 32;
+         type =SLV;
+         access_bus = READ_ONLY;
+         access_dev = WRITE_ONLY;
+      };
+   };
+
+   reg {
+     name = "TX trigger counter H";
+     prefix = "TXTH";
+     
+      field {
+         name = "Value";
+         size = 32;
+         type =SLV;
+         access_bus = READ_ONLY;
+         access_dev = WRITE_ONLY;
+      };
+   };
+
+   reg {
+     name = "RX trigger counter L";
+     prefix = "RXTL";
+     
+      field {
+         name = "Value";
+         size = 32;
+         type =SLV;
+         access_bus = READ_ONLY;
+         access_dev = WRITE_ONLY;
+      };
+   };
+
+   reg {
+     name = "RX trigger counter H";
+     prefix = "RXTH";
+     
+      field {
+         name = "Value";
+         size = 32;
+         type =SLV;
+         access_bus = READ_ONLY;
+         access_dev = WRITE_ONLY;
+      };
+   };
 
 };
