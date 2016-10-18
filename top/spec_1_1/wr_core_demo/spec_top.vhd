@@ -575,7 +575,7 @@ begin
       g_ep_rxbuf_size             => 1024,
       g_tx_runt_padding           => true,
       g_pcs_16bit                 => false,
-      g_dpram_initf               => "wrc.ram",
+      g_dpram_initf               => "none", --"wrc.ram",
       g_aux_sdb                   => c_etherbone_sdb,
       g_dpram_size                => 131072/4,
       g_interface_mode            => PIPELINED,
@@ -662,7 +662,7 @@ begin
       pps_p_o              => pps,
       pps_led_o            => pps_led,
 
---      dio_o       => dio_out(4 downto 1),
+      dio_o       => dio_out(4 downto 1),
       rst_aux_n_o => etherbone_rst_n
       );
 
@@ -819,7 +819,7 @@ begin
   end process;
   
   dio_out(0) <= pps;
-  dio_out(1) <= clk_ref_div2;
+  --dio_out(1) <= clk_ref_div2;
 
   dio_oe_n_o(0)          <= '0';
   dio_oe_n_o(2 downto 1) <= (others => '0');

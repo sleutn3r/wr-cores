@@ -491,6 +491,32 @@ architecture struct of wr_core is
   --signal TRIG1   : std_logic_vector(31 downto 0);
   --signal TRIG2   : std_logic_vector(31 downto 0);
   --signal TRIG3   : std_logic_vector(31 downto 0);
+
+  component ell_inj
+    port (
+      clk_tx_i :  in std_logic;
+      clk_rx_i :  in std_logic;
+      rst_n_i  : in std_logic;
+      
+      trig_i : in  std_logic;
+      trig_o : out std_logic;
+      tx_trig_o : out std_logic;
+      
+      inp_data_i : in std_logic_vector(7 downto 0);
+      inp_k_i    : in std_logic;
+      inp_enc_err_i : in std_logic;
+  
+      outp_data_i : in std_logic_vector(7 downto 0); 
+      outp_k_i    : in std_logic; 
+      outp_enc_err_i : in std_logic;
+      outp_disp_i : in std_logic;
+      outp_data_o : out std_logic_vector(7 downto 0); 
+      outp_k_o    : out std_logic);
+  end component;
+
+  signal phy_tx_data_int : std_logic_vector(7 downto 0);
+  signal phy_tx_k_int : std_logic_vector(0 downto 0);
+
 begin
 
   rst_aux_n_o <= rst_net_n;
@@ -648,8 +674,8 @@ begin
       phy_sfp_los_i        => phy_sfp_los_i,
       phy_sfp_tx_disable_o => phy_sfp_tx_disable_o,
       phy_ref_clk_i        => phy_ref_clk_i,
-      phy_tx_data_o        => phy_tx_data_o,
-      phy_tx_k_o           => phy_tx_k_o,
+      phy_tx_data_o        => phy_tx_data_int,
+      phy_tx_k_o           => phy_tx_k_int,
       phy_tx_disparity_i   => phy_tx_disparity_i,
       phy_tx_enc_err_i     => phy_tx_enc_err_i,
       phy_rx_data_i        => phy_rx_data_i,
@@ -682,6 +708,31 @@ begin
   link_ok_o    <= ep_led_link;
 
   tm_link_up_o <= ep_led_link;
+
+  -----------------------------------------------------------------------------
+  -- Extra Low Latency
+  -----------------------------------------------------------------------------
+  ELL: ell_inj
+  port map(
+    clk_tx_i    => clk_ref_i,
+    clk_rx_i    => phy_rx_rbclk_i,
+    rst_n_i     => rst_net_n,
+
+    trig_i      => '0',
+    trig_o      => dio_o(0),
+    tx_trig_o   => dio_o(1),
+    
+    inp_data_i  => phy_rx_data_i,
+    inp_k_i     => phy_rx_k_i(0),
+    inp_enc_err_i => phy_rx_enc_err_i,
+
+    outp_data_i => phy_tx_data_int,
+    outp_k_i    => phy_tx_k_int(0),
+    outp_enc_err_i => phy_tx_enc_err_i,
+    outp_disp_i => phy_tx_disparity_i,
+    outp_data_o => phy_tx_data_o,
+    outp_k_o    => phy_tx_k_o(0));
+
 
   -----------------------------------------------------------------------------
   -- Mini-NIC
