@@ -46,7 +46,7 @@ architecture beha of user_udp_demo is
 	
 begin
 
-fifo_wrreq <= fifo_wrreq_i and fifo_full;
+fifo_wrreq <= fifo_wrreq_i and not fifo_full;
 fifo_wrdata <= fifo_wrdata_i;
 
 U_udp_fifo : generic_sync_fifo
