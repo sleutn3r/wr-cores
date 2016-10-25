@@ -152,6 +152,8 @@ component user_udp_demo is
   port(
     clk_i 				   	      : in std_logic;
     rst_n_i 					      : in std_logic;
+		fifo_wrreq_i            : in std_logic;
+		fifo_wrdata_i           : in std_logic_vector(7 downto 0);
     udp_rx_data             : out std_logic_vector(7 downto 0);
     udp_rx_data_valid       : out std_logic;
     udp_rx_sof              : out std_logic;
@@ -167,24 +169,8 @@ end component;
 
 component xwb_pcn_module is
   generic(
--- fifo data width
-    g_data_width   : natural := 32;
--- coincidence window, 16 ns * ( 2^g_windows_width -1 )
-    g_window_width : natural := 10;
--- diff data width
-    g_diff_width   : natural := 18;
---    g_dualedge_enable   : boolean := c_dualedge_enable;
     g_waveunion_enable  : boolean := true;
---    g_correction_enable : boolean := c_correction_enable;
-    g_hit_cnt           : integer := 65536;
-    -- timestamp data width = g_coarsecntr_width + g_fine_width
-    g_timestamp_width   : integer := 32;
-    g_coarsecntr_width  : integer := 24;    -- must be multiple of 8
-    g_fine_width        : integer := 8;
-    -- dnl data width = addr_width + data_width
-    g_dnl_width         : integer := 32;
-    g_dnl_addr_width    : integer := 8;
-    g_dnl_data_width    : integer := 24;    
+    g_raw_width        : integer := 8;
     g_interface_mode       : t_wishbone_interface_mode      := CLASSIC;
     g_address_granularity  : t_wishbone_address_granularity := WORD);
   port (
@@ -200,11 +186,9 @@ component xwb_pcn_module is
     tdc_insig_i : in std_logic_vector(1 downto 0);
 -- the calibration signals (< 62.5MHz)
     tdc_cal_i  : in std_logic;
--- utc time coming from wrpc
-    utc_i               : in  std_logic_vector(39 downto 0):=(others=>'0'); -- time (>1s)
--- pps signal coming from wrpc
-    pps_i               : in  std_logic;  -- pps input
-
+		tdc_fifo_wrreq_o : out std_logic;
+		tdc_fifo_wrdata_o: out std_logic_vector(g_raw_width-1 downto 0);
+		
     pcn_slave_i : in  t_wishbone_slave_in;
     pcn_slave_o : out t_wishbone_slave_out);
 end component;
@@ -385,6 +369,9 @@ constant c_pcn_sdb : t_sdb_device := (
   signal ext_udp_tx_dest_ip_addr:  std_logic_vector(31 downto 0):=x"c0a80001";
   signal ext_udp_tx_source_port_no:  std_logic_vector(15 downto 0):=x"abcd";
   signal ext_udp_tx_dest_port_no:  std_logic_vector(15 downto 0):=x"abcd";
+	
+	signal tdc_fifo_wrreq : std_logic;
+	signal tdc_fifo_wrdata: std_logic_vector(7 downto 0);
 	
 begin
 
@@ -805,24 +792,8 @@ end generate;
   
 u_xwb_pcn: xwb_pcn_module
   generic map(
--- fifo data width
-    g_data_width => 32,
--- coincidence window, 16 ns * ( 2^g_windows_width -1 )
-    g_window_width => 10,
--- diff data width
-    g_diff_width => 17,
---    g_dualedge_enable   : boolean := c_dualedge_enable;
     g_waveunion_enable  => false,
---    g_correction_enable : boolean := c_correction_enable;
-    g_hit_cnt           => 65536,
-    -- timestamp data width = g_coarsecntr_width + g_fine_width
-    g_timestamp_width   => 32,
-    g_coarsecntr_width  => 24,
-    g_fine_width        => 8,
-    -- dnl data width = addr_width + data_width
-    g_dnl_width         => 32,
-    g_dnl_addr_width    => 8,
-    g_dnl_data_width    => 24,
+    g_raw_width        => 8,
     g_interface_mode    => pipelined,
     g_address_granularity=> byte)
   port map(
@@ -838,10 +809,8 @@ u_xwb_pcn: xwb_pcn_module
     tdc_insig_i => tdc_measure_i,
 -- the calibration signals (< 62.5MHz)
     tdc_cal_i   => tdc_cal_i,
--- utc time coming from wrpc
-    utc_i       => tm_tai,
--- pps signal coming from wrpc
-    pps_i       => pps,
+		tdc_fifo_wrreq_o => tdc_fifo_wrreq,
+		tdc_fifo_wrdata_o=> tdc_fifo_wrdata,
 -- control & data wishbone interface
     pcn_slave_i => pcn_wb_slave_i,
     pcn_slave_o => pcn_wb_slave_o);
@@ -885,20 +854,21 @@ u_xwr_com5402: xwr_com5402
     udp_tx_dest_port_no  => ext_udp_tx_dest_port_no
 );
 
-inst_udp_demo: user_udp_demo
-  port map(
-    clk_i                 => clk_ref_i,
-    rst_n_i               => local_reset_n,
-    udp_rx_data           => udp_rx_data,
-    udp_rx_data_valid     => udp_rx_data_valid,
-    udp_rx_sof            => udp_rx_sof,
-    udp_rx_eof            => udp_rx_eof,
-    udp_tx_data           => udp_tx_data,
-    udp_tx_data_valid     => udp_tx_data_valid,
-    udp_tx_sof            => udp_tx_sof,
-    udp_tx_eof            => udp_tx_eof,
-    udp_tx_cts            => udp_tx_cts,
-    udp_tx_ack            => udp_tx_ack,
-    udp_tx_nak            => udp_tx_nak);
+U_UDP_SEND: user_udp_demo
+port map(
+	clk_i 				   	      => clk_ref_i,
+	rst_n_i 					      => local_reset_n,
+
+  fifo_wrreq_i            => tdc_fifo_wrreq,
+	fifo_wrdata_i           => tdc_fifo_wrdata,
+	
+	udp_tx_data         		=> udp_tx_data,
+	udp_tx_data_valid   		=> udp_tx_data_valid,
+	udp_tx_sof          		=> udp_tx_sof,
+	udp_tx_eof          		=> udp_tx_eof,
+	udp_tx_cts          		=> udp_tx_cts,
+	udp_tx_ack          		=> udp_tx_ack,
+	udp_tx_nak          		=> udp_tx_nak
+);
 
 end rtl;
