@@ -22,7 +22,8 @@ NET "fpga_clk_n" LOC = E12;
 NET "fpga_clk_n" IOSTANDARD = LVDS_33;
 
 # bank 1
-#NET "ext_clk" LOC = C17 | IOSTANDARD = LVCMOS33;
+NET "ext_clk" LOC = C17;
+NET "ext_clk" IOSTANDARD = LVCMOS33;
 NET "pps_out" LOC = C18;
 NET "pps_out" IOSTANDARD = LVCMOS33;
 

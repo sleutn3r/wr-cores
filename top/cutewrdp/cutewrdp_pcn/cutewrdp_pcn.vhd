@@ -78,7 +78,7 @@ port (
   -- user interface
   sfp0_led         : out std_logic;
   sfp1_led         : out std_logic;
---  ext_clk          :  out  std_logic;
+  ext_clk          :  out  std_logic;
 --  usr_button       : in  std_logic;
 --  usr_led1         : out std_logic;
 --  usr_led2         : out std_logic;
@@ -166,6 +166,18 @@ component user_udp_demo is
     udp_tx_ack          		: in std_logic;
     udp_tx_nak          		: in std_logic);
 end component;
+
+component mpps_output is
+  generic(
+    g_clk_frequency : natural := 125000000);
+  port (
+    clk_i : in std_logic;
+    rst_n_i: in std_logic;
+    pps_i : in std_logic;
+
+    mpps_o: out std_logic
+  ) ;
+end component ; -- mpps_output
 
 component xwb_pcn_module is
   generic(
@@ -871,4 +883,14 @@ port map(
 	udp_tx_nak          		=> udp_tx_nak
 );
 
+U_MPPS: mpps_output
+generic map(
+  g_clk_frequency => 125000000)
+port map(
+    clk_i => clk_ref_i,
+    rst_n_i=> local_reset_n,
+    pps_i => pps,
+    mpps_o=> ext_clk
+  ) ;
+	
 end rtl;
