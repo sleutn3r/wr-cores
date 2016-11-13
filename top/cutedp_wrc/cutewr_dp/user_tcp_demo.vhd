@@ -29,76 +29,67 @@ use ieee.std_logic_unsigned.all;
 use ieee.numeric_std.all;
 
 entity user_tcp_demo is
-  port (
-    clk_i : in std_logic;
-    rst_n_i: in std_logic;
-
-    user_rx_data: in std_logic_vector(7 downto 0);
-    user_rx_dvalid:in std_logic;
-    user_tx_data: out std_logic_vector(7 downto 0);
-    user_tx_dvalid:out std_logic;
-    user_tx_cts: in std_logic;
-    user_rx_rts: in std_logic
-    
-  ) ;
+port (
+  clk_i : in std_logic;
+  rst_n_i: in std_logic;
+  tcp_rx_data: in std_logic_vector(7 downto 0);
+  tcp_rx_data_valid:in std_logic;
+  tcp_tx_data: out std_logic_vector(7 downto 0);
+  tcp_tx_data_valid:out std_logic;
+  tcp_tx_cts: in std_logic;
+  tcp_rx_rts: in std_logic) ;
 end entity ; -- user_tcp_demo
 
 architecture behavioral of user_tcp_demo is
 
-signal user_data:std_logic_vector(7 downto 0);
-signal user_dvalid:std_logic;
+  signal tcp_data:std_logic_vector(7 downto 0);
+  signal tcp_data_valid:std_logic;
 
-type t_tx_state is(T_IDLE,T_START,T_DATA,T_WAIT);
-signal tx_state : t_tx_state;
+  type t_tx_state is(T_IDLE,T_START,T_DATA,T_END);
+  signal tx_state : t_tx_state;
 
 begin
 
-user_tx_dvalid <= user_dvalid;
-user_tx_data <= user_data;
+  tcp_tx_data_valid <= tcp_data_valid;
+  tcp_tx_data <= tcp_data;
 
 U_tcp_tx_demo : process( clk_i )
 begin
-    if rising_edge(clk_i) then
-        if rst_n_i = '0' then
-            user_dvalid <= '0';
-            user_data   <= (others=>'0');
-            tx_state <= T_IDLE;			
-        else
-            case( tx_state ) is
-                when T_IDLE =>
-                    user_dvalid <= '0';
-                    user_data <= (others=>'0');
-					if user_rx_dvalid = '1' then
-                        tx_state<= T_START;
-                    end if ;
-                when T_START =>
-                    user_dvalid <= '1';
-                    user_data <= user_rx_data;
-					tx_state <= T_DATA;
-                when T_DATA =>
-                    user_dvalid <= '1';
-                    user_data <= user_data + 1;
-					if user_tx_cts = '0' then
-                        tx_state<= T_WAIT;
-                    end if ;
-                when T_WAIT =>
-                    user_dvalid <= '0';
-                    user_data <= (others=>'0');
-                    
-					if user_tx_cts = '1' then
-                        tx_state<= T_DATA;
-                    end if;
-
-                    if user_rx_dvalid = '1' then
-                        tx_state <= T_IDLE;
-                    end if ;
-                when others =>
-                    user_dvalid <= '0';
-                    user_data <= (others=>'0');
-					tx_state <= T_IDLE;
-            end case ;
-        end if ;
+  if rising_edge(clk_i) then
+    if rst_n_i = '0' then
+      tcp_data_valid <= '0';
+      tcp_data   <= (others=>'0');
+      tx_state <= T_IDLE;			
+    else
+      case( tx_state ) is
+        when T_IDLE =>
+          tcp_data_valid <= '0';
+          tcp_data <= (others=>'0');
+          if tcp_rx_data_valid = '1' and tcp_tx_cts = '1' then
+            tx_state<= T_START;
+            tcp_data_valid <= '1';
+            tcp_data <= tcp_rx_data;
+          end if ;
+			  
+				when T_START =>
+            tcp_data       <= tcp_rx_data;
+            tcp_data_valid <= '1';
+            if tcp_rx_data_valid = '0' then
+              tx_state <= T_END;
+              tcp_data_valid <= '0';
+              tcp_data       <= (others=>'0');
+            end if ;
+        
+				when T_END =>
+            tcp_data_valid <= '0';
+            tcp_data   <= (others=>'0');
+            tx_state <= T_IDLE;
+        
+				when others =>
+            tx_state <= T_IDLE;
+      end case ;
     end if ;
+  end if ;
 end process ; -- U_tcp_tx_demo
 
 end behavioral;

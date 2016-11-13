@@ -1,173 +1,250 @@
 CONFIG VCCAUX  = 3.3;
 
-#bank 0
-NET "clk_20m_vcxo_i" LOC = H1;
-NET "clk_20m_vcxo_i" IOSTANDARD = LVCMOS33;
+# bank 0
+#NET "la00_p" LOC = E6 | IOSTANDARD = LVDS_33;
+#NET "la00_n" LOC = F7 | IOSTANDARD = LVDS_33;
+#NET "la15_p" LOC = G9 | IOSTANDARD = LVDS_33;
+#NET "la15_n" LOC = G11 | IOSTANDARD = LVDS_33;
+#NET "la17_p" LOC = E14 | IOSTANDARD = LVDS_33;
+#NET "la17_n" LOC = D15 | IOSTANDARD = LVDS_33;
+#NET "la18_p" LOC = B16 | IOSTANDARD = LVDS_33;
+#NET "la18_n" LOC = A16 | IOSTANDARD = LVDS_33;
+#NET "la19_p" LOC = G8 | IOSTANDARD = LVDS_33;
+#NET "la19_n" LOC = E8 | IOSTANDARD = LVDS_33;
+#NET "la20_p" LOC = C15 | IOSTANDARD = LVDS_33;
+#NET "la20_n" LOC = A15 | IOSTANDARD = LVDS_33;
+#NET "la21_p" LOC = B3 | IOSTANDARD = LVDS_33;
+#NET "la21_n" LOC = A3 | IOSTANDARD = LVDS_33;
 
-NET "fpga_clk_n_i" LOC = E12;
-NET "fpga_clk_n_i" IOSTANDARD = LVDS_33;
+NET "fpga_clk_p" LOC = F12;
+NET "fpga_clk_p" IOSTANDARD = LVDS_33;
+NET "fpga_clk_n" LOC = E12;
+NET "fpga_clk_n" IOSTANDARD = LVDS_33;
 
-NET "fpga_clk_p_i" LOC = F12;
-NET "fpga_clk_p_i" IOSTANDARD = LVDS_33;
+# bank 1
+#NET "ext_clk" LOC = C17 | IOSTANDARD = LVCMOS33;
+NET "pps_out" LOC = C18;
+NET "pps_out" IOSTANDARD = LVCMOS33;
 
-#NET "sfp0_ref_clk_n_i" LOC = A8;
-#NET "sfp0_ref_clk_p_i" LOC = B8;
-#NET "sfp0_ref_clk_n_i" IOSTANDARD = LVDS_33;
-#NET "sfp0_ref_clk_p_i" IOSTANDARD = LVDS_33;
+#NET "usr_led2" LOC = D17 | IOSTANDARD = LVCMOS33;
+#NET "usr_led1" LOC = D18 | IOSTANDARD = LVCMOS33;
 
-#NET "fmc_ref_clk_n_i" LOC = A10;
-#NET "fmc_ref_clk_p_i" LOC = B10;
-#NET "fmc_ref_clk_n_i" IOSTANDARD = LVDS_33;
-#NET "fmc_ref_clk_p_i" IOSTANDARD = LVDS_33;
+NET "sfp1_mod_def0" LOC = F16;
+NET "sfp1_mod_def0" IOSTANDARD = LVCMOS33;
+NET "sfp1_mod_def1" LOC = G16;
+NET "sfp1_mod_def1" IOSTANDARD = LVCMOS33;
+NET "sfp1_mod_def2" LOC = F18;
+NET "sfp1_mod_def2" IOSTANDARD = LVCMOS33;
+NET "sfp1_tx_los" LOC = E16;
+NET "sfp1_tx_los" IOSTANDARD = LVCMOS33;
+NET "sfp1_led" LOC = E18;
+NET "sfp1_led" IOSTANDARD = LVCMOS33;
+NET "sfp1_tx_disable" LOC = H16;
+NET "sfp1_tx_disable" IOSTANDARD = LVCMOS33;
+NET "sfp1_tx_fault" LOC = G18;
+NET "sfp1_tx_fault" IOSTANDARD = LVCMOS33;
 
-NET "sfp1_ref_clk_n_i" LOC = C9;
-NET "sfp1_ref_clk_p_i" LOC = D9;
-NET "sfp1_ref_clk_n_i" IOSTANDARD = LVDS_33;
-NET "sfp1_ref_clk_p_i" IOSTANDARD = LVDS_33;
+NET "fpga_sda" LOC = H17;
+NET "fpga_sda" IOSTANDARD = LVCMOS33;
+NET "fpga_scl" LOC = H18;
+NET "fpga_scl" IOSTANDARD = LVCMOS33;
 
-NET "dac_clr_n_o" LOC = G1;
-NET "dac_clr_n_o" IOSTANDARD = LVCMOS33;
+#NET "lb01_p" LOC = J16 | IOSTANDARD = LVDS_33;
+#NET "lb01_n" LOC = J18 | IOSTANDARD = LVDS_33;
+#NET "lb02_p" LOC = K17 | IOSTANDARD = LVDS_33;
+#NET "lb02_n" LOC = K18 | IOSTANDARD = LVDS_33;
+#NET "lb03_p" LOC = U17 | IOSTANDARD = LVDS_33;
+#NET "lb03_n" LOC = U18 | IOSTANDARD = LVDS_33;
+#NET "lb04_p" LOC = N17 | IOSTANDARD = LVDS_33;
+#NET "lb04_n" LOC = N18 | IOSTANDARD = LVDS_33;
 
-NET "dac_sclk_o" LOC = D1;
-NET "dac_sclk_o" IOSTANDARD = LVCMOS33;
+#NET "pmod_1_2" LOC = P15 | IOSTANDARD = LVCMOS33;
+#NET "pmod_1_3" LOC = M18 | IOSTANDARD = LVCMOS33;
+#NET "pmod_1_4" LOC = L16 | IOSTANDARD = LVCMOS33;
+#NET "pmod_1_8" LOC = P17 | IOSTANDARD = LVCMOS33;
+#NET "pmod_1_9" LOC = N16 | IOSTANDARD = LVCMOS33;
+#NET "pmod_1_10" LOC = L17 | IOSTANDARD = LVCMOS33;
 
-NET "dac_din_o" LOC = C1;
-NET "dac_din_o" IOSTANDARD = LVCMOS33;
+# bank 2
+NET "fpga_cclk" LOC = R15;
+NET "fpga_cclk" IOSTANDARD = LVCMOS33;
+NET "fpga_cso_b" LOC = V3;
+NET "fpga_cso_b" IOSTANDARD = LVCMOS33;
+NET "fpga_mosi" LOC = T13;
+NET "fpga_mosi" IOSTANDARD = LVCMOS33;
+NET "fpga_din" LOC = R13;
+NET "fpga_din" IOSTANDARD = LVCMOS33;
 
-NET "dac_ldac_n_o" LOC = F1;
-NET "dac_ldac_n_o" IOSTANDARD = LVCMOS33;
+#NET "fmc_pps_p" LOC = R3 | IOSTANDARD = LVCMOS33;
+#NET "fmc_pps_n" LOC = T3 | IOSTANDARD = LVCMOS33;
 
-NET "dac_sync_n_o" LOC = E1;
-NET "dac_sync_n_o" IOSTANDARD = LVCMOS33;
+#NET "la01_p" LOC = U5  | IOSTANDARD = LVDS_33;
+#NET "la01_n" LOC = V5  | IOSTANDARD = LVDS_33;
+#NET "la02_p" LOC = T4  | IOSTANDARD = LVDS_33;
+#NET "la02_n" LOC = V4  | IOSTANDARD = LVDS_33;
+#NET "la03_p" LOC = U7  | IOSTANDARD = LVDS_33;
+#NET "la03_n" LOC = V7  | IOSTANDARD = LVDS_33;
+#NET "la04_p" LOC = T6  | IOSTANDARD = LVDS_33;
+#NET "la04_n" LOC = V6  | IOSTANDARD = LVDS_33;
+#NET "la05_p" LOC = T9  | IOSTANDARD = LVDS_33;
+#NET "la05_n" LOC = V9  | IOSTANDARD = LVDS_33;
+#NET "la06_p" LOC = U8  | IOSTANDARD = LVDS_33;
+#NET "la06_n" LOC = V8  | IOSTANDARD = LVDS_33;
+#NET "la07_p" LOC = U11 | IOSTANDARD = LVDS_33;
+#NET "la07_n" LOC = V11 | IOSTANDARD = LVDS_33;
+#NET "la08_p" LOC = U10 | IOSTANDARD = LVDS_33;
+#NET "la08_n" LOC = V10 | IOSTANDARD = LVDS_33;
+#NET "la09_p" LOC = U13 | IOSTANDARD = LVDS_33;
+#NET "la09_n" LOC = V13 | IOSTANDARD = LVDS_33;
+#NET "la10_p" LOC = T12 | IOSTANDARD = LVDS_33;
+#NET "la10_n" LOC = V12 | IOSTANDARD = LVDS_33;
+#NET "la11_p" LOC = U15 | IOSTANDARD = LVDS_33;
+#NET "la11_n" LOC = V15 | IOSTANDARD = LVDS_33;
+#NET "la12_p" LOC = T14 | IOSTANDARD = LVDS_33;
+#NET "la12_n" LOC = V14 | IOSTANDARD = LVDS_33;
+#NET "la13_p" LOC = R11 | IOSTANDARD = LVDS_33;
+#NET "la13_n" LOC = T11 | IOSTANDARD = LVDS_33;
+#NET "la14_p" LOC = U16 | IOSTANDARD = LVDS_33;
+#NET "la14_n" LOC = U16 | IOSTANDARD = LVDS_33;
+#NET "la16_p" LOC = M11 | IOSTANDARD = LVDS_33;
+#NET "la16_n" LOC = N11 | IOSTANDARD = LVDS_33;
+#NET "la22_p" LOC = N5  | IOSTANDARD = LVDS_33;
+#NET "la22_n" LOC = P6  | IOSTANDARD = LVDS_33;
+#NET "la23_p" LOC = M8  | IOSTANDARD = LVDS_33;
+#NET "la23_n" LOC = N8  | IOSTANDARD = LVDS_33;
+#NET "la24_p" LOC = R5  | IOSTANDARD = LVDS_33;
+#NET "la24_n" LOC = T5  | IOSTANDARD = LVDS_33;
+#NET "la25_p" LOC = R8  | IOSTANDARD = LVDS_33;
+#NET "la25_n" LOC = T8  | IOSTANDARD = LVDS_33;
+#NET "la26_p" LOC = M10 | IOSTANDARD = LVDS_33;
+#NET "la26_n" LOC = N9  | IOSTANDARD = LVDS_33;
+#NET "la27_p" LOC = N10 | IOSTANDARD = LVDS_33;
+#NET "la27_n" LOC = P11 | IOSTANDARD = LVDS_33;
+#NET "la29_p" LOC = R7  | IOSTANDARD = LVDS_33;
+#NET "la29_n" LOC = T7  | IOSTANDARD = LVDS_33;
+#NET "la30_p" LOC = N6  | IOSTANDARD = LVDS_33;
+#NET "la30_n" LOC = P7  | IOSTANDARD = LVDS_33;
+#NET "la31_p" LOC = N7  | IOSTANDARD = LVDS_33;
+#NET "la31_n" LOC = P8  | IOSTANDARD = LVDS_33;
+#NET "la32_p" LOC = R10 | IOSTANDARD = LVDS_33;
+#NET "la32_n" LOC = T10 | IOSTANDARD = LVDS_33;
 
-NET "sfp0_led_o" LOC = C2;
-NET "sfp0_led_o" IOSTANDARD = LVCMOS33;
+# bank 3
+NET "clk20" LOC = H1;
+NET "clk20" IOSTANDARD = LVCMOS33;
 
-NET "sfp1_led_o" LOC = E18;
-NET "sfp1_led_o" IOSTANDARD = LVCMOS33;
+#NET "fmc_prt" LOC = U2  | IOSTANDARD = LVCMOS33;
+#NET "fmc_test" LOC = U1 | IOSTANDARD = LVCMOS33;
+#NET "pg_c2m" LOC = T2   | IOSTANDARD = LVCMOS33;
+#NET "pmod_1_1" LOC = T1 | IOSTANDARD = LVCMOS33;
+#NET "pmod_1_7" LOC = P3 | IOSTANDARD = LVCMOS33;
+#NET "pmod_2_1" LOC = K2 | IOSTANDARD = LVCMOS33;
+#NET "pmod_2_2" LOC = N1 | IOSTANDARD = LVCMOS33;
+#NET "pmod_2_3" LOC = P2 | IOSTANDARD = LVCMOS33;
+#NET "pmod_2_4" LOC = N2 | IOSTANDARD = LVCMOS33;
+#NET "pmod_2_7" LOC = L1 | IOSTANDARD = LVCMOS33;
+#NET "pmod_2_8" LOC = M1 | IOSTANDARD = LVCMOS33;
+#NET "pmod_2_9" LOC = L2 | IOSTANDARD = LVCMOS33;
+#NET "pmod_2_10" LOC = P1| IOSTANDARD = LVCMOS33;
 
-#NET "sfp0_mod_def0_i" LOC = D2;
-#NET "sfp0_mod_def0_i" IOSTANDARD = LVCMOS33;
-#NET "sfp0_mod_def1_b" LOC = E3;
-#NET "sfp0_mod_def1_b" IOSTANDARD = LVCMOS33;
-#NET "sfp0_mod_def2_b" LOC = E4;
-#NET "sfp0_mod_def2_b" IOSTANDARD = LVCMOS33;
-#NET "sfp0_tx_fault_i" LOC = F3;
-#NET "sfp0_tx_fault_i" IOSTANDARD = LVCMOS33;
-#NET "sfp0_tx_disable_o" LOC = F2;
-#NET "sfp0_tx_disable_o" IOSTANDARD = LVCMOS33;
-#NET "sfp0_los_i" LOC = D3;
-#NET "sfp0_los_i" IOSTANDARD = LVCMOS33;
-#NET "sfp0_rxn_i" LOC = C5;
-#NET "sfp0_rxp_i" LOC = D5;
-#NET "sfp0_txn_o" LOC = A4;
-#NET "sfp0_txp_o" LOC = B4;
+#NET "usr_lemo1" LOC = K1| IOSTANDARD = LVCMOS33;
+#NET "usr_lemo2" LOC = J3| IOSTANDARD = LVCMOS33;
+#NET "usr_button" LOC = G3 | IOSTANDARD = LVCMOS33;
 
-NET "sfp1_mod_def0_i" LOC = F16;
-NET "sfp1_mod_def0_i" IOSTANDARD = LVCMOS33;
-NET "sfp1_mod_def1_b" LOC = G16;
-NET "sfp1_mod_def1_b" IOSTANDARD = LVCMOS33;
-NET "sfp1_mod_def2_b" LOC = F18;
-NET "sfp1_mod_def2_b" IOSTANDARD = LVCMOS33;
-NET "sfp1_tx_fault_i" LOC = J16;
-NET "sfp1_tx_fault_i" IOSTANDARD = LVCMOS33;
-NET "sfp1_tx_disable_o" LOC = H16;
-NET "sfp1_tx_disable_o" IOSTANDARD = LVCMOS33;
-NET "sfp1_los_i" LOC = E16;
-NET "sfp1_los_i" IOSTANDARD = LVCMOS33;
-NET "sfp1_rxn_i" LOC = C7;
-NET "sfp1_rxp_i" LOC = D7;
-NET "sfp1_txn_o" LOC = A6;
-NET "sfp1_txp_o" LOC = B6;
+NET "one_wire" LOC = J1;
+NET "one_wire" IOSTANDARD = LVCMOS33;
 
-NET "pps_o" LOC = C18;
-NET "pps_o" IOSTANDARD = LVCMOS33;
-#NET "ext_clk_o" LOC = C17;
-#NET "ext_clk_o" IOSTANDARD = LVCMOS33;
+NET "uart_rx" LOC = H2;
+NET "uart_rx" IOSTANDARD = LVCMOS33;
+NET "uart_tx" LOC = H3;
+NET "uart_tx" IOSTANDARD = LVCMOS33;
 
-NET "fpga_scl_b" LOC = U17;
-NET "fpga_scl_b" IOSTANDARD = LVCMOS33;
-NET "fpga_sda_b" LOC = U18;
-NET "fpga_sda_b" IOSTANDARD = LVCMOS33;
+NET "plldac_din" LOC = C1;
+NET "plldac_din" IOSTANDARD = LVCMOS33;
+NET "plldac_clr_n" LOC = G1;
+NET "plldac_clr_n" IOSTANDARD = LVCMOS33;
+NET "plldac_sclk" LOC = D1;
+NET "plldac_sclk" IOSTANDARD = LVCMOS33;
+NET "plldac_sync_n" LOC = E1;
+NET "plldac_sync_n" IOSTANDARD = LVCMOS33;
+NET "plldac_load_n" LOC = F1;
+NET "plldac_load_n" IOSTANDARD = LVCMOS33;
 
-NET "thermo_id_b" LOC = J1;
-NET "thermo_id_b" IOSTANDARD = LVCMOS33;
- 
-#NET "usr_led1_o" LOC = D18;
-#NET "usr_led1_o" IOSTANDARD = LVCMOS33;
-#NET "usr_led2_o" LOC = D17;
-#NET "usr_led2_o" IOSTANDARD = LVCMOS33;
-NET "usr_button_i" LOC = G3;
-NET "usr_button_i" IOSTANDARD = LVCMOS33;
+#NET "sfp0_led" LOC = C2       | IOSTANDARD = LVCMOS33;
+#NET "sfp0_los" LOC = D3       | IOSTANDARD = LVCMOS33;
+#NET "sfp0_mod_def0" LOC = D2  | IOSTANDARD = LVCMOS33;
+#NET "sfp0_mod_def1" LOC = E3  | IOSTANDARD = LVCMOS33;
+#NET "sfp0_mod_def2" LOC = E4  | IOSTANDARD = LVCMOS33;
+#NET "sfp0_tx_fault" LOC = F3  | IOSTANDARD = LVCMOS33;
+#NET "sfp0_tx_disable" LOC = F2| IOSTANDARD = LVCMOS33;
 
-NET "uart_rxd_i" LOC = H2;
-NET "uart_rxd_i" IOSTANDARD = LVCMOS33;
-NET "uart_txd_o" LOC = H3;
-NET "uart_txd_o" IOSTANDARD = LVCMOS33;
+# bank gtp
+
+#NET "sfp0_ref_clk_n" LOC = A8   | IOSTANDARD = LVCMOS33;
+#NET "sfp0_ref_clk_p" LOC = B8   | IOSTANDARD = LVCMOS33;
+#NET "sfp0_rx_n" LOC = C5;
+#NET "sfp0_rx_p" LOC = D5;
+#NET "sfp0_tx_n" LOC = A4;
+#NET "sfp0_tx_p" LOC = B4;
+
+NET "sfp1_ref_clk_n" LOC = C9;
+NET "sfp1_ref_clk_n" IOSTANDARD = LVCMOS33;
+NET "sfp1_ref_clk_p" LOC = D9;
+NET "sfp1_ref_clk_p" IOSTANDARD = LVCMOS33;
+NET "sfp1_rx_n" LOC = C7;
+NET "sfp1_rx_p" LOC = D7;
+NET "sfp1_tx_n" LOC = A6;
+NET "sfp1_tx_p" LOC = B6;
+
+#NET "mgt_ref_clk_n_i" LOC = A10 | IOSTANDARD = LVCMOS33;
+#NET "mgt_ref_clk_p_i" LOC = B10 | IOSTANDARD = LVCMOS33;
+#NET "mgtrx0_n" LOC = C11;
+#NET "mgtrx0_p" LOC = D11;
+#NET "mgtrx1_n" LOC = C13;
+#NET "mgtrx1_p" LOC = D13;
+#NET "mgttx0_n" LOC = A12;
+#NET "mgttx0_p" LOC = B12;
+#NET "mgttx1_n" LOC = A14;
+#NET "mgttx1_p" LOC = B14;
 
 #---------------------------------------------------------------------------------------------
 # CLOCK Period Information 
 #---------------------------------------------------------------------------------------------
-NET "clk_20m_vcxo_i" TNM_NET = "clk_20m_vcxo_i";
-TIMESPEC TS_clk_20m_vcxo_i = PERIOD "clk_20m_vcxo_i" 50 ns HIGH 50 %;
+NET "clk20" TNM_NET = "clk20";
+TIMESPEC TS_clk20 = PERIOD "clk20" 50 ns HIGH 50 %;
 
-NET "fpga_clk_p_i" TNM_NET = "fpga_clk_p_i";
-TIMESPEC TS_fpga_clk_p_i = PERIOD "fpga_clk_p_i" 8 ns HIGH 50 %;
+NET "fpga_clk_p" TNM_NET = "fpga_clk_p";
+TIMESPEC TS_fpga_clk_p = PERIOD "fpga_clk_p" 8 ns HIGH 50 %;
 
-NET "fpga_clk_n_i" TNM_NET = "fpga_clk_n_i";
-TIMESPEC TS_fpga_clk_n_i = PERIOD "fpga_clk_n_i" 8 ns HIGH 50 %;
+NET "fpga_clk_n" TNM_NET = "fpga_clk_n";
+TIMESPEC TS_fpga_clk_n = PERIOD "fpga_clk_n" 8 ns HIGH 50 %;
 
-#NET "sfp0_ref_clk_p_i" TNM_NET = "sfp0_ref_clk_p_i";
-#TIMESPEC TS_sfp0_ref_clk_p_i = PERIOD "sfp0_ref_clk_p_i" 8 ns HIGH 50 %;
+#NET "sfp0_ref_clk_p" TNM_NET = "sfp0_ref_clk_p";
+#TIMESPEC TS_sfp0_ref_clk_p = PERIOD "sfp0_ref_clk_p" 8 ns HIGH 50 %;
 
-#NET "sfp0_ref_clk_n_i" TNM_NET = "sfp0_ref_clk_n_i";
-#TIMESPEC TS_sfp0_ref_clk_n_i = PERIOD "sfp0_ref_clk_n_i" 8 ns HIGH 50 %;
+#NET "sfp0_ref_clk_n" TNM_NET = "sfp0_ref_clk_n";
+#TIMESPEC TS_sfp0_ref_clk_n = PERIOD "sfp0_ref_clk_n" 8 ns HIGH 50 %;
 
-NET "sfp1_ref_clk_p_i" TNM_NET = "sfp1_ref_clk_p_i";
-TIMESPEC TS_sfp1_ref_clk_p_i = PERIOD "sfp1_ref_clk_p_i" 8 ns HIGH 50 %;
+NET "sfp1_ref_clk_p" TNM_NET = "sfp1_ref_clk_p";
+TIMESPEC TS_sfp1_ref_clk_p = PERIOD "sfp1_ref_clk_p" 8 ns HIGH 50 %;
 
-NET "sfp1_ref_clk_n_i" TNM_NET = "sfp1_ref_clk_n_i";
-TIMESPEC TS_sfp1_ref_clk_n_i = PERIOD "sfp1_ref_clk_n_i" 8 ns HIGH 50 %;
+NET "sfp1_ref_clk_n" TNM_NET = "sfp1_ref_clk_n";
+TIMESPEC TS_sfp1_ref_clk_n = PERIOD "sfp1_ref_clk_n" 8 ns HIGH 50 %;
 
-INST "*/U_SOFTPLL/U_Wrapped_Softpll/gen_feedback_dmtds*/clk_in" TNM = "skew_limit";
-INST "*/U_SOFTPLL/U_Wrapped_Softpll/gen_ref_dmtds*/clk_in" TNM = "skew_limit";
-TIMESPEC TS_ = FROM "skew_limit" TO  FFS 1 ns DATAPATHONLY;
+INST "U_WR_CORE/u_wr_core/WRPC/LM32_CORE/*" AREA_GROUP = "pblock_LM32_CORE";
+AREA_GROUP "pblock_LM32_CORE" RANGE=SLICE_X30Y24:SLICE_X59Y55;
+AREA_GROUP "pblock_LM32_CORE" RANGE=DSP48_X1Y6:DSP48_X1Y13;
+AREA_GROUP "pblock_LM32_CORE" RANGE=RAMB16_X2Y12:RAMB16_X3Y26;
+AREA_GROUP "pblock_LM32_CORE" RANGE=RAMB8_X2Y12:RAMB8_X3Y27;
 
-INST "U_WR_CORE/PPS_GEN/WRAPPED_PPSGEN/pps_out_o" IOB =FORCE;
+#INST "*/U_SOFTPLL/U_Wrapped_Softpll/gen_feedback_dmtds*/clk_in" TNM = "skew_limit";
+#INST "*/U_SOFTPLL/U_Wrapped_Softpll/gen_ref_dmtds*/clk_in" TNM = "skew_limit";
+#TIMESPEC TS_ = FROM "skew_limit" TO  FFS 1 ns DATAPATHONLY;
 
-INST "U_WR_CORE/U_Endpoint" AREA_GROUP = "pblock_U_Endpoint";
-AREA_GROUP "pblock_U_Endpoint" RANGE=SLICE_X22Y104:SLICE_X59Y125;
-AREA_GROUP "pblock_U_Endpoint" RANGE=DSP48_X1Y26:DSP48_X1Y27;
-AREA_GROUP "pblock_U_Endpoint" RANGE=RAMB16_X2Y52:RAMB16_X3Y62;
-AREA_GROUP "pblock_U_Endpoint" RANGE=RAMB8_X2Y52:RAMB8_X3Y63;
-INST "U_WR_CORE/MINI_NIC" AREA_GROUP = "pblock_MINI_NIC";
-AREA_GROUP "pblock_MINI_NIC" RANGE=SLICE_X28Y80:SLICE_X29Y102, SLICE_X18Y80:SLICE_X27Y103;
-INST "U_WR_CORE/LM32_CORE" AREA_GROUP = "pblock_LM32_CORE";
-AREA_GROUP "pblock_LM32_CORE" RANGE=SLICE_X0Y119:SLICE_X17Y72;
-AREA_GROUP "pblock_LM32_CORE" RANGE=DSP48_X0Y18:DSP48_X0Y29;
-AREA_GROUP "pblock_LM32_CORE" RANGE=RAMB16_X0Y36:RAMB16_X0Y58;
-AREA_GROUP "pblock_LM32_CORE" RANGE=RAMB8_X0Y36:RAMB8_X0Y59;
-INST "U_WR_CORE/U_SOFTPLL" AREA_GROUP = "pblock_U_SOFTPLL";
-AREA_GROUP "pblock_U_SOFTPLL" RANGE=SLICE_X18Y40:SLICE_X29Y63;
+#INST "U_WR_CORE/u_wr_core/WRPC/PPS_GEN/WRAPPED_PPSGEN/pps_out_o" IOB =FORCE;
 
-INST "Etherbone" AREA_GROUP = "pblock_Etherbone";
-AREA_GROUP "pblock_Etherbone" RANGE=SLICE_X30Y72:SLICE_X41Y103;
-AREA_GROUP "pblock_Etherbone" RANGE=RAMB16_X2Y36:RAMB16_X2Y50;
-AREA_GROUP "pblock_Etherbone" RANGE=RAMB8_X2Y36:RAMB8_X2Y51;
-
-
-
-INST "Inst_xwb_com5402" AREA_GROUP = "pblock_Inst_xwb_com5402";
-AREA_GROUP "pblock_Inst_xwb_com5402" RANGE=SLICE_X42Y49:SLICE_X59Y103;
-AREA_GROUP "pblock_Inst_xwb_com5402" RANGE=DSP48_X1Y13:DSP48_X1Y25;
-AREA_GROUP "pblock_Inst_xwb_com5402_" RANGE=RAMB16_X3Y26:RAMB16_X3Y50;
-AREA_GROUP "pblock_Inst_xwb_com5402" RANGE=RAMB8_X3Y26:RAMB8_X3Y51;
-
-
-INST "U_WR_CORE/PPS_GEN" AREA_GROUP = "pblock_PPS_GEN";
-AREA_GROUP "pblock_PPS_GEN" RANGE=SLICE_X4Y33:SLICE_X17Y55;
-AREA_GROUP "pblock_PPS_GEN" RANGE=DSP48_X0Y9:DSP48_X0Y13;
-INST "U_WR_CORE/PERIPH/UART" AREA_GROUP = "pblock_UART";
-AREA_GROUP "pblock_UART" RANGE=SLICE_X0Y48:SLICE_X3Y63;
-AREA_GROUP "pblock_UART" RANGE=RAMB16_X0Y24:RAMB16_X0Y30;
-AREA_GROUP "pblock_UART" RANGE=RAMB8_X0Y24:RAMB8_X0Y31;
+INST "u_xwr_com5402" AREA_GROUP = "pblock_u_xwr_com5402";
+AREA_GROUP "pblock_u_xwr_com5402" RANGE=SLICE_X14Y2:SLICE_X17Y95, SLICE_X12Y0:SLICE_X13Y111, SLICE_X8Y2:SLICE_X11Y111, SLICE_X0Y2:SLICE_X7Y125;
+AREA_GROUP "pblock_u_xwr_com5402" RANGE=DSP48_X0Y0:DSP48_X0Y29;
+AREA_GROUP "pblock_u_xwr_com5402" RANGE=RAMB16_X0Y0:RAMB16_X0Y62;
+AREA_GROUP "pblock_u_xwr_com5402" RANGE=RAMB8_X0Y0:RAMB8_X0Y63;
