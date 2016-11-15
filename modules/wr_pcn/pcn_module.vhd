@@ -45,11 +45,9 @@ use work.wishbone_pkg.all;
 use work.pcn_wbgen2_pkg.all;
 
 entity pcn_module is
-
   generic(
-    g_waveunion_enable  : boolean := false;
-    g_raw_width        : integer := 8
-  );
+	    g_meas_channel_num  : integer := 2
+	  );
   port (
     rst_n_i   : in std_logic:='1';
 -- 62.5MHz system clock
@@ -64,8 +62,8 @@ entity pcn_module is
 -- the calibration signals (< 62.5MHz)
     tdc_cal_i  : in std_logic;
 		
-		tdc_fifo_wrreq_o : out std_logic;
-		tdc_fifo_wrdata_o: out std_logic_vector(g_raw_width-1 downto 0);
+    tdc_fifo_wrreq_o : out std_logic;
+    tdc_fifo_wrdata_o: out std_logic_vector(31 downto 0);
 		
 -- control & data wishbone interface
     wb_adr_i            : in     std_logic_vector(1 downto 0);
@@ -101,14 +99,23 @@ component pcn_wb_slave is
   );
 end component;
 
-component tdc_raw is
+component tdc_module is
   generic(
     -- general
     g_meas_channel_num  : integer := 2;
-    g_delaychain_length : integer := 128;
+    g_delaychain_length : integer := 128;  -- 7bit
 --    g_dualedge_enable   : boolean := c_dualedge_enable;
-    g_waveunion_enable  : boolean := true;
-    g_raw_width         : integer := 8
+    g_waveunion_enable  : boolean := false;
+    -- timestamp data width = g_coarsecntr_width + g_fine_width
+    g_timestamp_width   : integer := 32;
+    g_coarsecntr_width  : integer := 24;    -- must be multiple of 8
+    g_fine_width        : integer := 8;
+    -- calibration count
+    g_calib_cnt         : integer := 23;  -- 2**23 
+		-- dnl data width = addr_width + data_width
+    g_dnl_width         : integer := 32;
+    g_dnl_addr_width    : integer := 8;
+    g_dnl_data_width    : integer := 24
   );
   port(
     clk_sys_i           : in  std_logic;   -- 62.5MHz system clock
@@ -119,32 +126,44 @@ component tdc_raw is
     tdc_cal_i           : in  std_logic:='0'; -- calibration signal input
     tdc_insig_i         : in  std_logic_vector(g_meas_channel_num-1 downto 0); -- signal to be measured
 		
-    -- tdc data fifo output
-    raw_output_wrreq_o   : out std_logic_vector(g_meas_channel_num-1 downto 0);
-    raw_output_data_o    : out std_logic_vector(g_raw_width*g_meas_channel_num-1 downto 0);
-    raw_output_edgepol_o : out std_logic_vector(g_meas_channel_num-1 downto 0);	
-
-	  -- enable each channel 
-    tdc_en_i            : in  std_logic_vector(g_meas_channel_num-1 downto 0):=(others=>'0');
-    -- select the calibration or measured signal
-    tdc_cal_sel_i       : in  std_logic_vector(g_meas_channel_num-1 downto 0):=(others=>'0')
+    -- timestamps data fifo output
+    tdc_meas_en_i       : in std_logic_vector(g_meas_channel_num-1 downto 0);
+    tm_output_wrreq_o   : out std_logic_vector(g_meas_channel_num-1 downto 0);
+    tm_output_data_o    : out std_logic_vector(g_timestamp_width*g_meas_channel_num-1 downto 0);
+    tm_output_edgepol_o : out std_logic_vector(g_meas_channel_num-1 downto 0);	
+    
+    -- calibration dnl data fifo output
+    tdc_cali_en_i       : in std_logic_vector(g_meas_channel_num-1 downto 0);
+    tdc_lut_build_i     : in std_logic_vector(g_meas_channel_num-1 downto 0);
+    tdc_lut_done_o      : out std_logic_vector(g_meas_channel_num-1 downto 0);
+    tdc_dnl_done_o      : out std_logic_vector(g_meas_channel_num-1 downto 0);
+    dnl_output_req_i    : in std_logic_vector(g_meas_channel_num-1 downto 0);
+    dnl_output_stall_i  : in std_logic_vector(g_meas_channel_num-1 downto 0);
+    dnl_output_wrreq_o  : out std_logic_vector(g_meas_channel_num-1 downto 0);
+    dnl_output_data_o   : out std_logic_vector(g_dnl_width*g_meas_channel_num-1 downto 0)
   );
 end component;
-
--- signals declaration
-signal fifo_select : std_logic_vector(1 downto 0);
 
 signal pcn_wb_regs_in : t_pcn_in_registers;
 signal pcn_wb_regs_out : t_pcn_out_registers;
 
-    -- tdc data fifo output
-signal raw_output_wrreq   : std_logic_vector(2-1 downto 0);
-signal raw_output_data    : std_logic_vector(g_raw_width*2-1 downto 0);
-signal raw_output_edgepol : std_logic_vector(2-1 downto 0);	
-
 signal tdc_rst_n           : std_logic;
 signal tdc_en              : std_logic_vector(1 downto 0):=(others=>'0');
 signal tdc_cal_sel         : std_logic_vector(1 downto 0):=(others=>'0'); 
+
+signal tdc_meas_en_i       : std_logic_vector(g_meas_channel_num-1 downto 0);
+signal tm_output_wrreq_o   : std_logic_vector(g_meas_channel_num-1 downto 0);
+signal tm_output_data_o    : std_logic_vector(32*g_meas_channel_num-1 downto 0);
+signal tm_output_edgepol_o : std_logic_vector(g_meas_channel_num-1 downto 0);	
+    
+signal tdc_cali_en_i       : std_logic_vector(g_meas_channel_num-1 downto 0);
+signal tdc_lut_build_i     : std_logic_vector(g_meas_channel_num-1 downto 0);
+signal tdc_lut_done_o      : std_logic_vector(g_meas_channel_num-1 downto 0);
+signal tdc_dnl_done_o      : std_logic_vector(g_meas_channel_num-1 downto 0);
+signal dnl_output_req_i    : std_logic_vector(g_meas_channel_num-1 downto 0);
+signal dnl_output_stall_i  : std_logic_vector(g_meas_channel_num-1 downto 0);
+signal dnl_output_wrreq_o  : std_logic_vector(g_meas_channel_num-1 downto 0);
+signal dnl_output_data_o   : std_logic_vector(32*g_meas_channel_num-1 downto 0);
 
 begin
 	
@@ -166,14 +185,7 @@ begin
     regs_o    => pcn_wb_regs_out
   );
 
-u_tdc_module : tdc_raw
-  generic map(
--- general
-    g_meas_channel_num  => 2,
-    g_delaychain_length => 128,
-    g_waveunion_enable  => g_waveunion_enable,
-    g_raw_width         => g_raw_width
-  )
+u_tdc_module : tdc_module
   port map(
     rst_n_i             => tdc_rst_n,
     clk_sys_i           => clk_sys_i,
@@ -183,28 +195,36 @@ u_tdc_module : tdc_raw
     tdc_insig_i         => tdc_insig_i,
     tdc_cal_i           => tdc_cal_i,
 		
-    raw_output_wrreq_o   => raw_output_wrreq,
-    raw_output_data_o    => raw_output_data,
-    raw_output_edgepol_o => open,
-
-    tdc_en_i            => tdc_en,
-    tdc_cal_sel_i       => tdc_cal_sel
+    tdc_meas_en_i       => tdc_meas_en_i,
+    tm_output_wrreq_o   => tm_output_wrreq_o,
+    tm_output_data_o    => tm_output_data_o,
+    tm_output_edgepol_o => open,
+		
+    tdc_cali_en_i       => tdc_cali_en_i,
+    tdc_lut_build_i     => tdc_lut_build_i,
+    tdc_lut_done_o      => tdc_lut_done_o,
+    tdc_dnl_done_o      => tdc_dnl_done_o,
+    dnl_output_req_i    => dnl_output_req_i,
+    dnl_output_stall_i  => dnl_output_stall_i,
+    dnl_output_wrreq_o  => dnl_output_wrreq_o,
+    dnl_output_data_o   => dnl_output_data_o
   );
 	
-	tdc_fifo_wrreq_o <= raw_output_wrreq(0) when tdc_en = "01" else
-	                    raw_output_wrreq(1) when tdc_en = "10" else
-											'0';
-	tdc_fifo_wrdata_o <= raw_output_data(g_raw_width-1 downto 0) when tdc_en = "01" else
-	                     raw_output_data(2*g_raw_width-1 downto g_raw_width) when tdc_en = "10" else
-											(others=>'0');
+  tdc_fifo_wrreq_o <= dnl_output_wrreq_o(0);
+  tdc_fifo_wrdata_o <= dnl_output_data_o(31 downto 0);
 											
-  pcn_wb_regs_in.fifo_wr_req_i  <= '0';
-  pcn_wb_regs_in.fifo_wr_data_i <= (others=>'0');
-  pcn_wb_regs_in.sr_dnl_done_i  <= (others=>'0');
-  pcn_wb_regs_in.sr_lut_done_i  <= (others=>'0');
+  pcn_wb_regs_in.fifo_wr_req_i  <= dnl_output_wrreq_o(1);
+  pcn_wb_regs_in.fifo_wr_data_i <= dnl_output_data_o(63 downto 32);
+  pcn_wb_regs_in.sr_dnl_done_i  <= tdc_dnl_done_o;
+  pcn_wb_regs_in.sr_lut_done_i  <= tdc_lut_done_o;
   
   tdc_rst_n        <= not pcn_wb_regs_out.cr_rst_o;
-  tdc_en           <= pcn_wb_regs_out.cr_en_o;
-  tdc_cal_sel      <= pcn_wb_regs_out.cr_cal_sel_o;
+  tdc_cali_en_i    <= pcn_wb_regs_out.cr_cali_en_o;
+  tdc_meas_en_i    <= pcn_wb_regs_out.cr_meas_en_o;
+
+  tdc_lut_build_i(0)  <= pcn_wb_regs_out.cr_lut_build_o;
+  tdc_lut_build_i(1)  <= pcn_wb_regs_out.cr_lut_build_o;
+  dnl_output_req_i(0) <= pcn_wb_regs_out.cr_dnl_req_o;
+  dnl_output_req_i(1) <= pcn_wb_regs_out.cr_dnl_req_o;
 
 end architecture ; -- behavioral

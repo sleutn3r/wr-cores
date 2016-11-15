@@ -153,7 +153,7 @@ component user_udp_demo is
     clk_i 				   	      : in std_logic;
     rst_n_i 					      : in std_logic;
 		fifo_wrreq_i            : in std_logic;
-		fifo_wrdata_i           : in std_logic_vector(7 downto 0);
+		fifo_wrdata_i           : in std_logic_vector(31 downto 0);
     udp_rx_data             : out std_logic_vector(7 downto 0);
     udp_rx_data_valid       : out std_logic;
     udp_rx_sof              : out std_logic;
@@ -181,8 +181,6 @@ end component ; -- mpps_output
 
 component xwb_pcn_module is
   generic(
-    g_waveunion_enable  : boolean := true;
-    g_raw_width        : integer := 8;
     g_interface_mode       : t_wishbone_interface_mode      := CLASSIC;
     g_address_granularity  : t_wishbone_address_granularity := WORD);
   port (
@@ -199,7 +197,7 @@ component xwb_pcn_module is
 -- the calibration signals (< 62.5MHz)
     tdc_cal_i  : in std_logic;
 		tdc_fifo_wrreq_o : out std_logic;
-		tdc_fifo_wrdata_o: out std_logic_vector(g_raw_width-1 downto 0);
+		tdc_fifo_wrdata_o: out std_logic_vector(31 downto 0);
 		
     pcn_slave_i : in  t_wishbone_slave_in;
     pcn_slave_o : out t_wishbone_slave_out);
@@ -383,7 +381,7 @@ constant c_pcn_sdb : t_sdb_device := (
   signal ext_udp_tx_dest_port_no:  std_logic_vector(15 downto 0):=x"abcd";
 	
 	signal tdc_fifo_wrreq : std_logic;
-	signal tdc_fifo_wrdata: std_logic_vector(7 downto 0);
+	signal tdc_fifo_wrdata: std_logic_vector(31 downto 0);
 	
 begin
 
@@ -804,8 +802,6 @@ end generate;
   
 u_xwb_pcn: xwb_pcn_module
   generic map(
-    g_waveunion_enable  => false,
-    g_raw_width        => 8,
     g_interface_mode    => pipelined,
     g_address_granularity=> byte)
   port map(

@@ -1,49 +1,55 @@
 -- -*- Mode: LUA; tab-width: 2 -*-
 
 peripheral {
-	name ="PCN Wishbone Slave";
-	prefix="pcn";
-	hdl_entity="pcn_wb_slave";
+  name ="PCN Wishbone Slave";
+  prefix="pcn";
+  hdl_entity="pcn_wb_slave";
 	
 -- PCN CR
-	reg {
-		name = "PCN Control Register";
-		prefix = "cr";
-		description = "General PCN control register";
+  reg {
+    name = "PCN Control Register";
+    prefix = "cr";
+    description = "General PCN control register";
 
-		field {
-			name = "Reset PCN module";
-			description = "write 1: resets the PCN module";
-			prefix = "rst";
-			type = MONOSTABLE;
-		};
-    
     field {
-      name = "PCN calibration select";
-      description = "1: select calibration signal \
-                     0: select input signal.";
-      prefix = "cal_sel";
-      type = SLV;
-      size = 2;
+      name = "Reset PCN module";
+      description = "write 1: resets the PCN module";
+      prefix = "rst";
+      type = MONOSTABLE;
     };
 
     field {
-      name = "PCN lut build";
+    name = "PCN lut build start";
       description = "write 1: start build the LUT";
       prefix = "lut_build";
       type = MONOSTABLE;
     };
 
-		field {
-			name = "PCN module enable";
-			description = "1:PCN module is enabled\
-			               0:PCN module is disabled";
-			prefix = "en";
-			access_bus = READ_WRITE;
-			access_dev = READ_ONLY;
-			type = SLV;
-			size = 2;
-		};
+    field {
+      name = "PCN DNL read request";
+      description = "write 1: request reading the DNL";
+      prefix = "dnl_req";
+      type = MONOSTABLE;
+    };
+
+    field {
+      name = "PCN calibration enable";
+      description = "1: enable calibration signal \
+                     0: disable calibration signal.";
+      prefix = "cali_en";
+      align = 8;
+      type = SLV;
+      size = 2;
+    };
+
+    field {
+      name = "PCN measurement enable";
+      description = "1: enable measurement signal \
+                     0: disable measurement signal.";
+      prefix = "meas_en";
+      type = SLV;
+      size = 2;
+    };
 	};
 
 -- PCN SR
@@ -78,11 +84,12 @@ peripheral {
 	};
 
 	fifo_reg {
-		size = 128;
+		size = 256;
 		direction = CORE_TO_BUS;
 		prefix = "fifo";
 		name = "Channel 1 & 2 output FIFO";
 		description = "Channel 1 & 2 output FIFO";
+        clock = "refclk_i";
 		flags_bus = {FIFO_FULL, FIFO_EMPTY, FIFO_COUNT};
 		flags_dev = {FIFO_FULL, FIFO_EMPTY, FIFO_COUNT};
 		
@@ -90,7 +97,7 @@ peripheral {
 			name = "output FIFO";
 			prefix = "wr_data";
 			type = SLV;
-			size = 18;
+			size = 32;
 		};
 	};
 };

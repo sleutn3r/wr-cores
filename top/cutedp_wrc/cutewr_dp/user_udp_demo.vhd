@@ -12,7 +12,7 @@ port(
 	rst_n_i 					      : in std_logic;
 
   fifo_wrreq_i            : in std_logic;
-	fifo_wrdata_i           : in std_logic_vector(7 downto 0);
+	fifo_wrdata_i           : in std_logic_vector(31 downto 0);
 	
 	udp_rx_data         		: in std_logic_vector(7 downto 0):=(others=>'0');
 	udp_rx_data_valid   		: in std_logic:='0';
@@ -39,10 +39,12 @@ architecture beha of user_udp_demo is
 	signal fifo_almost_full: std_logic;
 	signal fifo_full:std_logic;
 	signal fifo_empty: std_logic;
-	signal fifo_wrdata:std_logic_vector(7 downto 0);
-	signal fifo_rddata:std_logic_vector(7 downto 0);
+	signal fifo_wrdata:std_logic_vector(31 downto 0);
+	signal fifo_rddata:std_logic_vector(31 downto 0);
+	signal rddata :std_logic_vector(31 downto 0);
 	
-  signal tx_cnt : integer;
+	signal word_cnt: integer range 0 to 3 :=0;
+	signal tx_cnt: integer range 0 to 511 :=0;
 	
 begin
 
@@ -51,12 +53,12 @@ fifo_wrdata <= fifo_wrdata_i;
 
 U_udp_fifo : generic_sync_fifo
 generic map(
-    g_data_width             => 8,
+    g_data_width             => 32,
     g_size                   => 2048,
     g_with_empty             => true,
     g_with_full              => true,
     g_with_almost_full       => true,
-    g_almost_full_threshold  => 1024)
+    g_almost_full_threshold  => 256)
 port map(
     rst_n_i        => rst_n_i,
     clk_i          => clk_i,
@@ -69,6 +71,8 @@ port map(
     almost_full_o  => fifo_almost_full
 );
 
+udp_tx_data <= rddata(31 downto 24);
+
 U_udp_tx : process( clk_i )
 begin
     if rising_edge(clk_i) then
@@ -76,56 +80,74 @@ begin
             udp_tx_sof        <= '0';
             udp_tx_eof        <= '0';
             udp_tx_data_valid <= '0';
-            udp_tx_data       <= (others=>'0');
+            rddata            <= (others=>'0');
 						fifo_rdreq        <= '0';
-						tx_cnt            <= 0;
+						word_cnt          <= 0;
             tx_state          <= T_IDLE;
+						tx_cnt            <= 0;
         else
             case( tx_state ) is
                 when T_IDLE =>
                     udp_tx_sof        <= '0';
                     udp_tx_eof        <= '0';
                     udp_tx_data_valid <= '0';
-                    udp_tx_data <= (others=>'0');
+                    rddata            <= (others=>'0');
+										word_cnt          <= 0;
                     if (fifo_almost_full = '1' and udp_tx_cts = '1') then
                         tx_state <= T_WAIT;
                         fifo_rdreq <= '1';
                     end if ;
+										
                 when T_WAIT =>
-								    tx_state <= T_START;
+								    tx_state          <= T_START;
 										udp_tx_sof        <= '0';
                     udp_tx_eof        <= '0';
                     udp_tx_data_valid <= '0';
-                    udp_tx_data       <= (others=>'0');
-										tx_cnt            <= 1023;
+										fifo_rdreq        <= '0';
+                    rddata            <= (others=>'0');
 										
                 when T_START =>
                     udp_tx_sof        <= '1';
                     udp_tx_eof        <= '0';
                     udp_tx_data_valid <= '1';
-                    udp_tx_data       <= fifo_rddata;
-										tx_cnt            <= tx_cnt - 1;
+                    rddata            <= fifo_rddata;
+										tx_cnt            <= 350;
+										word_cnt          <= 3;
                     tx_state          <= T_DATA;
 
                 when T_DATA =>
                     udp_tx_sof        <= '0';
                     udp_tx_eof        <= '0';
                     udp_tx_data_valid <= '1';
-                    udp_tx_data       <= fifo_rddata;
-                    if ( tx_cnt > 0 ) then
-										    tx_cnt            <= tx_cnt - 1;
-                    else
-                        udp_tx_eof    <= '1';
-												fifo_rdreq    <= '0';
-												tx_state      <= T_END;
-                    end if;
-
+										
+										if word_cnt > 1 then
+										    rddata            <= rddata(23 downto 0) & x"00";
+												word_cnt <= word_cnt - 1;
+												fifo_rdreq  <= '0';
+										elsif word_cnt = 1 then
+										    rddata            <= rddata(23 downto 0) & x"00";
+										    word_cnt          <= word_cnt - 1;
+												if ( fifo_empty = '1' ) or (tx_cnt = 0) then
+														udp_tx_eof    <= '1';
+														fifo_rdreq    <= '0';
+														tx_state      <= T_END;
+														tx_cnt        <= tx_cnt - 1;
+                        else
+												    fifo_rdreq    <= '1';
+                        end if;												
+												
+										else 
+										    rddata <= fifo_rddata;
+												fifo_rdreq  <= '0';
+												word_cnt <= 3;
+										end if;
+										
                 when T_END =>
                     udp_tx_sof        <= '0';
                     udp_tx_eof        <= '0';
                     udp_tx_data_valid <= '0';
-                    udp_tx_data <= (others=>'0');
 										fifo_rdreq    <= '0';
+										tx_cnt <= 0;
 										tx_state      <= T_IDLE;
 								
 								when others =>

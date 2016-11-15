@@ -238,13 +238,12 @@ INST "u_xwb_pcn/WRAPPED_PCN_MODULE/u_tdc_module/gen_period_meas_channels[0].u_td
 NET "pllout_clk_calib" TIG;
 NET "u_xwb_pcn/WRAPPED_PCN_MODULE/u_tdc_module/h_level[*]" TIG;
 NET "u_xwb_pcn/WRAPPED_PCN_MODULE/u_tdc_module/l_level[*]" TIG;
-NET "u_xwb_pcn/WRAPPED_PCN_MODULE/u_tdc_module/tdc_cal_sel_i[*]" TIG;
-#NET "u_xwb_pcn/WRAPPED_PCN_MODULE/u_tdc_module/tdc_dnl_done_o[*]" TIG;
-#NET "u_xwb_pcn/WRAPPED_PCN_MODULE/u_tdc_module/tdc_lut_done_o[*]" TIG;
-#NET "u_xwb_pcn/WRAPPED_PCN_MODULE/u_tdc_module/tdc_lut_build_i[*]" TIG;
+NET "u_xwb_pcn/WRAPPED_PCN_MODULE/u_tdc_module/tdc_cali_en_i[*]" TIG;
+NET "u_xwb_pcn/WRAPPED_PCN_MODULE/u_tdc_module/tdc_meas_en_i[*]" TIG;
 NET "u_xwb_pcn/WRAPPED_PCN_MODULE/u_tdc_module/tdc_insig_i[*]" TIG;
 NET "u_xwb_pcn/WRAPPED_PCN_MODULE/u_tdc_module/rd_data[*]" TIG;
 NET "u_xwb_pcn/WRAPPED_PCN_MODULE/u_tdc_module/rd_addr[*]" TIG;
+NET "u_xwb_pcn/WRAPPED_PCN_MODULE/tdc_rst_n" TIG;
 
 #INST "u_xwb_pcn" AREA_GROUP = "pblock_u_xwb_pcn";
 #AREA_GROUP "pblock_u_xwb_pcn" RANGE=SLICE_X0Y2:SLICE_X17Y87;
