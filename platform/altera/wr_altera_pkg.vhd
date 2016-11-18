@@ -52,4 +52,22 @@ package wr_altera_pkg is
       pad_rxp_i      : in  std_logic := '0');
   end component;
 
+  component arria5_dmtd_pll_default is
+    port (
+      refclk   : in  std_logic := '0';
+      rst      : in  std_logic := '0';
+      outclk_0 : out std_logic;
+      locked   : out std_logic);
+  end component;
+
+  component arria5_sys_pll_default is
+    port (
+      refclk   : in  std_logic := '0';
+      rst      : in  std_logic := '0';
+      outclk_0 : out std_logic;
+      outclk_1 : out std_logic;
+      outclk_2 : out std_logic;
+      locked   : out std_logic);
+  end component;
+
 end wr_altera_pkg;
