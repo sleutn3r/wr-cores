@@ -83,21 +83,4 @@ peripheral {
 		};
 	};
 
-	fifo_reg {
-		size = 256;
-		direction = CORE_TO_BUS;
-		prefix = "fifo";
-		name = "Channel 1 & 2 output FIFO";
-		description = "Channel 1 & 2 output FIFO";
-        clock = "refclk_i";
-		flags_bus = {FIFO_FULL, FIFO_EMPTY, FIFO_COUNT};
-		flags_dev = {FIFO_FULL, FIFO_EMPTY, FIFO_COUNT};
-		
-		field {
-			name = "output FIFO";
-			prefix = "wr_data";
-			type = SLV;
-			size = 32;
-		};
-	};
 };

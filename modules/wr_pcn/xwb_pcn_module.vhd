@@ -30,7 +30,9 @@ use work.wishbone_pkg.all;
 entity xwb_pcn_module is
   generic(
     g_interface_mode       : t_wishbone_interface_mode      := CLASSIC;
-    g_address_granularity  : t_wishbone_address_granularity := WORD
+    g_address_granularity  : t_wishbone_address_granularity := WORD;
+    g_meas_channel_num  : integer := 2;
+    g_timestamp_width   : integer := 40    
     );
   port (
     rst_n_i   : in std_logic:='1';
@@ -41,13 +43,15 @@ entity xwb_pcn_module is
 -- 250MHz TDC clock
     clk_tdc_i : in std_logic:='0';
 
+-- pps input
+    pps_i       : in std_logic:='0';
 -- signals to be measured
-    tdc_insig_i : in std_logic_vector(1 downto 0);
+    tdc_insig_i : in std_logic_vector(g_meas_channel_num-1 downto 0);
 -- the calibration signals (< 62.5MHz)
     tdc_cal_i  : in std_logic;
 		
-		tdc_fifo_wrreq_o : out std_logic;
-		tdc_fifo_wrdata_o: out std_logic_vector(31 downto 0);
+		tdc_fifo_wrreq_o : out std_logic_vector(g_meas_channel_num-1 downto 0);
+		tdc_fifo_wrdata_o: out std_logic_vector(g_meas_channel_num*g_timestamp_width-1 downto 0);
 		
     pcn_slave_i : in  t_wishbone_slave_in;
     pcn_slave_o : out t_wishbone_slave_out
@@ -57,6 +61,10 @@ end xwb_pcn_module;
 architecture behavioral of xwb_pcn_module is
 
 component pcn_module is
+  generic(
+    g_meas_channel_num  : integer := 2;
+    g_timestamp_width   : integer := 40    
+  );
   port (
     rst_n_i   : in std_logic:='1';
 -- 62.5MHz system clock
@@ -70,8 +78,8 @@ component pcn_module is
     tdc_insig_i : in std_logic_vector(1 downto 0);
 -- the calibration signals (< 62.5MHz)
     tdc_cal_i  : in std_logic;
-		tdc_fifo_wrreq_o : out std_logic;
-		tdc_fifo_wrdata_o: out std_logic_vector(31 downto 0);		
+		tdc_fifo_wrreq_o : out std_logic_vector(1 downto 0);
+		tdc_fifo_wrdata_o: out std_logic_vector(79 downto 0);		
 		
 -- control & data wishbone interface
     wb_adr_i            : in     std_logic_vector(1 downto 0);
@@ -109,6 +117,9 @@ begin  -- behavioral
       );
 
   WRAPPED_PCN_MODULE : pcn_module
+    generic map(
+      g_meas_channel_num  => g_meas_channel_num,
+      g_timestamp_width   => g_timestamp_width)
     port map(
       clk_sys_i       => clk_sys_i,
       clk_ref_i       => clk_ref_i,

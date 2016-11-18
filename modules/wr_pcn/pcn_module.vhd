@@ -46,7 +46,8 @@ use work.pcn_wbgen2_pkg.all;
 
 entity pcn_module is
   generic(
-	    g_meas_channel_num  : integer := 2
+	    g_meas_channel_num  : integer := 2;
+      g_timestamp_width   : integer := 40
 	  );
   port (
     rst_n_i   : in std_logic:='1';
@@ -57,13 +58,15 @@ entity pcn_module is
 -- 250MHz TDC clock
     clk_tdc_i : in std_logic:='0';
 
+--  pps input
+    pps_i               : in  std_logic:='0';
 -- signals to be measured
-    tdc_insig_i : in std_logic_vector(1 downto 0);
+    tdc_insig_i : in std_logic_vector(g_meas_channel_num-1 downto 0);
 -- the calibration signals (< 62.5MHz)
     tdc_cal_i  : in std_logic;
 		
-    tdc_fifo_wrreq_o : out std_logic;
-    tdc_fifo_wrdata_o: out std_logic_vector(31 downto 0);
+    tdc_fifo_wrreq_o : out std_logic_vector(g_meas_channel_num-1 downto 0);
+    tdc_fifo_wrdata_o: out std_logic_vector(g_meas_channel_num*g_timestamp_width-1 downto 0);
 		
 -- control & data wishbone interface
     wb_adr_i            : in     std_logic_vector(1 downto 0);
@@ -85,7 +88,7 @@ component pcn_wb_slave is
     clk_sys_i                                : in     std_logic;
     refclk_i                                 : in     std_logic;
     rst_n_i                                  : in     std_logic;
-    wb_adr_i                                 : in     std_logic_vector(1 downto 0);
+    wb_adr_i                                 : in     std_logic_vector(0 downto 0);
     wb_dat_i                                 : in     std_logic_vector(31 downto 0);
     wb_dat_o                                 : out    std_logic_vector(31 downto 0);
     wb_cyc_i                                 : in     std_logic;
@@ -107,11 +110,11 @@ component tdc_module is
 --    g_dualedge_enable   : boolean := c_dualedge_enable;
     g_waveunion_enable  : boolean := false;
     -- timestamp data width = g_coarsecntr_width + g_fine_width
-    g_timestamp_width   : integer := 32;
-    g_coarsecntr_width  : integer := 24;    -- must be multiple of 8
+    g_timestamp_width   : integer := 40;
+    g_coarsecntr_width  : integer := 32;    -- must be multiple of 8
     g_fine_width        : integer := 8;
     -- calibration count
-    g_calib_cnt         : integer := 23;  -- 2**23 
+    g_calib_cnt         : integer := 24;  -- 2**23 
 		-- dnl data width = addr_width + data_width
     g_dnl_width         : integer := 32;
     g_dnl_addr_width    : integer := 8;
@@ -123,6 +126,7 @@ component tdc_module is
     clk_tdc_i           : in  std_logic;   -- 250MHz clock
     rst_n_i             : in  std_logic;   -- set '0' to reset
 
+    pps_i               : in  std_logic:='0';
     tdc_cal_i           : in  std_logic:='0'; -- calibration signal input
     tdc_insig_i         : in  std_logic_vector(g_meas_channel_num-1 downto 0); -- signal to be measured
 		
@@ -153,7 +157,7 @@ signal tdc_cal_sel         : std_logic_vector(1 downto 0):=(others=>'0');
 
 signal tdc_meas_en_i       : std_logic_vector(g_meas_channel_num-1 downto 0);
 signal tm_output_wrreq_o   : std_logic_vector(g_meas_channel_num-1 downto 0);
-signal tm_output_data_o    : std_logic_vector(32*g_meas_channel_num-1 downto 0);
+signal tm_output_data_o    : std_logic_vector(g_timestamp_width*g_meas_channel_num-1 downto 0);
 signal tm_output_edgepol_o : std_logic_vector(g_meas_channel_num-1 downto 0);	
     
 signal tdc_cali_en_i       : std_logic_vector(g_meas_channel_num-1 downto 0);
@@ -172,7 +176,7 @@ begin
     rst_n_i   => rst_n_i,
     clk_sys_i => clk_sys_i,
     refclk_i  => clk_ref_i,
-    wb_adr_i  => wb_adr_i,
+    wb_adr_i  => wb_adr_i(0 downto 0),
     wb_dat_i  => wb_dat_i,
     wb_dat_o  => wb_dat_o,
     wb_cyc_i  => wb_cyc_i,
@@ -191,7 +195,8 @@ u_tdc_module : tdc_module
     clk_sys_i           => clk_sys_i,
     clk_ref_i           => clk_ref_i,
     clk_tdc_i           => clk_tdc_i,
-
+     
+    pps_i               => pps_i,
     tdc_insig_i         => tdc_insig_i,
     tdc_cal_i           => tdc_cal_i,
 		
@@ -210,11 +215,13 @@ u_tdc_module : tdc_module
     dnl_output_data_o   => dnl_output_data_o
   );
 	
-  tdc_fifo_wrreq_o <= dnl_output_wrreq_o(0);
-  tdc_fifo_wrdata_o <= dnl_output_data_o(31 downto 0);
-											
-  pcn_wb_regs_in.fifo_wr_req_i  <= dnl_output_wrreq_o(1);
-  pcn_wb_regs_in.fifo_wr_data_i <= dnl_output_data_o(63 downto 32);
+  --tdc_fifo_wrreq_o <= dnl_output_wrreq_o(0);
+  --tdc_fifo_wrdata_o <= dnl_output_data_o(31 downto 0);
+	tdc_fifo_wrreq_o <= tm_output_wrreq_o;
+  tdc_fifo_wrdata_o <= tm_output_data_o;
+
+  --pcn_wb_regs_in.fifo_wr_req_i  <= dnl_output_wrreq_o(0);
+  --pcn_wb_regs_in.fifo_wr_data_i <= dnl_output_data_o(31 downto 0);
   pcn_wb_regs_in.sr_dnl_done_i  <= tdc_dnl_done_o;
   pcn_wb_regs_in.sr_lut_done_i  <= tdc_lut_done_o;
   

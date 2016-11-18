@@ -17,8 +17,10 @@ use unisim.vcomponents.all;
 
 entity cutewrdp_pcn is
 generic (
-  g_etherbone_enable: boolean:= true;
-  g_multiboot_enable: boolean:= true);
+  g_etherbone_enable: boolean := true;
+  g_multiboot_enable: boolean := true;
+  g_meas_channel_num: integer := 2;
+  g_timestamp_width : integer := 40);
 port (
 -- clock
   clk20          : in std_logic;    -- 20MHz VCXO clock
@@ -149,11 +151,14 @@ architecture rtl of cutewrdp_pcn is
 end component;
 
 component user_udp_demo is
+  generic(
+    g_meas_channel_num  : integer := 2;
+    g_timestamp_width   : integer := 40);
   port(
     clk_i 				   	      : in std_logic;
     rst_n_i 					      : in std_logic;
-		fifo_wrreq_i            : in std_logic;
-		fifo_wrdata_i           : in std_logic_vector(31 downto 0);
+		fifo_wrreq_i            : in std_logic_vector(1 downto 0);
+		fifo_wrdata_i           : in std_logic_vector(79 downto 0);
     udp_rx_data             : out std_logic_vector(7 downto 0);
     udp_rx_data_valid       : out std_logic;
     udp_rx_sof              : out std_logic;
@@ -182,7 +187,9 @@ end component ; -- mpps_output
 component xwb_pcn_module is
   generic(
     g_interface_mode       : t_wishbone_interface_mode      := CLASSIC;
-    g_address_granularity  : t_wishbone_address_granularity := WORD);
+    g_address_granularity  : t_wishbone_address_granularity := WORD;
+    g_meas_channel_num  : integer := 2;
+    g_timestamp_width   : integer := 40);
   port (
     rst_n_i   : in std_logic:='1';
 -- 62.5MHz system clock
@@ -192,12 +199,14 @@ component xwb_pcn_module is
 -- 250MHz TDC clock
     clk_tdc_i : in std_logic:='0';
 
+-- pps input
+    pps_i       : in std_logic:='0';
 -- signals to be measured
-    tdc_insig_i : in std_logic_vector(1 downto 0);
+    tdc_insig_i : in std_logic_vector(g_meas_channel_num-1 downto 0);
 -- the calibration signals (< 62.5MHz)
     tdc_cal_i  : in std_logic;
-		tdc_fifo_wrreq_o : out std_logic;
-		tdc_fifo_wrdata_o: out std_logic_vector(31 downto 0);
+		tdc_fifo_wrreq_o : out std_logic_vector(g_meas_channel_num-1 downto 0);
+		tdc_fifo_wrdata_o: out std_logic_vector(g_meas_channel_num*g_timestamp_width-1 downto 0);
 		
     pcn_slave_i : in  t_wishbone_slave_in;
     pcn_slave_o : out t_wishbone_slave_out);
@@ -380,8 +389,8 @@ constant c_pcn_sdb : t_sdb_device := (
   signal ext_udp_tx_source_port_no:  std_logic_vector(15 downto 0):=x"abcd";
   signal ext_udp_tx_dest_port_no:  std_logic_vector(15 downto 0):=x"abcd";
 	
-	signal tdc_fifo_wrreq : std_logic;
-	signal tdc_fifo_wrdata: std_logic_vector(31 downto 0);
+	signal tdc_fifo_wrreq : std_logic_vector(g_meas_channel_num-1 downto 0);
+	signal tdc_fifo_wrdata: std_logic_vector(g_timestamp_width*g_meas_channel_num-1 downto 0);
 	
 begin
 
@@ -813,6 +822,8 @@ u_xwb_pcn: xwb_pcn_module
 -- 250MHz TDC clock
     clk_tdc_i   => clk_tdc_i,
 
+-- pps input
+    pps_i       => pps,
 -- signals to be measured
     tdc_insig_i => tdc_measure_i,
 -- the calibration signals (< 62.5MHz)
@@ -863,6 +874,9 @@ u_xwr_com5402: xwr_com5402
 );
 
 U_UDP_SEND: user_udp_demo
+generic map(
+  g_meas_channel_num => g_meas_channel_num,
+  g_timestamp_width => g_timestamp_width)
 port map(
 	clk_i 				   	      => clk_ref_i,
 	rst_n_i 					      => local_reset_n,
