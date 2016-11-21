@@ -81,7 +81,7 @@ port (
   sfp0_led         : out std_logic;
   sfp1_led         : out std_logic;
   ext_clk          :  out  std_logic;
---  usr_button       : in  std_logic;
+  usr_button       : in  std_logic;
 --  usr_led1         : out std_logic;
 --  usr_led2         : out std_logic;
   usr_lemo1        : in  std_logic;
@@ -97,6 +97,7 @@ architecture rtl of cutewrdp_pcn is
   component cute_reset_gen is
   port (
     clk_sys_i : in std_logic;
+    rst_button_n_a_i : in std_logic;
     rst_n_o : out std_logic);
   end component;
 	
@@ -397,6 +398,7 @@ begin
   U_Reset_Gen : cute_reset_gen
   port map (
     clk_sys_i    => clk_sys_i,
+    rst_button_n_a_i => usr_button,
     rst_n_o      => local_reset_n);
 
   cmp_refclk_buf : ibufgds

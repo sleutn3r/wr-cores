@@ -148,7 +148,8 @@ NET "usr_lemo1" LOC = K1;
 NET "usr_lemo1" IOSTANDARD = LVCMOS33;
 NET "usr_lemo2" LOC = J3;
 NET "usr_lemo2" IOSTANDARD = LVCMOS33;
-#NET "usr_button" LOC = G3 | IOSTANDARD = LVCMOS33;
+NET "usr_button" LOC = G3;
+NET "usr_button" IOSTANDARD = LVCMOS33;
 
 NET "one_wire" LOC = J1;
 NET "one_wire" IOSTANDARD = LVCMOS33;
