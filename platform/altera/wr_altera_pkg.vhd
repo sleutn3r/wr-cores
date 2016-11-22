@@ -2,6 +2,9 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
+library work;
+use work.endpoint_pkg.all;
+
 package wr_altera_pkg is
 
   component wr_arria2_phy
@@ -32,6 +35,8 @@ package wr_altera_pkg is
   end component;
 
   component wr_arria5_phy is
+    generic (
+      g_pcs_16bit : boolean := FALSE);
     port (
       clk_reconf_i   : in  std_logic;
       clk_phy_i      : in  std_logic;
@@ -39,17 +44,79 @@ package wr_altera_pkg is
       loopen_i       : in  std_logic;
       drop_link_i    : in  std_logic;
       tx_clk_o       : out std_logic;
-      tx_data_i      : in  std_logic_vector(7 downto 0);
-      tx_k_i         : in  std_logic;
+      tx_data_i      : in  std_logic_vector(f_pcs_data_width(g_pcs_16bit)-1 downto 0);
+      tx_k_i         : in  std_logic_vector(f_pcs_k_width(g_pcs_16bit)-1 downto 0);
       tx_disparity_o : out std_logic;
       tx_enc_err_o   : out std_logic;
       rx_rbclk_o     : out std_logic;
-      rx_data_o      : out std_logic_vector(7 downto 0);
-      rx_k_o         : out std_logic;
+      rx_data_o      : out std_logic_vector(f_pcs_data_width(g_pcs_16bit)-1 downto 0);
+      rx_k_o         : out std_logic_vector(f_pcs_k_width(g_pcs_16bit)-1 downto 0);
       rx_enc_err_o   : out std_logic;
-      rx_bitslide_o  : out std_logic_vector(3 downto 0);
+      rx_bitslide_o  : out std_logic_vector(f_pcs_bts_width(g_pcs_16bit)-1 downto 0);
       pad_txp_o      : out std_logic;
       pad_rxp_i      : in  std_logic := '0');
+  end component;
+
+  component arria5_phy8 is
+    port (
+      phy_mgmt_clk                : in  std_logic                      := '0';
+      phy_mgmt_clk_reset          : in  std_logic                      := '0';
+      phy_mgmt_address            : in  std_logic_vector(8 downto 0)   := (others => '0');
+      phy_mgmt_read               : in  std_logic                      := '0';
+      phy_mgmt_readdata           : out std_logic_vector(31 downto 0);
+      phy_mgmt_waitrequest        : out std_logic;
+      phy_mgmt_write              : in  std_logic                      := '0';
+      phy_mgmt_writedata          : in  std_logic_vector(31 downto 0)  := (others => '0');
+      tx_ready                    : out std_logic;
+      rx_ready                    : out std_logic;
+      pll_ref_clk                 : in  std_logic_vector(0 downto 0)   := (others => '0');
+      tx_serial_data              : out std_logic_vector(0 downto 0);
+      tx_bitslipboundaryselect    : in  std_logic_vector(4 downto 0)   := (others => '0');
+      pll_locked                  : out std_logic_vector(0 downto 0);
+      rx_serial_data              : in  std_logic_vector(0 downto 0)   := (others => '0');
+      rx_runningdisp              : out std_logic_vector(0 downto 0);
+      rx_disperr                  : out std_logic_vector(0 downto 0);
+      rx_errdetect                : out std_logic_vector(0 downto 0);
+      rx_bitslipboundaryselectout : out std_logic_vector(4 downto 0);
+      tx_clkout                   : out std_logic_vector(0 downto 0);
+      rx_clkout                   : out std_logic_vector(0 downto 0);
+      tx_parallel_data            : in  std_logic_vector(7 downto 0)   := (others => '0');
+      tx_datak                    : in  std_logic_vector(0 downto 0)   := (others => '0');
+      rx_parallel_data            : out std_logic_vector(7 downto 0);
+      rx_datak                    : out std_logic_vector(0 downto 0);
+      reconfig_from_xcvr          : out std_logic_vector(91 downto 0);
+      reconfig_to_xcvr            : in  std_logic_vector(139 downto 0) := (others => '0'));
+  end component;
+
+  component arria5_phy16 is
+    port (
+      phy_mgmt_clk                : in  std_logic                      := '0';
+      phy_mgmt_clk_reset          : in  std_logic                      := '0';
+      phy_mgmt_address            : in  std_logic_vector(8 downto 0)   := (others => '0');
+      phy_mgmt_read               : in  std_logic                      := '0';
+      phy_mgmt_readdata           : out std_logic_vector(31 downto 0);
+      phy_mgmt_waitrequest        : out std_logic;
+      phy_mgmt_write              : in  std_logic                      := '0';
+      phy_mgmt_writedata          : in  std_logic_vector(31 downto 0)  := (others => '0');
+      tx_ready                    : out std_logic;
+      rx_ready                    : out std_logic;
+      pll_ref_clk                 : in  std_logic_vector(0 downto 0)   := (others => '0');
+      tx_serial_data              : out std_logic_vector(0 downto 0);
+      tx_bitslipboundaryselect    : in  std_logic_vector(4 downto 0)   := (others => '0');
+      pll_locked                  : out std_logic_vector(0 downto 0);
+      rx_serial_data              : in  std_logic_vector(0 downto 0)   := (others => '0');
+      rx_runningdisp              : out std_logic_vector(1 downto 0);
+      rx_disperr                  : out std_logic_vector(1 downto 0);
+      rx_errdetect                : out std_logic_vector(1 downto 0);
+      rx_bitslipboundaryselectout : out std_logic_vector(4 downto 0);
+      tx_clkout                   : out std_logic_vector(0 downto 0);
+      rx_clkout                   : out std_logic_vector(0 downto 0);
+      tx_parallel_data            : in  std_logic_vector(15 downto 0)  := (others => '0');
+      tx_datak                    : in  std_logic_vector(1 downto 0)   := (others => '0');
+      rx_parallel_data            : out std_logic_vector(15 downto 0);
+      rx_datak                    : out std_logic_vector(1 downto 0);
+      reconfig_from_xcvr          : out std_logic_vector(91 downto 0);
+      reconfig_to_xcvr            : in  std_logic_vector(139 downto 0) := (others => '0'));
   end component;
 
   component arria5_dmtd_pll_default is
