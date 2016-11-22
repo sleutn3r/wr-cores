@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <pinplan
- variation_name="arria5_phy"
+ variation_name="arria5_phy8"
  megafunction_name="ALTERA_XCVR_DET_LATENCY"
  intended_family="Arria V"
  specifies="all_ports">

@@ -2,7 +2,7 @@
 WORK > DEFAULT
 DEFAULT:             ./libraries/work/               
 work:                ./libraries/work/               
-arria5_phy:          ./libraries/arria5_phy/         
+arria5_phy8:         ./libraries/arria5_phy8/        
 altera_ver:          ./libraries/altera_ver/         
 lpm_ver:             ./libraries/lpm_ver/            
 sgate_ver:           ./libraries/sgate_ver/          

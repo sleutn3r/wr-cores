@@ -23,4 +23,4 @@ DEFINE sgate               ./../libraries/sgate/
 DEFINE altera_mf           ./../libraries/altera_mf/                 
 DEFINE altera_lnsim        ./../libraries/altera_lnsim/              
 DEFINE arriav              ./../libraries/arriav/                    
-DEFINE arria5_phy          ./../libraries/arria5_phy/                
+DEFINE arria5_phy8         ./../libraries/arria5_phy8/               

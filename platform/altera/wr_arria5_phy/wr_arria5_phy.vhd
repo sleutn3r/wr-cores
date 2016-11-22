@@ -93,7 +93,7 @@ architecture rtl of wr_arria5_phy is
       reconfig_from_xcvr        : in  std_logic_vector(91 downto 0));
   end component;
 
-  component arria5_phy is
+  component arria5_phy8 is
     port (
       phy_mgmt_clk                : in  std_logic                      := '0';
       phy_mgmt_clk_reset          : in  std_logic                      := '0';
@@ -122,7 +122,7 @@ architecture rtl of wr_arria5_phy is
       rx_datak                    : out std_logic_vector(0 downto 0);
       reconfig_from_xcvr          : out std_logic_vector(91 downto 0);
       reconfig_to_xcvr            : in  std_logic_vector(139 downto 0) := (others => '0'));
-  end component arria5_phy;
+  end component;
   
   signal clk_rx_gxb    : std_logic; -- external fabric
   signal pll_locked    : std_logic;
@@ -154,7 +154,7 @@ begin
       reconfig_to_xcvr          => reconfig_to_xcvr,
       reconfig_from_xcvr        => xcvr_to_reconfig);
 
-  U_The_PHY : arria5_phy
+  U_The_PHY : arria5_phy8
     port map (
       phy_mgmt_clk                => clk_reconf_i,
       phy_mgmt_clk_reset          => drop_link_i,

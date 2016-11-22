@@ -1,4 +1,4 @@
-	component arria5_phy is
+	component arria5_phy8 is
 		port (
 			phy_mgmt_clk                : in  std_logic                      := 'X';             -- clk
 			phy_mgmt_clk_reset          : in  std_logic                      := 'X';             -- reset
@@ -28,5 +28,5 @@
 			reconfig_from_xcvr          : out std_logic_vector(91 downto 0);                     -- reconfig_from_xcvr
 			reconfig_to_xcvr            : in  std_logic_vector(139 downto 0) := (others => 'X')  -- reconfig_to_xcvr
 		);
-	end component arria5_phy;
+	end component arria5_phy8;
 

@@ -22,7 +22,7 @@ agreement for further details.
 (header "symbol" (version "1.1"))
 (symbol
 	(rect 0 0 528 584)
-	(text "arria5_phy" (rect 233 -1 276 11)(font "Arial" (font_size 10)))
+	(text "arria5_phy8" (rect 230 -1 278 11)(font "Arial" (font_size 10)))
 	(text "inst" (rect 8 568 20 580)(font "Arial" ))
 	(port
 		(pt 0 72)

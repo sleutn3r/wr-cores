@@ -12,13 +12,13 @@
 # or its authorized distributors. Please refer to the applicable 
 # agreement for further details.
 
-# ACDS 16.0 218 linux 2016.08.09.13:31:24
+# ACDS 16.0 218 linux 2016.11.22.12:01:59
 # ----------------------------------------
 # Auto-generated simulation script rivierapro_setup.tcl
 # ----------------------------------------
 # This script provides commands to simulate the following IP detected in
 # your Quartus project:
-#     arria5_phy
+#     arria5_phy8
 # 
 # Altera recommends that you source this Quartus-generated IP simulation
 # script from your own customized top-level script, and avoid editing this
@@ -82,7 +82,7 @@
 # 
 # IP SIMULATION SCRIPT
 # ----------------------------------------
-# If arria5_phy is one of several IP cores in your
+# If arria5_phy8 is one of several IP cores in your
 # Quartus project, you can generate a simulation script
 # suitable for inclusion in your top-level simulation
 # script by running the following command line:
@@ -103,7 +103,7 @@ if ![info exists SYSTEM_INSTANCE_NAME] {
 }
 
 if ![info exists TOP_LEVEL_NAME] { 
-  set TOP_LEVEL_NAME "arria5_phy"
+  set TOP_LEVEL_NAME "arria5_phy8"
 }
 
 if ![info exists QSYS_SIMDIR] { 
@@ -180,8 +180,8 @@ ensure_lib                     ./libraries/altera_lnsim
 vmap       altera_lnsim        ./libraries/altera_lnsim       
 ensure_lib                     ./libraries/arriav             
 vmap       arriav              ./libraries/arriav             
-ensure_lib            ./libraries/arria5_phy
-vmap       arria5_phy ./libraries/arria5_phy
+ensure_lib             ./libraries/arria5_phy8
+vmap       arria5_phy8 ./libraries/arria5_phy8
 
 # ----------------------------------------
 # Compile device library files
@@ -220,63 +220,63 @@ alias dev_com {
 # Compile the design files in correct order
 alias com {
   echo "\[exec\] com"
-  eval  vlog  $USER_DEFINED_COMPILE_OPTIONS      "$QSYS_SIMDIR/altera_xcvr_det_latency/altera_xcvr_functions.sv"                -work arria5_phy
-  eval  vlog  $USER_DEFINED_COMPILE_OPTIONS      "$QSYS_SIMDIR/altera_xcvr_det_latency/altera_xcvr_det_latency.sv"              -work arria5_phy
-  eval  vlog  $USER_DEFINED_COMPILE_OPTIONS      "$QSYS_SIMDIR/altera_xcvr_det_latency/av_xcvr_custom_nr.sv"                    -work arria5_phy
-  eval  vlog  $USER_DEFINED_COMPILE_OPTIONS      "$QSYS_SIMDIR/altera_xcvr_det_latency/av_xcvr_custom_native.sv"                -work arria5_phy
-  eval  vlog  $USER_DEFINED_COMPILE_OPTIONS      "$QSYS_SIMDIR/altera_xcvr_det_latency/alt_xcvr_resync.sv"                      -work arria5_phy
-  eval  vlog  $USER_DEFINED_COMPILE_OPTIONS      "$QSYS_SIMDIR/altera_xcvr_det_latency/alt_xcvr_csr_common_h.sv"                -work arria5_phy
-  eval  vlog  $USER_DEFINED_COMPILE_OPTIONS      "$QSYS_SIMDIR/altera_xcvr_det_latency/alt_xcvr_csr_common.sv"                  -work arria5_phy
-  eval  vlog  $USER_DEFINED_COMPILE_OPTIONS      "$QSYS_SIMDIR/altera_xcvr_det_latency/alt_xcvr_csr_pcs8g_h.sv"                 -work arria5_phy
-  eval  vlog  $USER_DEFINED_COMPILE_OPTIONS      "$QSYS_SIMDIR/altera_xcvr_det_latency/alt_xcvr_csr_pcs8g.sv"                   -work arria5_phy
-  eval  vlog  $USER_DEFINED_COMPILE_OPTIONS      "$QSYS_SIMDIR/altera_xcvr_det_latency/alt_xcvr_csr_selector.sv"                -work arria5_phy
-  eval  vlog  $USER_DEFINED_COMPILE_OPTIONS      "$QSYS_SIMDIR/altera_xcvr_det_latency/alt_xcvr_mgmt2dec.sv"                    -work arria5_phy
-  eval  vlog -v2k5 $USER_DEFINED_COMPILE_OPTIONS "$QSYS_SIMDIR/altera_xcvr_det_latency/altera_wait_generate.v"                  -work arria5_phy
-  eval  vlog  $USER_DEFINED_COMPILE_OPTIONS      "$QSYS_SIMDIR/altera_xcvr_det_latency/sv_reconfig_bundle_to_xcvr.sv"           -work arria5_phy
-  eval  vlog  $USER_DEFINED_COMPILE_OPTIONS      "$QSYS_SIMDIR/altera_xcvr_det_latency/sv_reconfig_bundle_to_ip.sv"             -work arria5_phy
-  eval  vlog  $USER_DEFINED_COMPILE_OPTIONS      "$QSYS_SIMDIR/altera_xcvr_det_latency/sv_reconfig_bundle_merger.sv"            -work arria5_phy
-  eval  vlog  $USER_DEFINED_COMPILE_OPTIONS      "$QSYS_SIMDIR/altera_xcvr_det_latency/av_xcvr_h.sv"                            -work arria5_phy
-  eval  vlog  $USER_DEFINED_COMPILE_OPTIONS      "$QSYS_SIMDIR/altera_xcvr_det_latency/av_xcvr_avmm_csr.sv"                     -work arria5_phy
-  eval  vlog  $USER_DEFINED_COMPILE_OPTIONS      "$QSYS_SIMDIR/altera_xcvr_det_latency/av_tx_pma_ch.sv"                         -work arria5_phy
-  eval  vlog  $USER_DEFINED_COMPILE_OPTIONS      "$QSYS_SIMDIR/altera_xcvr_det_latency/av_tx_pma.sv"                            -work arria5_phy
-  eval  vlog  $USER_DEFINED_COMPILE_OPTIONS      "$QSYS_SIMDIR/altera_xcvr_det_latency/av_rx_pma.sv"                            -work arria5_phy
-  eval  vlog  $USER_DEFINED_COMPILE_OPTIONS      "$QSYS_SIMDIR/altera_xcvr_det_latency/av_pma.sv"                               -work arria5_phy
-  eval  vlog  $USER_DEFINED_COMPILE_OPTIONS      "$QSYS_SIMDIR/altera_xcvr_det_latency/av_pcs_ch.sv"                            -work arria5_phy
-  eval  vlog  $USER_DEFINED_COMPILE_OPTIONS      "$QSYS_SIMDIR/altera_xcvr_det_latency/av_pcs.sv"                               -work arria5_phy
-  eval  vlog  $USER_DEFINED_COMPILE_OPTIONS      "$QSYS_SIMDIR/altera_xcvr_det_latency/av_xcvr_avmm.sv"                         -work arria5_phy
-  eval  vlog  $USER_DEFINED_COMPILE_OPTIONS      "$QSYS_SIMDIR/altera_xcvr_det_latency/av_xcvr_native.sv"                       -work arria5_phy
-  eval  vlog  $USER_DEFINED_COMPILE_OPTIONS      "$QSYS_SIMDIR/altera_xcvr_det_latency/av_xcvr_plls.sv"                         -work arria5_phy
-  eval  vlog  $USER_DEFINED_COMPILE_OPTIONS      "$QSYS_SIMDIR/altera_xcvr_det_latency/av_xcvr_data_adapter.sv"                 -work arria5_phy
-  eval  vlog  $USER_DEFINED_COMPILE_OPTIONS      "$QSYS_SIMDIR/altera_xcvr_det_latency/av_reconfig_bundle_to_basic.sv"          -work arria5_phy
-  eval  vlog  $USER_DEFINED_COMPILE_OPTIONS      "$QSYS_SIMDIR/altera_xcvr_det_latency/av_reconfig_bundle_to_xcvr.sv"           -work arria5_phy
-  eval  vlog  $USER_DEFINED_COMPILE_OPTIONS      "$QSYS_SIMDIR/altera_xcvr_det_latency/av_hssi_8g_rx_pcs_rbc.sv"                -work arria5_phy
-  eval  vlog  $USER_DEFINED_COMPILE_OPTIONS      "$QSYS_SIMDIR/altera_xcvr_det_latency/av_hssi_8g_tx_pcs_rbc.sv"                -work arria5_phy
-  eval  vlog  $USER_DEFINED_COMPILE_OPTIONS      "$QSYS_SIMDIR/altera_xcvr_det_latency/av_hssi_common_pcs_pma_interface_rbc.sv" -work arria5_phy
-  eval  vlog  $USER_DEFINED_COMPILE_OPTIONS      "$QSYS_SIMDIR/altera_xcvr_det_latency/av_hssi_common_pld_pcs_interface_rbc.sv" -work arria5_phy
-  eval  vlog  $USER_DEFINED_COMPILE_OPTIONS      "$QSYS_SIMDIR/altera_xcvr_det_latency/av_hssi_pipe_gen1_2_rbc.sv"              -work arria5_phy
-  eval  vlog  $USER_DEFINED_COMPILE_OPTIONS      "$QSYS_SIMDIR/altera_xcvr_det_latency/av_hssi_rx_pcs_pma_interface_rbc.sv"     -work arria5_phy
-  eval  vlog  $USER_DEFINED_COMPILE_OPTIONS      "$QSYS_SIMDIR/altera_xcvr_det_latency/av_hssi_rx_pld_pcs_interface_rbc.sv"     -work arria5_phy
-  eval  vlog  $USER_DEFINED_COMPILE_OPTIONS      "$QSYS_SIMDIR/altera_xcvr_det_latency/av_hssi_tx_pcs_pma_interface_rbc.sv"     -work arria5_phy
-  eval  vlog  $USER_DEFINED_COMPILE_OPTIONS      "$QSYS_SIMDIR/altera_xcvr_det_latency/av_hssi_tx_pld_pcs_interface_rbc.sv"     -work arria5_phy
-  eval  vlog  $USER_DEFINED_COMPILE_OPTIONS      "$QSYS_SIMDIR/altera_xcvr_det_latency/altera_xcvr_reset_control.sv"            -work arria5_phy
-  eval  vlog  $USER_DEFINED_COMPILE_OPTIONS      "$QSYS_SIMDIR/altera_xcvr_det_latency/alt_xcvr_reset_counter.sv"               -work arria5_phy
-  eval  vlog  $USER_DEFINED_COMPILE_OPTIONS      "$QSYS_SIMDIR/altera_xcvr_det_latency/alt_xcvr_arbiter.sv"                     -work arria5_phy
-  eval  vlog  $USER_DEFINED_COMPILE_OPTIONS      "$QSYS_SIMDIR/altera_xcvr_det_latency/alt_xcvr_m2s.sv"                         -work arria5_phy
-  eval  vcom $USER_DEFINED_COMPILE_OPTIONS       "$QSYS_SIMDIR/arria5_phy.vhd"                                                                  
+  eval  vlog  $USER_DEFINED_COMPILE_OPTIONS      "$QSYS_SIMDIR/altera_xcvr_det_latency/altera_xcvr_functions.sv"                -work arria5_phy8
+  eval  vlog  $USER_DEFINED_COMPILE_OPTIONS      "$QSYS_SIMDIR/altera_xcvr_det_latency/altera_xcvr_det_latency.sv"              -work arria5_phy8
+  eval  vlog  $USER_DEFINED_COMPILE_OPTIONS      "$QSYS_SIMDIR/altera_xcvr_det_latency/av_xcvr_custom_nr.sv"                    -work arria5_phy8
+  eval  vlog  $USER_DEFINED_COMPILE_OPTIONS      "$QSYS_SIMDIR/altera_xcvr_det_latency/av_xcvr_custom_native.sv"                -work arria5_phy8
+  eval  vlog  $USER_DEFINED_COMPILE_OPTIONS      "$QSYS_SIMDIR/altera_xcvr_det_latency/alt_xcvr_resync.sv"                      -work arria5_phy8
+  eval  vlog  $USER_DEFINED_COMPILE_OPTIONS      "$QSYS_SIMDIR/altera_xcvr_det_latency/alt_xcvr_csr_common_h.sv"                -work arria5_phy8
+  eval  vlog  $USER_DEFINED_COMPILE_OPTIONS      "$QSYS_SIMDIR/altera_xcvr_det_latency/alt_xcvr_csr_common.sv"                  -work arria5_phy8
+  eval  vlog  $USER_DEFINED_COMPILE_OPTIONS      "$QSYS_SIMDIR/altera_xcvr_det_latency/alt_xcvr_csr_pcs8g_h.sv"                 -work arria5_phy8
+  eval  vlog  $USER_DEFINED_COMPILE_OPTIONS      "$QSYS_SIMDIR/altera_xcvr_det_latency/alt_xcvr_csr_pcs8g.sv"                   -work arria5_phy8
+  eval  vlog  $USER_DEFINED_COMPILE_OPTIONS      "$QSYS_SIMDIR/altera_xcvr_det_latency/alt_xcvr_csr_selector.sv"                -work arria5_phy8
+  eval  vlog  $USER_DEFINED_COMPILE_OPTIONS      "$QSYS_SIMDIR/altera_xcvr_det_latency/alt_xcvr_mgmt2dec.sv"                    -work arria5_phy8
+  eval  vlog -v2k5 $USER_DEFINED_COMPILE_OPTIONS "$QSYS_SIMDIR/altera_xcvr_det_latency/altera_wait_generate.v"                  -work arria5_phy8
+  eval  vlog  $USER_DEFINED_COMPILE_OPTIONS      "$QSYS_SIMDIR/altera_xcvr_det_latency/sv_reconfig_bundle_to_xcvr.sv"           -work arria5_phy8
+  eval  vlog  $USER_DEFINED_COMPILE_OPTIONS      "$QSYS_SIMDIR/altera_xcvr_det_latency/sv_reconfig_bundle_to_ip.sv"             -work arria5_phy8
+  eval  vlog  $USER_DEFINED_COMPILE_OPTIONS      "$QSYS_SIMDIR/altera_xcvr_det_latency/sv_reconfig_bundle_merger.sv"            -work arria5_phy8
+  eval  vlog  $USER_DEFINED_COMPILE_OPTIONS      "$QSYS_SIMDIR/altera_xcvr_det_latency/av_xcvr_h.sv"                            -work arria5_phy8
+  eval  vlog  $USER_DEFINED_COMPILE_OPTIONS      "$QSYS_SIMDIR/altera_xcvr_det_latency/av_xcvr_avmm_csr.sv"                     -work arria5_phy8
+  eval  vlog  $USER_DEFINED_COMPILE_OPTIONS      "$QSYS_SIMDIR/altera_xcvr_det_latency/av_tx_pma_ch.sv"                         -work arria5_phy8
+  eval  vlog  $USER_DEFINED_COMPILE_OPTIONS      "$QSYS_SIMDIR/altera_xcvr_det_latency/av_tx_pma.sv"                            -work arria5_phy8
+  eval  vlog  $USER_DEFINED_COMPILE_OPTIONS      "$QSYS_SIMDIR/altera_xcvr_det_latency/av_rx_pma.sv"                            -work arria5_phy8
+  eval  vlog  $USER_DEFINED_COMPILE_OPTIONS      "$QSYS_SIMDIR/altera_xcvr_det_latency/av_pma.sv"                               -work arria5_phy8
+  eval  vlog  $USER_DEFINED_COMPILE_OPTIONS      "$QSYS_SIMDIR/altera_xcvr_det_latency/av_pcs_ch.sv"                            -work arria5_phy8
+  eval  vlog  $USER_DEFINED_COMPILE_OPTIONS      "$QSYS_SIMDIR/altera_xcvr_det_latency/av_pcs.sv"                               -work arria5_phy8
+  eval  vlog  $USER_DEFINED_COMPILE_OPTIONS      "$QSYS_SIMDIR/altera_xcvr_det_latency/av_xcvr_avmm.sv"                         -work arria5_phy8
+  eval  vlog  $USER_DEFINED_COMPILE_OPTIONS      "$QSYS_SIMDIR/altera_xcvr_det_latency/av_xcvr_native.sv"                       -work arria5_phy8
+  eval  vlog  $USER_DEFINED_COMPILE_OPTIONS      "$QSYS_SIMDIR/altera_xcvr_det_latency/av_xcvr_plls.sv"                         -work arria5_phy8
+  eval  vlog  $USER_DEFINED_COMPILE_OPTIONS      "$QSYS_SIMDIR/altera_xcvr_det_latency/av_xcvr_data_adapter.sv"                 -work arria5_phy8
+  eval  vlog  $USER_DEFINED_COMPILE_OPTIONS      "$QSYS_SIMDIR/altera_xcvr_det_latency/av_reconfig_bundle_to_basic.sv"          -work arria5_phy8
+  eval  vlog  $USER_DEFINED_COMPILE_OPTIONS      "$QSYS_SIMDIR/altera_xcvr_det_latency/av_reconfig_bundle_to_xcvr.sv"           -work arria5_phy8
+  eval  vlog  $USER_DEFINED_COMPILE_OPTIONS      "$QSYS_SIMDIR/altera_xcvr_det_latency/av_hssi_8g_rx_pcs_rbc.sv"                -work arria5_phy8
+  eval  vlog  $USER_DEFINED_COMPILE_OPTIONS      "$QSYS_SIMDIR/altera_xcvr_det_latency/av_hssi_8g_tx_pcs_rbc.sv"                -work arria5_phy8
+  eval  vlog  $USER_DEFINED_COMPILE_OPTIONS      "$QSYS_SIMDIR/altera_xcvr_det_latency/av_hssi_common_pcs_pma_interface_rbc.sv" -work arria5_phy8
+  eval  vlog  $USER_DEFINED_COMPILE_OPTIONS      "$QSYS_SIMDIR/altera_xcvr_det_latency/av_hssi_common_pld_pcs_interface_rbc.sv" -work arria5_phy8
+  eval  vlog  $USER_DEFINED_COMPILE_OPTIONS      "$QSYS_SIMDIR/altera_xcvr_det_latency/av_hssi_pipe_gen1_2_rbc.sv"              -work arria5_phy8
+  eval  vlog  $USER_DEFINED_COMPILE_OPTIONS      "$QSYS_SIMDIR/altera_xcvr_det_latency/av_hssi_rx_pcs_pma_interface_rbc.sv"     -work arria5_phy8
+  eval  vlog  $USER_DEFINED_COMPILE_OPTIONS      "$QSYS_SIMDIR/altera_xcvr_det_latency/av_hssi_rx_pld_pcs_interface_rbc.sv"     -work arria5_phy8
+  eval  vlog  $USER_DEFINED_COMPILE_OPTIONS      "$QSYS_SIMDIR/altera_xcvr_det_latency/av_hssi_tx_pcs_pma_interface_rbc.sv"     -work arria5_phy8
+  eval  vlog  $USER_DEFINED_COMPILE_OPTIONS      "$QSYS_SIMDIR/altera_xcvr_det_latency/av_hssi_tx_pld_pcs_interface_rbc.sv"     -work arria5_phy8
+  eval  vlog  $USER_DEFINED_COMPILE_OPTIONS      "$QSYS_SIMDIR/altera_xcvr_det_latency/altera_xcvr_reset_control.sv"            -work arria5_phy8
+  eval  vlog  $USER_DEFINED_COMPILE_OPTIONS      "$QSYS_SIMDIR/altera_xcvr_det_latency/alt_xcvr_reset_counter.sv"               -work arria5_phy8
+  eval  vlog  $USER_DEFINED_COMPILE_OPTIONS      "$QSYS_SIMDIR/altera_xcvr_det_latency/alt_xcvr_arbiter.sv"                     -work arria5_phy8
+  eval  vlog  $USER_DEFINED_COMPILE_OPTIONS      "$QSYS_SIMDIR/altera_xcvr_det_latency/alt_xcvr_m2s.sv"                         -work arria5_phy8
+  eval  vcom $USER_DEFINED_COMPILE_OPTIONS       "$QSYS_SIMDIR/arria5_phy8.vhd"                                                                  
 }
 
 # ----------------------------------------
 # Elaborate top level design
 alias elab {
   echo "\[exec\] elab"
-  eval vsim +access +r -t ps $ELAB_OPTIONS -L work -L arria5_phy -L altera_ver -L lpm_ver -L sgate_ver -L altera_mf_ver -L altera_lnsim_ver -L arriav_ver -L arriav_hssi_ver -L arriav_pcie_hip_ver -L altera -L lpm -L sgate -L altera_mf -L altera_lnsim -L arriav $TOP_LEVEL_NAME
+  eval vsim +access +r -t ps $ELAB_OPTIONS -L work -L arria5_phy8 -L altera_ver -L lpm_ver -L sgate_ver -L altera_mf_ver -L altera_lnsim_ver -L arriav_ver -L arriav_hssi_ver -L arriav_pcie_hip_ver -L altera -L lpm -L sgate -L altera_mf -L altera_lnsim -L arriav $TOP_LEVEL_NAME
 }
 
 # ----------------------------------------
 # Elaborate the top level design with -dbg -O2 option
 alias elab_debug {
   echo "\[exec\] elab_debug"
-  eval vsim -dbg -O2 +access +r -t ps $ELAB_OPTIONS -L work -L arria5_phy -L altera_ver -L lpm_ver -L sgate_ver -L altera_mf_ver -L altera_lnsim_ver -L arriav_ver -L arriav_hssi_ver -L arriav_pcie_hip_ver -L altera -L lpm -L sgate -L altera_mf -L altera_lnsim -L arriav $TOP_LEVEL_NAME
+  eval vsim -dbg -O2 +access +r -t ps $ELAB_OPTIONS -L work -L arria5_phy8 -L altera_ver -L lpm_ver -L sgate_ver -L altera_mf_ver -L altera_lnsim_ver -L arriav_ver -L arriav_hssi_ver -L arriav_pcie_hip_ver -L altera -L lpm -L sgate -L altera_mf -L altera_lnsim -L arriav $TOP_LEVEL_NAME
 }
 
 # ----------------------------------------
