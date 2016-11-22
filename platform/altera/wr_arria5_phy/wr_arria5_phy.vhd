@@ -54,7 +54,7 @@ entity wr_arria5_phy is
     -- Clock for PHY. 125MHz when PCS is 8bit, 62.5MHz when PCS is 16bit.
     clk_phy_i      : in  std_logic;
     -- PLL locked, RX/TX ready, PHY reconfiguration complete
-    locked_o       : out std_logic;
+    ready_o        : out std_logic;
     -- Enable local loopback (Tx->Rx)
     loopen_i       : in  std_logic;
     -- Drop the link
@@ -202,7 +202,7 @@ begin
                     rx_disperr(1) or rx_errdetect(1);
   end generate gen_arria5_phy16;
 
-  locked_o <= pll_locked and tx_ready and rx_ready and not reconfig_busy;
+  ready_o <= pll_locked and tx_ready and rx_ready and not reconfig_busy;
 
   rx_bitslide_o <= rx_bitslide(f_pcs_bts_width(g_pcs_16bit)-1 downto 0);
 

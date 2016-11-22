@@ -40,7 +40,7 @@ package wr_altera_pkg is
     port (
       clk_reconf_i   : in  std_logic;
       clk_phy_i      : in  std_logic;
-      locked_o       : out std_logic;
+      ready_o        : out std_logic;
       loopen_i       : in  std_logic;
       drop_link_i    : in  std_logic;
       tx_clk_o       : out std_logic;
