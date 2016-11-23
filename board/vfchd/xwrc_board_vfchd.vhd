@@ -63,7 +63,7 @@ entity xwrc_board_vfchd is
     clk_board_20m_i  : in std_logic;
 
     -- Reset input (active low, can be async)
-    aresetn_i : in std_logic;
+    areset_n_i : in std_logic;
 
     -- 62.5MHz sys clock output
     clk_sys_62m5_o : out std_logic;
@@ -89,6 +89,15 @@ entity xwrc_board_vfchd is
 
     sfp_tx_o : out std_logic;
     sfp_rx_i : in  std_logic;
+
+    ---------------------------------------------------------------------------
+    -- I2C EEPROM
+    ---------------------------------------------------------------------------
+
+    eeprom_sda_b : inout std_logic;
+    -- VFC-HD defines SCL as output, which works because the EEPROM is the
+    -- only device connected on this I2C bus.
+    eeprom_scl_o : out std_logic;
 
     ---------------------------------------------------------------------------
     -- External WB interface
@@ -151,6 +160,10 @@ architecture struct of xwrc_board_vfchd is
   signal dac_dpll_load_p1 : std_logic;
   signal dac_dpll_data    : std_logic_vector(15 downto 0);
 
+  -- I2C EEPROM
+  signal eeprom_sda_in  : std_logic;
+  signal eeprom_sda_out : std_logic;
+
   -- PHY
   signal phy_ready        : std_logic;
   signal phy_loopen       : std_logic;
@@ -183,7 +196,7 @@ begin  -- architecture struct
       g_use_default_plls          => TRUE,
       g_pcs_16bit                 => c_pcs_16bit)
     port map (
-      areset_n_i         => aresetn_i,
+      areset_n_i         => areset_n_i,
       clk_20m_i          => clk_board_20m_i,
       clk_125m_i         => clk_board_125m_i,
       pad_tx_o           => sfp_tx_o,
@@ -208,13 +221,13 @@ begin  -- architecture struct
 
   clk_sys_62m5_o <= clk_pll_62m5;
   clk_ref_125m_o <= clk_pll_125m;
-  
+
   -----------------------------------------------------------------------------
   -- Reset logic
   -----------------------------------------------------------------------------
 
   -- logic AND of all async reset sources (active low)
-  rstlogic_arst_n <= pll_locked and aresetn_i;
+  rstlogic_arst_n <= pll_locked and areset_n_i;
 
   -- concatenation of all clocks required to have synced resets
   rstlogic_clk_in(0) <= clk_pll_62m5;
@@ -257,6 +270,13 @@ begin  -- architecture struct
 
   dac_ref_sync_n_o  <= dac_sync_n(0);
   dac_dmtd_sync_n_o <= dac_sync_n(1);
+
+  -----------------------------------------------------------------------------
+  -- Tristates for I2C EEPROM
+  -----------------------------------------------------------------------------
+
+  eeprom_sda_b  <= '0' when (eeprom_sda_out = '0') else 'Z';
+  eeprom_sda_in <= eeprom_sda_b;
 
   -----------------------------------------------------------------------------
   -- The WR PTP core itself
@@ -307,10 +327,10 @@ begin  -- architecture struct
       phy_sfp_tx_disable_o => open,
       led_act_o            => led_act_o,
       led_link_o           => led_link_o,
-      scl_o                => open,
+      scl_o                => eeprom_scl_o,
       scl_i                => '1',
-      sda_o                => open,
-      sda_i                => '1',
+      sda_o                => eeprom_sda_out,
+      sda_i                => eeprom_sda_in,
       sfp_scl_o            => open,
       sfp_scl_i            => '1',
       sfp_sda_o            => open,
