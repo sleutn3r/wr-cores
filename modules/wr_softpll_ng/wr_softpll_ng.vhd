@@ -6,7 +6,7 @@
 -- Author     : Tomasz Włostowski
 -- Company    : CERN BE-CO-HT
 -- Created    : 2011-01-29
--- Last update: 2013-07-25
+-- Last update: 2016-11-18
 -- Platform   : FPGA-generic
 -- Standard   : VHDL'93
 -------------------------------------------------------------------------------
@@ -84,7 +84,7 @@ entity wr_softpll_ng is
 -- Configuration of all output channels (phase detector type & dividers). See
 -- softpll_pkg.vhd for details.
     g_channels_config : t_softpll_channel_config_array := c_softpll_default_channel_config;
-
+    g_sys_clock_rate : integer := 62500000;
     g_interface_mode      : t_wishbone_interface_mode      := PIPELINED;
     g_address_granularity : t_wishbone_address_granularity := WORD
     );
@@ -385,7 +385,99 @@ architecture rtl of wr_softpll_ng is
   signal bb_config    : t_out_channel_bb_config_array;
   signal bb_det_reset : std_logic_vector(g_num_outputs-1 downto 0);
   
+  type t_freq_meter_channel is record
+    clk     : std_logic;
+    cnt     : unsigned(1 downto 0);
+    divided : std_logic;
+  end record;
+
+  type t_freq_meter_channel_array is array (0 to g_num_outputs + g_num_outputs) of t_freq_meter_channel;
+
+  signal freq_meter_channels : t_freq_meter_channel_array;
+  signal freq_meter_cnt,freq_meter_timebase      : unsigned(27 downto 0);
+  signal freq_meter_gate, freq_meter_in,freq_meter_p     : std_logic;
+  signal freq_meter_ready    : std_logic_vector(1 downto 0);
+
 begin  -- rtl
+
+  gen_freq_meas_inputs : for i in 0 to g_num_ref_inputs-1 generate
+    freq_meter_channels(i).clk <= clk_ref_i(i);
+  end generate gen_freq_meas_inputs;
+
+  gen_freq_meas_outputs : for i in 0 to g_num_outputs-1 generate
+    freq_meter_channels(i + g_num_ref_inputs).clk <= clk_fb_i(i);
+  end generate gen_freq_meas_outputs;
+
+  gen_freq_meas_ext_clock_input : if g_with_ext_clock_input generate
+    freq_meter_channels(g_num_ref_inputs + g_num_outputs).clk <= clk_ext_i;
+  end generate gen_freq_meas_ext_clock_input;
+
+  gen_freq_meas_dividers : for i in 0 to g_num_outputs + g_num_ref_inputs generate
+    process(freq_meter_channels(i).clk, rst_n_i)
+    begin
+      if rst_n_i = '0' then
+        freq_meter_channels(i).cnt     <= (others => '0');
+        freq_meter_channels(i).divided <= '0';
+      elsif rising_edge(freq_meter_channels(i).clk) then
+        if freq_meter_channels(i).cnt = 3 then
+          freq_meter_channels(i).divided <= not freq_meter_channels(i).divided;
+          freq_meter_channels(i).cnt     <= (others => '0');
+        else
+          freq_meter_channels(i).cnt <= freq_meter_channels(i).cnt + 1;
+        end if;
+      end if;
+    end process;
+  end generate gen_freq_meas_dividers;
+
+  freq_meter_in <= freq_meter_channels(to_integer (unsigned(regs_in.freq_csr_chan_sel_o))).divided;
+
+  U_edge_detect_freq_meter : gc_sync_ffs
+    generic map (
+      g_sync_edge => "positive")
+    port map (
+      clk_i    => clk_sys_i,
+      rst_n_i  => rst_n_i,
+      data_i   => freq_meter_in,
+      ppulse_o => freq_meter_p);
+
+  
+  p_measure_frequency : process(clk_sys_i, rst_n_i)
+  begin
+    if rising_edge(clk_sys_i) then
+      if rst_n_i = '0' then
+        freq_meter_gate     <= '0';
+        freq_meter_cnt      <= (others => '0');
+        freq_meter_ready    <= (others => '0');
+        freq_meter_timebase <= (others => '0');
+        regs_out.freq_csr_valid_i <= '0';
+      else
+        if (freq_meter_timebase = g_sys_clock_rate - 1) then
+          freq_meter_gate <= '1';
+          freq_meter_timebase <= (others => '0');
+        else
+          freq_meter_gate     <= '0';
+          freq_meter_timebase <= freq_meter_timebase + 1;
+        end if;
+
+        if (regs_in.freq_csr_valid_load_o = '1') then
+          freq_meter_ready         <= (others => '0');
+          regs_out.freq_csr_valid_i <= '0';
+        elsif (freq_meter_gate = '1') then
+          freq_meter_ready         <= freq_meter_ready(freq_meter_ready'length-2 downto 0) & '1';
+          regs_out.freq_csr_valid_i <= freq_meter_ready(freq_meter_ready'length-1);
+        end if;
+
+        if (freq_meter_gate = '1') then
+          regs_out.freq_csr_freq_i <= std_logic_vector(freq_meter_cnt(25 downto 0));
+          freq_meter_cnt          <= (others => '0');
+        elsif (freq_meter_p = '1') then
+          freq_meter_cnt <= freq_meter_cnt + 1;
+        end if;
+      end if;
+    end if;
+  end process;
+
+
 
   resized_addr(6 downto 0)                          <= wb_adr_i;
   resized_addr(c_wishbone_address_width-1 downto 7) <= (others => '0');

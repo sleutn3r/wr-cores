@@ -10,7 +10,7 @@ peripheral {
 			prefix = "CSR";
 			
 			field {
-		         align = 8;
+--		         align = 8;
 		         name = "Unused (kept for software compatibility).";
 		         prefix = "UNUSED0";
 		         size = 6;
@@ -115,7 +115,7 @@ peripheral {
 			prefix = "OCCR";
 
 			field {
-				 align = 8;
+--				 align = 8;
 				 name = "Output Channel HW enable flag";
 				 prefix = "OUT_EN";
 				 type = SLV;
@@ -367,6 +367,39 @@ peripheral {
       };
    };
 
+
+	 reg {
+			name = "Frequency Diagnostic Measurement Control/Status Register";
+			prefix = "FREQ_CSR";
+			
+			field {
+				 name = "Measured Frequency";
+				 prefix = "FREQ";
+				 type = SLV;
+				 size = 26;
+				 access_bus = READ_ONLY;
+				 access_dev = WRITE_ONLY;
+			};
+
+			field {
+				 name = "Measured Frequency Valid";
+				 prefix = "VALID";
+				 type = BIT;
+				 access_bus = READ_WRITE;
+				 access_dev = READ_WRITE;
+				 load = LOAD_EXT;
+			};
+
+			field {
+				 name = "Channel Select";
+				 prefix = "CHAN_SEL";
+				 type = SLV;
+				 size = 5;
+				 access_bus = READ_WRITE;
+				 access_dev = READ_ONLY;
+			};
+
+	 };
 
 
 	 irq {
