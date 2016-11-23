@@ -7,6 +7,43 @@ use work.endpoint_pkg.all;
 
 package wr_altera_pkg is
 
+  component xwrc_platform_altera is
+    generic (
+      g_fpga_family               : string  := "arria5";
+      g_with_external_clock_input : boolean := FALSE;
+      g_use_default_plls          : boolean := TRUE;
+      g_pcs_16bit                 : boolean := FALSE);
+    port (
+      areset_n_i         : in  std_logic := '1';
+      clk_20m_i          : in  std_logic := '0';
+      clk_125m_i         : in  std_logic := '0';
+      clk_62m5_dmtd_i    : in  std_logic := '0';
+      clk_62m5_sys_i     : in  std_logic := '0';
+      clk_125m_ref_i     : in  std_logic := '0';
+      clk_10m_ext_ref_i  : in  std_logic := '0';
+      pps_ext_ref_i      : in  std_logic := '0';
+      pad_tx_o           : out std_logic;
+      pad_rx_i           : in  std_logic;
+      clk_62m5_sys_o     : out std_logic;
+      clk_125m_ref_o     : out std_logic;
+      clk_62m5_dmtd_o    : out std_logic;
+      pll_locked_o       : out std_logic;
+      phy_ready_o        : out std_logic;
+      phy_loopen_i       : in  std_logic;
+      phy_rst_i          : in  std_logic;
+      phy_tx_clk_o       : out std_logic;
+      phy_tx_data_i      : in  std_logic_vector(f_pcs_data_width(g_pcs_16bit)-1 downto 0);
+      phy_tx_k_i         : in  std_logic_vector(f_pcs_k_width(g_pcs_16bit)-1 downto 0);
+      phy_tx_disparity_o : out std_logic;
+      phy_tx_enc_err_o   : out std_logic;
+      phy_rx_rbclk_o     : out std_logic;
+      phy_rx_data_o      : out std_logic_vector(f_pcs_data_width(g_pcs_16bit)-1 downto 0);
+      phy_rx_k_o         : out std_logic_vector(f_pcs_k_width(g_pcs_16bit)-1 downto 0);
+      phy_rx_enc_err_o   : out std_logic;
+      phy_rx_bitslide_o  : out std_logic_vector(f_pcs_bts_width(g_pcs_16bit)-1 downto 0);
+      ext_ref_rst_i      : in  std_logic := '0');
+  end component;
+
   component wr_arria2_phy
     generic (
       g_tx_latch_edge : std_logic := '1';
