@@ -97,7 +97,14 @@ entity xwrc_board_vfchd is
     eeprom_sda_b : inout std_logic;
     -- VFC-HD defines SCL as output, which works because the EEPROM is the
     -- only device connected on this I2C bus.
-    eeprom_scl_o : out std_logic;
+    eeprom_scl_o : out   std_logic;
+
+    ---------------------------------------------------------------------------
+    -- Onewire interface
+    ---------------------------------------------------------------------------
+
+    onewire_i     : in  std_logic;
+    onewire_oen_o : out std_logic;
 
     ---------------------------------------------------------------------------
     -- External WB interface
@@ -163,6 +170,10 @@ architecture struct of xwrc_board_vfchd is
   -- I2C EEPROM
   signal eeprom_sda_in  : std_logic;
   signal eeprom_sda_out : std_logic;
+
+  -- OneWire
+  signal onewire_in : std_logic_vector(1 downto 0);
+  signal onewire_en : std_logic_vector(1 downto 0);
 
   -- PHY
   signal phy_ready        : std_logic;
@@ -279,6 +290,14 @@ begin  -- architecture struct
   eeprom_sda_in <= eeprom_sda_b;
 
   -----------------------------------------------------------------------------
+  -- OneWire
+  -----------------------------------------------------------------------------
+
+  onewire_oen_o <= onewire_en(0);
+  onewire_in(0) <= onewire_i;
+  onewire_in(1) <= '1';
+
+  -----------------------------------------------------------------------------
   -- The WR PTP core itself
   -----------------------------------------------------------------------------
 
@@ -345,8 +364,8 @@ begin  -- architecture struct
       uart_rxd_i           => '0',
       uart_txd_o           => open,
       owr_pwren_o          => open,
-      owr_en_o             => open,
-      owr_i                => (others => '1'),
+      owr_en_o             => onewire_en,
+      owr_i                => onewire_in,
       slave_i              => wb_slave_in,
       slave_o              => wb_slave_out,
       aux_master_o         => open,
