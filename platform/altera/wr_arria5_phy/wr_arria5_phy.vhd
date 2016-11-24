@@ -8,7 +8,7 @@
 --              Dimitrios lampridis
 -- Company    : GSI, CERN
 -- Created    : 2013-05-14
--- Last update: 2016-11-22
+-- Last update: 2016-11-24
 -- Standard   : VHDL'93
 -------------------------------------------------------------------------------
 -- Description: Single channel wrapper for deterministic PHY
@@ -86,21 +86,6 @@ entity wr_arria5_phy is
 end wr_arria5_phy;
 
 architecture rtl of wr_arria5_phy is
-
-  component arria5_phy_reconf
-    port(
-      reconfig_busy             : out std_logic;
-      mgmt_clk_clk              : in  std_logic;
-      mgmt_rst_reset            : in  std_logic;
-      reconfig_mgmt_address     : in  std_logic_vector(6 downto 0);
-      reconfig_mgmt_read        : in  std_logic;
-      reconfig_mgmt_readdata    : out std_logic_vector(31 downto 0);
-      reconfig_mgmt_waitrequest : out std_logic;
-      reconfig_mgmt_write       : in  std_logic;
-      reconfig_mgmt_writedata   : in  std_logic_vector(31 downto 0);
-      reconfig_to_xcvr          : out std_logic_vector(139 downto 0);
-      reconfig_from_xcvr        : in  std_logic_vector(91 downto 0));
-  end component;
 
   signal pll_locked    : std_logic;
   signal rx_ready      : std_logic;

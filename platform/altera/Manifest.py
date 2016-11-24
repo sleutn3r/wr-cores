@@ -4,6 +4,6 @@ def __helper():
   if syn_device[:4] == "ep2a": dirs.extend(["wr_arria2_phy"])
   return dirs
   
-files = [ "altera_pkg.vhd", "xwrc_platform_altera.vhd" ]
+files = [ "wr_altera_pkg.vhd", "xwrc_platform_altera.vhd" ]
 
 modules = {"local": __helper() }
