@@ -94,6 +94,21 @@ package wr_altera_pkg is
       pad_rxp_i      : in  std_logic := '0');
   end component;
 
+  component arria5_phy_reconf is
+    port (
+      reconfig_busy             : out std_logic;
+      mgmt_clk_clk              : in  std_logic                     := '0';
+      mgmt_rst_reset            : in  std_logic                     := '0';
+      reconfig_mgmt_address     : in  std_logic_vector(6 downto 0)  := (others => '0');
+      reconfig_mgmt_read        : in  std_logic                     := '0';
+      reconfig_mgmt_readdata    : out std_logic_vector(31 downto 0);
+      reconfig_mgmt_waitrequest : out std_logic;
+      reconfig_mgmt_write       : in  std_logic                     := '0';
+      reconfig_mgmt_writedata   : in  std_logic_vector(31 downto 0) := (others => '0');
+      reconfig_to_xcvr          : out std_logic_vector(139 downto 0);
+      reconfig_from_xcvr        : in  std_logic_vector(91 downto 0) := (others => '0'));
+  end component;
+
   component arria5_phy8 is
     port (
       phy_mgmt_clk                : in  std_logic                      := '0';
