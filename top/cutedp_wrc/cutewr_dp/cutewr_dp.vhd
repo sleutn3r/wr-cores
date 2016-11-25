@@ -518,7 +518,6 @@ u_xwr_com5402: xwr_com5402
     snk_o             => ext_snk_o,
     src_o             => ext_src_o,
     src_i             => ext_src_i,
-    connection_reset  => (others=>'0'),
     udp_rx_data       => udp_rx_data,
     udp_rx_data_valid => udp_rx_data_valid,
     udp_rx_sof        => udp_rx_sof,
