@@ -7,7 +7,7 @@
 -- Author(s)  : Dimitrios Lampridis  <dimitrios.lampridis@cern.ch>
 -- Company    : CERN (BE-CO-HT)
 -- Created    : 2016-07-26
--- Last update: 2016-11-23
+-- Last update: 2016-11-25
 -- Standard   : VHDL'93
 -------------------------------------------------------------------------------
 -- Description: Top-level wrapper for WR PTP core including all the modules
@@ -38,7 +38,6 @@
 
 library ieee;
 use ieee.std_logic_1164.all;
---use ieee.numeric_std.all;
 
 library work;
 use work.gencores_pkg.all;
@@ -84,11 +83,19 @@ entity xwrc_board_vfchd is
     dac_sclk_o        : out std_logic;
 
     ---------------------------------------------------------------------------
-    -- SFP I/O for transceiver
+    -- SFP I/O for transceiver and SFP management info from VFC-HD
     ---------------------------------------------------------------------------
 
     sfp_tx_o : out std_logic;
     sfp_rx_i : in  std_logic;
+
+    -- HIGH if both of the following are true:
+    -- 1. SFP is detected (plugged in)
+    -- 2. The part number has been successfully read after the SFP detection
+    sfp_det_valid_i : in std_logic;
+    -- 16 byte vendor Part Number (PN)
+    -- (ASCII encoded, first character byte in bits 127 downto 120)
+    sfp_data_i      : in std_logic_vector (127 downto 0);
 
     ---------------------------------------------------------------------------
     -- I2C EEPROM
@@ -135,6 +142,21 @@ end entity xwrc_board_vfchd;
 
 
 architecture struct of xwrc_board_vfchd is
+
+  -----------------------------------------------------------------------------
+  -- Internal Components
+  -----------------------------------------------------------------------------
+
+  component sfp_i2c_adapter is
+    port (
+      clk_i           : in  std_logic;
+      rst_n_i         : in  std_logic;
+      scl_i           : in  std_logic;
+      sda_i           : in  std_logic;
+      sda_en_o        : out std_logic;
+      sfp_det_valid_i : in  std_logic;
+      sfp_data_i      : in  std_logic_vector (127 downto 0));
+  end component sfp_i2c_adapter;
 
   -----------------------------------------------------------------------------
   -- Constants
@@ -189,6 +211,11 @@ architecture struct of xwrc_board_vfchd is
   signal phy_rx_k         : std_logic_vector(f_pcs_k_width(c_pcs_16bit)-1 downto 0);
   signal phy_rx_enc_err   : std_logic;
   signal phy_rx_bitslide  : std_logic_vector(f_pcs_bts_width(c_pcs_16bit)-1 downto 0);
+
+  -- SFP I2C adapter
+  signal sfp_i2c_scl_in : std_logic;
+  signal sfp_i2c_sda_in : std_logic;
+  signal sfp_i2c_sda_en : std_logic;
 
   -- External WB interface
   signal wb_slave_out : t_wishbone_slave_out;
@@ -298,6 +325,20 @@ begin  -- architecture struct
   onewire_in(1) <= '1';
 
   -----------------------------------------------------------------------------
+  -- SFP I2C adapter for VFC-HD
+  -----------------------------------------------------------------------------
+  cmp_sfp_i2c_adapter : sfp_i2c_adapter
+    port map (
+      clk_i           => clk_pll_62m5,
+      rst_n_i         => rst_62m5_n,
+      scl_i           => sfp_i2c_scl_in,
+      sda_i           => sfp_i2c_sda_in,
+      sda_en_o        => sfp_i2c_sda_en,
+      sfp_det_valid_i => sfp_det_valid_i,
+      sfp_data_i      => sfp_data_i);
+
+
+  -----------------------------------------------------------------------------
   -- The WR PTP core itself
   -----------------------------------------------------------------------------
 
@@ -350,11 +391,11 @@ begin  -- architecture struct
       scl_i                => '1',
       sda_o                => eeprom_sda_out,
       sda_i                => eeprom_sda_in,
-      sfp_scl_o            => open,
+      sfp_scl_o            => sfp_i2c_scl_in,
       sfp_scl_i            => '1',
-      sfp_sda_o            => open,
-      sfp_sda_i            => '1',
-      sfp_det_i            => '1',                -- TODO: replace with actual signal
+      sfp_sda_o            => sfp_i2c_sda_in,
+      sfp_sda_i            => not sfp_i2c_sda_en,
+      sfp_det_i            => not sfp_det_valid_i,  -- WRPC-SW expects this active low
       btn1_i               => '1',
       btn2_i               => '1',
       spi_sclk_o           => open,

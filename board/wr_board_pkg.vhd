@@ -23,6 +23,8 @@ package wr_board_pkg is
       dac_sclk_o        : out   std_logic;
       sfp_tx_o          : out   std_logic;
       sfp_rx_i          : in    std_logic;
+      sfp_det_valid_i   : in    std_logic;
+      sfp_data_i        : in    std_logic_vector (127 downto 0);
       eeprom_sda_b      : inout std_logic;
       eeprom_scl_o      : out   std_logic;
       onewire_i         : in    std_logic;
