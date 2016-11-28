@@ -42,10 +42,6 @@ entity xrx_streamer is
     -- Size of RX buffer, in data words.
     g_buffer_size       : integer := 16;
 
-    -- When true, receives only packets whose destination MAC equals
-    -- cfg_mac_remote_i. When false. accepts all incoming packets. 
-    g_filter_remote_mac : boolean := false;
-
     -- DO NOT USE unless you know what you are doing
     -- legacy stuff: the streamers that were initially used in Btrain did not check/insert 
     -- the escape code. This is justified if only one block of a known number of words is 
@@ -115,7 +111,7 @@ entity xrx_streamer is
     rx_latency_o       : out std_logic_vector(27 downto 0);
     -- 1 when the latency on rx_latency_o is valid.
     rx_latency_valid_o : out std_logic;
-    -- received streamer frame (counts all frames, corrupted and not)
+    -- received 	streamer frame (counts all frames, corrupted and not)
     rx_frame_p1_o         : out std_logic;
 
     -- MAC address
@@ -124,7 +120,13 @@ entity xrx_streamer is
     cfg_ethertype_i         : in std_logic_vector(15 downto 0) := x"dbff";
     -- 1: accept all broadcast packets
     -- 0: accept only unicasts
-    cfg_accept_broadcasts_i : in std_logic                     := '1'
+    cfg_accept_broadcasts_i : in std_logic                     := '1';
+    -- filtering of streamer frames on reception by source MAC address
+    -- 0: accept frames from any source
+    -- 1: accept frames only from the source MAC address defined in cfg_mac_remote_i
+    cfg_filter_remote_i     : in std_logic                     := '0';
+    -- value in cycles of fixed-latency enforced on data
+    cfg_fixed_latency_i     : in std_logic_vector(27 downto 0) := x"0000000"
     );
 
 end xrx_streamer;
@@ -237,6 +239,20 @@ architecture rtl of xrx_streamer is
   signal is_frame_seq_id : std_logic;
   signal word_count                                                        : unsigned(11 downto 0);
   signal sync_seq_no : std_logic;
+
+  -- fixed latency signals
+  type   t_rx_delay_state is (DELAY, ALLOW);
+  signal timestamped        : std_logic;
+  signal delay_cnt          : std_logic_vector(27 downto 0);
+  signal fixed_latency_zero : std_logic_vector(27 downto 0);
+  signal fixed_latency_cnt  : std_logic_vector(27 downto 0);
+  signal rx_dreq_mask       : std_logic;
+  signal rx_latency         : std_logic_vector(27 downto 0);
+  signal rx_latency_stored  : std_logic_vector(27 downto 0);
+  signal rx_latency_valid   : std_logic;
+  signal delay_state        : t_rx_delay_state;
+  signal rx_dreq            : std_logic;
+
 begin  -- rtl
 
   rst <= not rst_n_i;
@@ -317,7 +333,7 @@ begin  -- rtl
       d_valid_i  => fifo_dvalid,
       d_o        => fifo_dout,
       d_valid_o  => rx_valid_o,
-      d_req_i    => rx_dreq_i);
+      d_req_i    => rx_dreq);
 
   fifo_din(g_data_width+1)          <= fifo_sync;
   fifo_din(g_data_width)            <= fifo_last or 
@@ -339,6 +355,65 @@ begin  -- rtl
       tm_cycles_i     => tm_cycles_i,
       tag_cycles_o    => rx_tag_cycles);
 
+  -------------------------------------------------------------------------------------------
+  -- fixed latency implementation
+  -------------------------------------------------------------------------------------------
+
+  -- mask rx_dreq to prevent reception
+  rx_dreq                           <= rx_dreq_i and rx_dreq_mask;
+  -- produce a pulse when SOF is timestamped, this pulse starts counter in clk_sys clock 
+  -- domain
+  U_sync_with_clk : gc_sync_ffs
+    port map (
+      clk_i          => clk_sys_i,
+      rst_n_i        => rst_n_i,
+      data_i         => fsm_in.sof,
+      synced_o       => timestamped);
+
+  -- count delay after reception of frame
+  p_delay_cnt : process(clk_sys_i)
+  begin
+    if rising_edge(clk_sys_i) then
+      if rst_n_i = '0' or timestamped = '1' then
+        delay_cnt <= (others=>'0');
+      else
+        delay_cnt <= std_logic_vector(unsigned(delay_cnt) + 1);
+      end if;
+    end if;
+  end process;
+
+  fixed_latency_zero <= (others => '0');
+  fixed_latency_cnt  <= std_logic_vector(unsigned(delay_cnt) + unsigned(rx_latency_stored));
+  -- introduce fixed latency, if configured to do so
+  p_fixed_latency_fsm : process(clk_sys_i)
+  begin
+    if rising_edge(clk_sys_i) then
+      if rst_n_i = '0' or cfg_fixed_latency_i = fixed_latency_zero then
+        delay_state        <= ALLOW;
+        rx_latency_stored  <= (others=>'0');
+        rx_dreq_mask       <= '1';
+      else
+        case delay_state is
+          when ALLOW =>
+            if(rx_latency_valid ='1') then
+              rx_dreq_mask      <= '0';
+              rx_latency_stored <= rx_latency;
+              delay_state       <= DELAY;
+            end if;
+          when DELAY =>
+            if(fixed_latency_cnt >= cfg_fixed_latency_i) then
+              rx_dreq_mask <= '1';
+              delay_state  <= ALLOW;
+            end if;
+        end case;
+      end if;
+    end if;
+  end process;
+
+  -------------------------------------------------------------------------------------------
+  -- end of fixed latency implementation
+  -- ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
   p_fsm : process(clk_sys_i)
   begin
     if rising_edge(clk_sys_i) then
@@ -355,7 +430,6 @@ begin  -- rtl
         got_next_subframe      <= '0';
         fifo_sync              <= '0';
         fifo_last              <= '0';
-        rx_latency_valid_o     <= '0';
         tx_tag_valid           <= '0';
         ser_count              <= (others => '0');
         word_count             <= (others => '0');
@@ -363,6 +437,8 @@ begin  -- rtl
         rx_frame_p1_o             <= '0';
         rx_lost_frames_cnt_o   <= (others => '0');
         frames_lost            <= '0';
+        rx_latency             <= (others=>'0');
+        rx_latency_valid       <= '0';
       else
         case state is
           when IDLE =>
@@ -378,12 +454,13 @@ begin  -- rtl
             fifo_sync          <='0';
             fifo_last          <= '0';
             word_count         <= (others => '0');
-            rx_latency_valid_o <= '0';
             tx_tag_valid       <= '0';
             rx_frame_p1_o      <= '0';
             rx_lost_frames_cnt_o <= (others => '0');
             frames_lost          <= '0';
             blocks_lost          <= '0';
+            rx_latency           <= (others=>'0');
+            rx_latency_valid     <= '0';
 
             if(fsm_in.sof = '1') then
               state            <= HEADER;
@@ -410,17 +487,17 @@ begin  -- rtl
                   end if;
                   count <= count + 1;
                 when x"03" =>
-                  if(fsm_in.data /= cfg_mac_remote_i(47 downto 32) and g_filter_remote_mac) then
+                  if(fsm_in.data /= cfg_mac_remote_i(47 downto 32) and cfg_filter_remote_i ='1') then
                     state <= IDLE;
                   end if;
                   count <= count + 1;
                 when x"04" =>
-                  if(fsm_in.data /= cfg_mac_remote_i(31 downto 16) and g_filter_remote_mac) then
+                  if(fsm_in.data /= cfg_mac_remote_i(31 downto 16) and cfg_filter_remote_i ='1') then
                     state <= IDLE;
                   end if;
                   count <= count + 1;
                 when x"05" =>
-                  if(fsm_in.data /= cfg_mac_remote_i(15 downto 0) and g_filter_remote_mac) then
+                  if(fsm_in.data /= cfg_mac_remote_i(15 downto 0) and cfg_filter_remote_i ='1') then
                     state <= IDLE;
                   end if;
                   count <= count + 1;
@@ -457,15 +534,15 @@ begin  -- rtl
               word_count          <= word_count + 1; -- count words, increment in advance
               got_next_subframe   <= '1';
               if(tx_tag_valid = '1') then
-                rx_latency_valid_o <= '1';
+                rx_latency_valid <= '1';
                 if(unsigned(tx_tag_cycles) > unsigned(rx_tag_cycles)) then
-                  rx_latency_o <= std_logic_vector(unsigned(rx_tag_cycles) - unsigned(tx_tag_cycles) + to_unsigned(125000000, 28));
+                  rx_latency <= std_logic_vector(unsigned(rx_tag_cycles) - unsigned(tx_tag_cycles) + to_unsigned(125000000, 28));
                 else
-                  rx_latency_o <= std_logic_vector(unsigned(rx_tag_cycles) - unsigned(tx_tag_cycles));
+                  rx_latency <= std_logic_vector(unsigned(rx_tag_cycles) - unsigned(tx_tag_cycles));
                 end if;
                 tx_tag_valid <= '0';
               else
-                rx_latency_valid_o <= '0';
+                rx_latency_valid <= '0';
               end if;
 
               if(std_logic_vector(seq_no) /= fsm_in.data(14 downto 0)) then
@@ -510,7 +587,7 @@ begin  -- rtl
           when PAYLOAD =>
             frames_lost <= '0';
             rx_lost_frames_cnt_o <= (others => '0');
-            rx_latency_valid_o <= '0';
+            rx_latency_valid <= '0';
             fifo_sync <= got_next_subframe;
 
             if(fsm_in.eof = '1') then
@@ -635,7 +712,8 @@ begin  -- rtl
   rx_lost_p1_o        <= frames_lost or blocks_lost;
   rx_lost_blocks_p1_o <= blocks_lost;
   rx_lost_frames_p1_o <= frames_lost;
+  rx_latency_o        <= rx_latency;
+  rx_latency_valid_o  <= rx_latency_valid;
   crc_restart <= '1' when (state = FRAME_SEQ_ID or (is_escape = '1' and fsm_in.data(15) = '1')) else not rst_n_i;
-  
-  
+
 end rtl;
