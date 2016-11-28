@@ -7,7 +7,7 @@
 -- Author(s)  : Dimitrios Lampridis  <dimitrios.lampridis@cern.ch>
 -- Company    : CERN (BE-CO-HT)
 -- Created    : 2016-07-26
--- Last update: 2016-11-25
+-- Last update: 2016-11-28
 -- Standard   : VHDL'93
 -------------------------------------------------------------------------------
 -- Description: Top-level wrapper for WR PTP core including all the modules
@@ -45,12 +45,15 @@ use work.wrcore_pkg.all;
 use work.wishbone_pkg.all;
 use work.wr_fabric_pkg.all;
 use work.endpoint_pkg.all;
+use work.streamers_pkg.all;
 use work.wr_altera_pkg.all;
 
 entity xwrc_board_vfchd is
   generic(
-    g_simulation  : integer := 0;
-    g_dpram_initf : string  := "default"
+    g_simulation     : integer := 0;
+    g_fabric_iface   : string  := "plain";
+    g_streamer_width : integer := 32;
+    g_dpram_initf    : string  := "default"
     );
   port (
     ---------------------------------------------------------------------------
@@ -129,6 +132,44 @@ entity xwrc_board_vfchd is
     wb_err_o   : out std_logic;
     wb_rty_o   : out std_logic;
     wb_stall_o : out std_logic;
+
+    ---------------------------------------------------------------------------
+    -- WR fabric interface (when g_fabric_iface = "plain")
+    ---------------------------------------------------------------------------
+    wrf_src_adr   : out std_logic_vector(1 downto 0);
+    wrf_src_dat   : out std_logic_vector(15 downto 0);
+    wrf_src_cyc   : out std_logic;
+    wrf_src_stb   : out std_logic;
+    wrf_src_we    : out std_logic;
+    wrf_src_sel   : out std_logic_vector(1 downto 0);
+    wrf_src_ack   : in  std_logic;
+    wrf_src_stall : in  std_logic;
+    wrf_src_err   : in  std_logic;
+    wrf_src_rty   : in  std_logic;
+    wrf_snk_adr   : in  std_logic_vector(1 downto 0);
+    wrf_snk_dat   : in  std_logic_vector(15 downto 0);
+    wrf_snk_cyc   : in  std_logic;
+    wrf_snk_stb   : in  std_logic;
+    wrf_snk_we    : in  std_logic;
+    wrf_snk_sel   : in  std_logic_vector(1 downto 0);
+    wrf_snk_ack   : out std_logic;
+    wrf_snk_stall : out std_logic;
+    wrf_snk_err   : out std_logic;
+    wrf_snk_rty   : out std_logic;
+
+    ---------------------------------------------------------------------------
+    -- WR streamers (when g_fabric_iface = "streamers")
+    ---------------------------------------------------------------------------
+    wrs_tx_data_i  : in  std_logic_vector(g_streamer_width-1 downto 0) := (others => '0');
+    wrs_tx_valid_i : in  std_logic                                     := '0';
+    wrs_tx_dreq_o  : out std_logic;
+    wrs_tx_last_i  : in  std_logic                                     := '1';
+    wrs_tx_flush_i : in  std_logic                                     := '0';
+    wrs_rx_first_o : out std_logic;
+    wrs_rx_last_o  : out std_logic;
+    wrs_rx_data_o  : out std_logic_vector(g_streamer_width-1 downto 0);
+    wrs_rx_valid_o : out std_logic;
+    wrs_rx_dreq_i  : in  std_logic                                     := '0';
 
     ---------------------------------------------------------------------------
     -- WRPC timing interface and status
@@ -217,11 +258,41 @@ architecture struct of xwrc_board_vfchd is
   signal sfp_i2c_sda_in : std_logic;
   signal sfp_i2c_sda_en : std_logic;
 
+  -- Timecode interface
+  signal tm_time_valid : std_logic;
+  signal tm_tai        : std_logic_vector(39 downto 0);
+  signal tm_cycles     : std_logic_vector(27 downto 0);
+
+  -- WR fabric interface
+  signal wrf_src_out : t_wrf_source_out;
+  signal wrf_src_in  : t_wrf_source_in;
+  signal wrf_snk_out : t_wrf_sink_out;
+  signal wrf_snk_in  : t_wrf_sink_in;
+
+  -- WR SNMP
+  signal aux_diag_in  : t_generic_word_array(c_WR_TRANS_ARR_SIZE_OUT-1 downto 0);
+  signal aux_diag_out : t_generic_word_array(c_WR_TRANS_ARR_SIZE_IN-1 downto 0);
+
   -- External WB interface
   signal wb_slave_out : t_wishbone_slave_out;
   signal wb_slave_in  : t_wishbone_slave_in;
 
+  -- Aux WB interface
+  signal aux_master_out : t_wishbone_master_out;
+  signal aux_master_in  : t_wishbone_master_in;
+
 begin  -- architecture struct
+
+  -----------------------------------------------------------------------------
+  -- Check for unsupported features and/or misconfiguration
+  -----------------------------------------------------------------------------
+  gen_unknown_wrfabric : if (g_fabric_iface /= "plain") and
+                           (g_fabric_iface /= "streamers")
+  generate
+    assert FALSE
+      report "WR PTP core fabric interface [" & g_fabric_iface & "] is not supported"
+      severity ERROR;
+  end generate gen_unknown_wrfabric;
 
   -----------------------------------------------------------------------------
   -- Platform-dependent part (PHY, PLLs, etc)
@@ -339,7 +410,7 @@ begin  -- architecture struct
 
 
   -----------------------------------------------------------------------------
-  -- The WR PTP core itself
+  -- The WR PTP core itself (with optional streamers)
   -----------------------------------------------------------------------------
 
   cmp_xwr_core : xwr_core
@@ -350,6 +421,10 @@ begin  -- architecture struct
       g_interface_mode      => CLASSIC,
       g_address_granularity => WORD,
       g_pcs_16bit           => c_pcs_16bit,
+      g_diag_id             => 0,
+      g_diag_ver            => 0,
+      g_diag_ro_size        => c_WR_TRANS_ARR_SIZE_OUT,
+      g_diag_rw_size        => c_WR_TRANS_ARR_SIZE_IN,
       g_dpram_initf         => g_dpram_initf)
     port map (
       clk_sys_i            => clk_pll_62m5,
@@ -378,13 +453,17 @@ begin  -- architecture struct
       phy_rx_enc_err_i     => phy_rx_enc_err,
       phy_rx_bitslide_i    => phy_rx_bitslide,
       phy_rst_o            => phy_rst,
-      phy_loopen_o         => phy_loopen,
       phy_rdy_i            => phy_ready,
+      phy_loopen_o         => phy_loopen,
       phy_loopen_vec_o     => open,
       phy_tx_prbs_sel_o    => open,
       phy_sfp_tx_fault_i   => '0',
       phy_sfp_los_i        => '0',
       phy_sfp_tx_disable_o => open,
+      phy8_o               => open,
+      phy8_i               => c_dummy_phy8_to_wrc,
+      phy16_o              => open,
+      phy16_i              => c_dummy_phy16_to_wrc,
       led_act_o            => led_act_o,
       led_link_o           => led_link_o,
       scl_o                => eeprom_scl_o,
@@ -409,12 +488,12 @@ begin  -- architecture struct
       owr_i                => onewire_in,
       slave_i              => wb_slave_in,
       slave_o              => wb_slave_out,
-      aux_master_o         => open,
-      aux_master_i         => cc_dummy_master_in,
-      wrf_src_o            => open,
-      wrf_src_i            => c_dummy_src_in,
-      wrf_snk_o            => open,
-      wrf_snk_i            => c_dummy_snk_in,
+      aux_master_o         => aux_master_out,
+      aux_master_i         => aux_master_in,
+      wrf_src_o            => wrf_src_out,
+      wrf_src_i            => wrf_src_in,
+      wrf_snk_o            => wrf_snk_out,
+      wrf_snk_i            => wrf_snk_in,
       timestamps_o         => open,
       timestamps_ack_i     => '1',
       fc_tx_pause_req_i    => '0',
@@ -425,13 +504,15 @@ begin  -- architecture struct
       tm_dac_wr_o          => open,
       tm_clk_aux_lock_en_i => (others => '0'),
       tm_clk_aux_locked_o  => open,
-      tm_time_valid_o      => tm_time_valid_o,
-      tm_tai_o             => open,
-      tm_cycles_o          => open,
+      tm_time_valid_o      => tm_time_valid,
+      tm_tai_o             => tm_tai,
+      tm_cycles_o          => tm_cycles,
       pps_p_o              => open,
       pps_led_o            => open,
       dio_o                => open,
       rst_aux_n_o          => open,
+      aux_diag_i           => aux_diag_in,
+      aux_diag_o           => aux_diag_out,
       link_ok_o            => open);
 
   wb_slave_in.cyc <= wb_cyc_i;
@@ -448,5 +529,77 @@ begin  -- architecture struct
   wb_int_o   <= wb_slave_out.int;
   wb_dat_o   <= wb_slave_out.dat;
 
+  tm_time_valid_o <= tm_time_valid;
+
+  gen_wr_streamers : if (g_fabric_iface = "streamers") generate
+
+    cmp_xwr_transmission : xwr_transmission
+      generic map (
+        g_tx_data_width => g_streamer_width,
+        g_rx_data_width => g_streamer_width)
+      port map (
+        clk_sys_i                  => clk_pll_62m5,
+        rst_n_i                    => rst_62m5_n,
+        src_i                      => wrf_snk_out,
+        src_o                      => wrf_snk_in,
+        snk_i                      => wrf_src_out,
+        snk_o                      => wrf_src_in,
+        tx_data_i                  => wrs_tx_data_i,
+        tx_valid_i                 => wrs_tx_valid_i,
+        tx_dreq_o                  => wrs_tx_dreq_o,
+        tx_last_p1_i               => wrs_tx_last_i,
+        tx_flush_p1_i              => wrs_tx_flush_i,
+        rx_first_p1_o              => wrs_rx_first_o,
+        rx_last_p1_o               => wrs_rx_last_o,
+        rx_data_o                  => wrs_rx_data_o,
+        rx_valid_o                 => wrs_rx_valid_o,
+        rx_dreq_i                  => wrs_rx_dreq_i,
+        clk_ref_i                  => clk_pll_125m,
+        tm_time_valid_i            => tm_time_valid,
+        tm_tai_i                   => tm_tai,
+        tm_cycles_i                => tm_cycles,
+        wb_slave_i                 => aux_master_out,
+        wb_slave_o                 => aux_master_in,
+        snmp_array_o               => aux_diag_in,
+        snmp_array_i               => aux_diag_out,
+        tx_cfg_mac_local_i         => (others => '0'),
+        tx_cfg_mac_target_i        => (others => '1'),
+        tx_cfg_ethertype_i         => x"dbff",
+        rx_cfg_mac_local_i         => (others => '0'),
+        rx_cfg_mac_remote_i        => (others => '0'),
+        rx_cfg_ethertype_i         => x"dbff",
+        rx_cfg_accept_broadcasts_i => '1',
+        rx_cfg_filter_remote_i     => '0',
+        rx_cfg_fixed_latency_i     => (others => '0'));
+
+  end generate gen_wr_streamers;
+
+  gen_wr_fabric : if (g_fabric_iface = "plain") generate
+
+    wrf_src_adr      <= wrf_src_out.adr;
+    wrf_src_dat      <= wrf_src_out.dat;
+    wrf_src_cyc      <= wrf_src_out.cyc;
+    wrf_src_stb      <= wrf_src_out.stb;
+    wrf_src_we       <= wrf_src_out.we;
+    wrf_src_sel      <= wrf_src_out.sel;
+    wrf_src_in.ack   <= wrf_src_ack;
+    wrf_src_in.stall <= wrf_src_stall;
+    wrf_src_in.err   <= wrf_src_err;
+    wrf_src_in.rty   <= wrf_src_rty;
+
+    wrf_snk_in.adr <= wrf_snk_adr;
+    wrf_snk_in.dat <= wrf_snk_dat;
+    wrf_snk_in.cyc <= wrf_snk_cyc;
+    wrf_snk_in.stb <= wrf_snk_stb;
+    wrf_snk_in.we  <= wrf_snk_we;
+    wrf_snk_in.sel <= wrf_snk_sel;
+    wrf_snk_ack    <= wrf_snk_out.ack;
+    wrf_snk_stall  <= wrf_snk_out.stall;
+    wrf_snk_err    <= wrf_snk_out.err;
+    wrf_snk_rty    <= wrf_snk_out.rty;
+
+    aux_diag_in <= (others => (others => '0'));
+
+  end generate gen_wr_fabric;
 
 end architecture struct;
