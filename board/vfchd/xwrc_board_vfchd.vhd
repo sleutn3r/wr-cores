@@ -7,7 +7,7 @@
 -- Author(s)  : Dimitrios Lampridis  <dimitrios.lampridis@cern.ch>
 -- Company    : CERN (BE-CO-HT)
 -- Created    : 2016-07-26
--- Last update: 2016-11-28
+-- Last update: 2016-11-29
 -- Standard   : VHDL'93
 -------------------------------------------------------------------------------
 -- Description: Top-level wrapper for WR PTP core including all the modules
@@ -50,9 +50,16 @@ use work.wr_altera_pkg.all;
 
 entity xwrc_board_vfchd is
   generic(
+    -- set to 1 to speed up some initialization processes during simulation
     g_simulation     : integer := 0;
+    -- set to 1 to use 16bit PCS (instead of default 8bit PCS)
+    g_pcs_16bit      : integer := 0;
+    -- "plain"     = expose WRC fabric interface
+    -- "streamers" = attach WRC streamers to fabric interface
     g_fabric_iface   : string  := "plain";
+    -- data width when g_fabric_iface = "streamers" (otherwise ignored)
     g_streamer_width : integer := 32;
+    -- memory initialisation file for embedded CPU
     g_dpram_initf    : string  := "default"
     );
   port (
@@ -203,9 +210,7 @@ architecture struct of xwrc_board_vfchd is
   -- Constants
   -----------------------------------------------------------------------------
 
-  -- This is used to ignore (for now) the g_pcs_16bit value, since PCS16 is not
-  -- supported yet.
-  constant c_pcs_16bit : boolean := FALSE;
+  constant c_pcs_16bit : boolean := f_int2bool(g_pcs_16bit);
 
   -----------------------------------------------------------------------------
   -- Signals
@@ -281,6 +286,12 @@ architecture struct of xwrc_board_vfchd is
   signal aux_master_out : t_wishbone_master_out;
   signal aux_master_in  : t_wishbone_master_in;
 
+  -- External reference
+  signal ext_ref_mul        : std_logic;
+  signal ext_ref_mul_locked : std_logic;
+  signal ext_ref_rst        : std_logic;
+
+
 begin  -- architecture struct
 
   -----------------------------------------------------------------------------
@@ -305,28 +316,37 @@ begin  -- architecture struct
       g_use_default_plls          => TRUE,
       g_pcs_16bit                 => c_pcs_16bit)
     port map (
-      areset_n_i         => areset_n_i,
-      clk_20m_i          => clk_board_20m_i,
-      clk_125m_i         => clk_board_125m_i,
-      pad_tx_o           => sfp_tx_o,
-      pad_rx_i           => sfp_rx_i,
-      clk_62m5_sys_o     => clk_pll_62m5,
-      clk_125m_ref_o     => clk_pll_125m,
-      clk_62m5_dmtd_o    => clk_pll_dmtd,
-      pll_locked_o       => pll_locked,
-      phy_ready_o        => phy_ready,
-      phy_loopen_i       => phy_loopen,
-      phy_rst_i          => phy_rst,
-      phy_tx_clk_o       => phy_tx_clk,
-      phy_tx_data_i      => phy_tx_data,
-      phy_tx_k_i         => phy_tx_k,
-      phy_tx_disparity_o => phy_tx_disparity,
-      phy_tx_enc_err_o   => phy_tx_enc_err,
-      phy_rx_rbclk_o     => phy_rx_rbclk,
-      phy_rx_data_o      => phy_rx_data,
-      phy_rx_k_o         => phy_rx_k,
-      phy_rx_enc_err_o   => phy_rx_enc_err,
-      phy_rx_bitslide_o  => phy_rx_bitslide);
+      areset_n_i           => areset_n_i,
+      clk_10m_ext_i        => '0',
+      clk_20m_i            => clk_board_20m_i,
+      clk_125m_i           => clk_board_125m_i,
+      clk_62m5_dmtd_i      => '0',
+      clk_62m5_sys_i       => '0',
+      clk_125m_ref_i       => '0',
+      clk_125m_ext_mul_i   => '0',
+      pad_tx_o             => sfp_tx_o,
+      pad_rx_i             => sfp_rx_i,
+      clk_62m5_sys_o       => clk_pll_62m5,
+      clk_125m_ref_o       => clk_pll_125m,
+      clk_62m5_dmtd_o      => clk_pll_dmtd,
+      pll_locked_o         => pll_locked,
+      phy_ready_o          => phy_ready,
+      phy_loopen_i         => phy_loopen,
+      phy_rst_i            => phy_rst,
+      phy_tx_clk_o         => phy_tx_clk,
+      phy_tx_data_i        => phy_tx_data,
+      phy_tx_k_i           => phy_tx_k,
+      phy_tx_disparity_o   => phy_tx_disparity,
+      phy_tx_enc_err_o     => phy_tx_enc_err,
+      phy_rx_rbclk_o       => phy_rx_rbclk,
+      phy_rx_data_o        => phy_rx_data,
+      phy_rx_k_o           => phy_rx_k,
+      phy_rx_enc_err_o     => phy_rx_enc_err,
+      phy_rx_bitslide_o    => phy_rx_bitslide,
+      ext_ref_mul_o        => ext_ref_mul,
+      ext_ref_mul_locked_o => ext_ref_mul_locked,
+      ext_ref_rst_i        => ext_ref_rst
+      );
 
   clk_sys_62m5_o <= clk_pll_62m5;
   clk_ref_125m_o <= clk_pll_125m;
@@ -415,27 +435,40 @@ begin  -- architecture struct
 
   cmp_xwr_core : xwr_core
     generic map (
-      g_simulation          => g_simulation,
-      g_phys_uart           => TRUE,
-      g_aux_clks            => 1,
-      g_interface_mode      => CLASSIC,
-      g_address_granularity => WORD,
-      g_pcs_16bit           => c_pcs_16bit,
-      g_diag_id             => 0,
-      g_diag_ver            => 0,
-      g_diag_ro_size        => c_WR_TRANS_ARR_SIZE_OUT,
-      g_diag_rw_size        => c_WR_TRANS_ARR_SIZE_IN,
-      g_dpram_initf         => g_dpram_initf)
+      g_simulation                => g_simulation,
+      -- temporary, does not work without it (gui produces periodic message:
+      -- ERROR: wr_servo_update: TimestampsIncorrect: 1 0 0 1)
+      g_with_external_clock_input => TRUE,
+      -- temporary, without it vuart receives but is not able to transmit
+      g_phys_uart                 => TRUE,
+      g_virtual_uart              => TRUE,
+      g_aux_clks                  => 0,
+      g_ep_rxbuf_size             => 1024,
+      g_tx_runt_padding           => TRUE,
+      g_dpram_initf               => g_dpram_initf,
+      g_dpram_size                => 131072/4,
+      g_interface_mode            => PIPELINED,
+      g_address_granularity       => WORD,
+      g_aux_sdb                   => c_wrc_periph3_sdb,
+      g_softpll_enable_debugger   => FALSE,
+      g_vuart_fifo_size           => 1024,
+      g_pcs_16bit                 => c_pcs_16bit,
+      g_records_for_phy           => FALSE,
+      g_diag_id                   => 0,
+      g_diag_ver                  => 0,
+      g_diag_ro_size              => c_WR_TRANS_ARR_SIZE_OUT,
+      g_diag_rw_size              => c_WR_TRANS_ARR_SIZE_IN
+      )
     port map (
       clk_sys_i            => clk_pll_62m5,
       clk_dmtd_i           => clk_pll_dmtd,
       clk_ref_i            => clk_pll_125m,
       clk_aux_i            => (others => '0'),
       clk_ext_i            => '0',
-      clk_ext_mul_i        => '0',
-      clk_ext_mul_locked_i => '0',
-      clk_ext_stopped_i    => '1',
-      clk_ext_rst_o        => open,
+      clk_ext_mul_i        => ext_ref_mul,
+      clk_ext_mul_locked_i => ext_ref_mul_locked,
+      clk_ext_stopped_i    => '0',
+      clk_ext_rst_o        => ext_ref_rst,
       pps_ext_i            => '0',
       rst_n_i              => rst_62m5_n,
       dac_hpll_load_p1_o   => dac_hpll_load_p1,

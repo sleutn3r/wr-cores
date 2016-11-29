@@ -9,6 +9,7 @@ package wr_board_pkg is
   component xwrc_board_vfchd is
     generic (
       g_simulation     : integer := 0;
+      g_pcs_16bit      : boolean := FALSE;
       g_fabric_iface   : string  := "plain";
       g_streamer_width : integer := 32;
       g_dpram_initf    : string  := "default");
