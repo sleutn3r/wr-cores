@@ -1,0 +1,9 @@
+	component arria5_ext_ref_pll_default is
+		port (
+			refclk   : in  std_logic := 'X'; -- clk
+			rst      : in  std_logic := 'X'; -- reset
+			outclk_0 : out std_logic;        -- clk
+			locked   : out std_logic         -- export
+		);
+	end component arria5_ext_ref_pll_default;
+

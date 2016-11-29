@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<simPackage>
+ <file
+   path="arria5_ext_ref_pll_default_sim/arria5_ext_ref_pll_default.vho"
+   type="VHDL" />
+ <topLevel name="arria5_ext_ref_pll_default" />
+ <deviceFamily name="arriav" />
+</simPackage>
