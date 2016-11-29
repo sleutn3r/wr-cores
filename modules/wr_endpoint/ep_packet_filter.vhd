@@ -6,7 +6,7 @@
 -- Author     : Tomasz Włostowski
 -- Company    : CERN BE-CO-HT
 -- Created    : 2010-11-18
--- Last update: 2016-11-24
+-- Last update: 2014-03-18
 -- Platform   : FPGA-generic
 -- Standard   : VHDL'93
 -------------------------------------------------------------------------------
@@ -17,20 +17,20 @@
 --
 -- Copyright (c) 2011 CERN / BE-CO-HT
 --
--- This source file is free software; you can redistribute it
--- and/or modify it under the terms of the GNU Lesser General
--- Public License as published by the Free Software Foundation;
--- either version 2.1 of the License, or (at your option) any
--- later version.
+-- This source file is free software; you can redistribute it   
+-- and/or modify it under the terms of the GNU Lesser General   
+-- Public License as published by the Free Software Foundation; 
+-- either version 2.1 of the License, or (at your option) any   
+-- later version.                                               
 --
--- This source is distributed in the hope that it will be
--- useful, but WITHOUT ANY WARRANTY; without even the implied
--- warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
--- PURPOSE.  See the GNU Lesser General Public License for more
--- details.
+-- This source is distributed in the hope that it will be       
+-- useful, but WITHOUT ANY WARRANTY; without even the implied   
+-- warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR      
+-- PURPOSE.  See the GNU Lesser General Public License for more 
+-- details.                                                     
 --
--- You should have received a copy of the GNU Lesser General
--- Public License along with this source; if not, download it
+-- You should have received a copy of the GNU Lesser General    
+-- Public License along with this source; if not, download it   
 -- from http://www.gnu.org/licenses/lgpl-2.1l.html
 --
 -------------------------------------------------------------------------------
@@ -46,7 +46,7 @@ use work.endpoint_pkg.all;
 use work.ep_wbgen2_pkg.all;
 
 entity ep_packet_filter is
-
+  
   port (
     clk_rx_i    : in std_logic;
     clk_sys_i   : in std_logic;
@@ -140,9 +140,9 @@ architecture behavioral of ep_packet_filter is
 
 
 
-  signal pc              : unsigned(c_PC_SIZE-1 downto 0);
-  signal ir, ir_d              : std_logic_vector(35 downto 0);
-  signal insn, insn_d            : t_microcode_instruction;
+  signal pc   : unsigned(c_PC_SIZE-1 downto 0);
+  signal ir   : std_logic_vector(35 downto 0);
+  signal insn : t_microcode_instruction;
   signal insn_predecoded : t_microcode_instruction;
 
   signal done_int : std_logic;
@@ -160,13 +160,11 @@ architecture behavioral of ep_packet_filter is
 
   type t_state is (WAIT_FRAME, PROCESS_FRAME, GEN_OUTPUT);
 
-  signal stage1, stage2, stage3      : std_logic;
+  signal stage1, stage2      : std_logic;
   signal r_pfcr1_mm_data_lsb : std_logic_vector(11 downto 0);
-
+  
   signal pfcr0_enable_rxclk : std_logic;
-
-  signal rst_n_rx_d : std_logic;
-
+  
 begin  -- behavioral
 
   U_sync_pfcr0_enable : gc_sync_ffs
@@ -186,13 +184,6 @@ begin  -- behavioral
       if(regs_i.pfcr1_mm_data_lsb_wr_o = '1') then
         r_pfcr1_mm_data_lsb <= regs_i.pfcr1_mm_data_lsb_o;
       end if;
-    end if;
-  end process;
-
-  process(clk_rx_i)
-  begin
-    if rising_edge(clk_rx_i) then
-      rst_n_rx_d <= rst_n_rx_i;
     end if;
   end process;
 
@@ -229,7 +220,7 @@ begin  -- behavioral
       g_with_byte_enable => false,
       g_dual_clock       => false)
     port map (
-      rst_n_i => rst_n_rx_d,
+      rst_n_i => rst_n_rx_i,
       clka_i  => clk_rx_i,
       bwea_i  => "11",
       wea_i   => snk_fab_i.dvalid,
@@ -244,13 +235,13 @@ begin  -- behavioral
       qb_o    => pmem_rdata);
 
   insn_predecoded <= f_decode_insn(mm_rdata);
-
+  
   src_fab_o <= snk_fab_i;
 
   p_pc_counter : process(clk_rx_i)
   begin
     if rising_edge(clk_rx_i) then
-      if rst_n_rx_d = '0' or snk_fab_i.eof = '1' or snk_fab_i.error = '1' or done_int = '1' then
+      if rst_n_rx_i = '0' or snk_fab_i.eof = '1' or snk_fab_i.error = '1' or done_int = '1' then
         pc     <= (others => '0');
         stage1 <= '0';
       elsif(snk_fab_i.dvalid = '1') then
@@ -265,7 +256,7 @@ begin  -- behavioral
   p_stage2 : process(clk_rx_i)
   begin
     if rising_edge(clk_rx_i) then
-      if rst_n_rx_d = '0' or done_int = '1' or snk_fab_i.error = '1' then
+      if rst_n_rx_i = '0' or done_int = '1' or snk_fab_i.error = '1' then
         stage2 <= '0';
         ir     <= (others => '0');
       else
@@ -305,44 +296,26 @@ begin  -- behavioral
     end if;
   end process;
 
-  p_compare : process(clk_rx_i)
-  begin
-    if rising_edge(clk_rx_i) then
-      if stage2 = '1' then
-        stage3 <= '1';
-        ir_d   <= ir;
-        if (((pmem_rdata and mask) = insn.cmp_value)) then
-          result_cmp <= '1';
-        else
-          result_cmp <= '0';
-        end if;
+  result_cmp <= '1' when ((pmem_rdata and mask) = insn.cmp_value) else '0';
 
-      else
-        stage3 <= '0';
-      end if;
-    end if;
-  end process;
+  insn <= f_decode_insn(ir);
+  ra   <= f_pick_reg(regs, insn.ra) when insn.mode = c_MODE_LOGIC else result_cmp;
+  rb   <= f_pick_reg(regs, insn.rb) when insn.mode = c_MODE_LOGIC else f_pick_reg(regs, insn.rd);
+  rc   <= f_pick_reg(regs, insn.rc);
 
-  insn   <= f_decode_insn(ir);
-  insn_d <= f_decode_insn(ir_d);
-  ra     <= f_pick_reg(regs, insn_d.ra) when insn_d.mode = c_MODE_LOGIC else result_cmp;
-  rb     <= f_pick_reg(regs, insn_d.rb) when insn_d.mode = c_MODE_LOGIC else f_pick_reg(regs, insn_d.rd);
-  rc     <= f_pick_reg(regs, insn_d.rc);
+  result1 <= f_eval(ra, rb, insn.op);
+  result2 <= f_eval(result1, rc, insn.op2);
 
-  result1 <= f_eval(ra, rb, insn_d.op);
-  result2 <= f_eval(result1, rc, insn_d.op2);
-
-  rd <= result2 when insn_d.mode = c_MODE_LOGIC else result1;
-
+  rd <= result2 when insn.mode = c_MODE_LOGIC else result1;
 
   p_execute : process(clk_rx_i)
   begin
     if rising_edge(clk_rx_i) then
-      if rst_n_rx_d = '0' or snk_fab_i.eof = '1' or snk_fab_i.error = '1' or done_int = '1' then
+      if rst_n_rx_i = '0' or snk_fab_i.eof = '1' or snk_fab_i.error = '1' or done_int = '1' then
         regs <= (others => '0');
       else
-        if(stage3 = '1') then
-          regs(to_integer(unsigned(insn_d.rd))) <= rd;
+        if(stage2 = '1') then
+          regs(to_integer(unsigned(insn.rd))) <= rd;
         end if;
       end if;
     end if;
@@ -351,7 +324,7 @@ begin  -- behavioral
   p_gen_status : process(clk_rx_i)
   begin
     if rising_edge(clk_rx_i) then
-      if (rst_n_rx_d = '0' or snk_fab_i.sof = '1') then
+      if (rst_n_rx_i = '0' or snk_fab_i.sof = '1') then
         done_int <= '0';
         drop_o   <= '0';
       else
@@ -359,7 +332,8 @@ begin  -- behavioral
           done_int <= '0';
           drop_o   <= '0';
           pclass_o <= (others => '0');
-        elsif((stage3 = '1' and insn_d.fin = '1') or snk_fab_i.error = '1' or snk_fab_i.eof = '1') then
+        elsif( (stage2 = '1' and insn.fin = '1') or
+               ((snk_fab_i.error = '1' or snk_fab_i.eof = '1') and done_int = '0') ) then
           done_int <= '1';
           pclass_o <= regs(31 downto 24);
           drop_o   <= regs(23);
