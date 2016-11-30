@@ -7,7 +7,7 @@
 -- Author(s)  : Dimitrios Lampridis  <dimitrios.lampridis@cern.ch>
 -- Company    : CERN (BE-CO-HT)
 -- Created    : 2016-07-26
--- Last update: 2016-11-29
+-- Last update: 2016-11-30
 -- Standard   : VHDL'93
 -------------------------------------------------------------------------------
 -- Description: Top-level wrapper for WR PTP core including all the modules
@@ -143,26 +143,26 @@ entity xwrc_board_vfchd is
     ---------------------------------------------------------------------------
     -- WR fabric interface (when g_fabric_iface = "plain")
     ---------------------------------------------------------------------------
-    wrf_src_adr   : out std_logic_vector(1 downto 0);
-    wrf_src_dat   : out std_logic_vector(15 downto 0);
-    wrf_src_cyc   : out std_logic;
-    wrf_src_stb   : out std_logic;
-    wrf_src_we    : out std_logic;
-    wrf_src_sel   : out std_logic_vector(1 downto 0);
-    wrf_src_ack   : in  std_logic;
-    wrf_src_stall : in  std_logic;
-    wrf_src_err   : in  std_logic;
-    wrf_src_rty   : in  std_logic;
-    wrf_snk_adr   : in  std_logic_vector(1 downto 0);
-    wrf_snk_dat   : in  std_logic_vector(15 downto 0);
-    wrf_snk_cyc   : in  std_logic;
-    wrf_snk_stb   : in  std_logic;
-    wrf_snk_we    : in  std_logic;
-    wrf_snk_sel   : in  std_logic_vector(1 downto 0);
-    wrf_snk_ack   : out std_logic;
-    wrf_snk_stall : out std_logic;
-    wrf_snk_err   : out std_logic;
-    wrf_snk_rty   : out std_logic;
+    wrf_src_adr_o   : out std_logic_vector(1 downto 0);
+    wrf_src_dat_o   : out std_logic_vector(15 downto 0);
+    wrf_src_cyc_o   : out std_logic;
+    wrf_src_stb_o   : out std_logic;
+    wrf_src_we_o    : out std_logic;
+    wrf_src_sel_o   : out std_logic_vector(1 downto 0);
+    wrf_src_ack_i   : in  std_logic;
+    wrf_src_stall_i : in  std_logic;
+    wrf_src_err_i   : in  std_logic;
+    wrf_src_rty_i   : in  std_logic;
+    wrf_snk_adr_i   : in  std_logic_vector(1 downto 0);
+    wrf_snk_dat_i   : in  std_logic_vector(15 downto 0);
+    wrf_snk_cyc_i   : in  std_logic;
+    wrf_snk_stb_i   : in  std_logic;
+    wrf_snk_we_i    : in  std_logic;
+    wrf_snk_sel_i   : in  std_logic_vector(1 downto 0);
+    wrf_snk_ack_o   : out std_logic;
+    wrf_snk_stall_o : out std_logic;
+    wrf_snk_err_o   : out std_logic;
+    wrf_snk_rty_o   : out std_logic;
 
     ---------------------------------------------------------------------------
     -- WR streamers (when g_fabric_iface = "streamers")
@@ -605,33 +605,54 @@ begin  -- architecture struct
         rx_cfg_filter_remote_i     => '0',
         rx_cfg_fixed_latency_i     => (others => '0'));
 
+    -- unused output ports
+    wrf_src_adr_o   <= (others => '0');
+    wrf_src_dat_o   <= (others => '0');
+    wrf_src_cyc_o   <= '0';
+    wrf_src_stb_o   <= '0';
+    wrf_src_we_o    <= '0';
+    wrf_src_sel_o   <= (others => '0');
+    wrf_snk_ack_o   <= '0';
+    wrf_snk_stall_o <= '0';
+    wrf_snk_err_o   <= '0';
+    wrf_snk_rty_o   <= '0';
+
   end generate gen_wr_streamers;
 
   gen_wr_fabric : if (g_fabric_iface = "plain") generate
 
-    wrf_src_adr      <= wrf_src_out.adr;
-    wrf_src_dat      <= wrf_src_out.dat;
-    wrf_src_cyc      <= wrf_src_out.cyc;
-    wrf_src_stb      <= wrf_src_out.stb;
-    wrf_src_we       <= wrf_src_out.we;
-    wrf_src_sel      <= wrf_src_out.sel;
-    wrf_src_in.ack   <= wrf_src_ack;
-    wrf_src_in.stall <= wrf_src_stall;
-    wrf_src_in.err   <= wrf_src_err;
-    wrf_src_in.rty   <= wrf_src_rty;
+    wrf_src_adr_o    <= wrf_src_out.adr;
+    wrf_src_dat_o    <= wrf_src_out.dat;
+    wrf_src_cyc_o    <= wrf_src_out.cyc;
+    wrf_src_stb_o    <= wrf_src_out.stb;
+    wrf_src_we_o     <= wrf_src_out.we;
+    wrf_src_sel_o    <= wrf_src_out.sel;
+    wrf_src_in.ack   <= wrf_src_ack_i;
+    wrf_src_in.stall <= wrf_src_stall_i;
+    wrf_src_in.err   <= wrf_src_err_i;
+    wrf_src_in.rty   <= wrf_src_rty_i;
 
-    wrf_snk_in.adr <= wrf_snk_adr;
-    wrf_snk_in.dat <= wrf_snk_dat;
-    wrf_snk_in.cyc <= wrf_snk_cyc;
-    wrf_snk_in.stb <= wrf_snk_stb;
-    wrf_snk_in.we  <= wrf_snk_we;
-    wrf_snk_in.sel <= wrf_snk_sel;
-    wrf_snk_ack    <= wrf_snk_out.ack;
-    wrf_snk_stall  <= wrf_snk_out.stall;
-    wrf_snk_err    <= wrf_snk_out.err;
-    wrf_snk_rty    <= wrf_snk_out.rty;
+    wrf_snk_in.adr  <= wrf_snk_adr_i;
+    wrf_snk_in.dat  <= wrf_snk_dat_i;
+    wrf_snk_in.cyc  <= wrf_snk_cyc_i;
+    wrf_snk_in.stb  <= wrf_snk_stb_i;
+    wrf_snk_in.we   <= wrf_snk_we_i;
+    wrf_snk_in.sel  <= wrf_snk_sel_i;
+    wrf_snk_ack_o   <= wrf_snk_out.ack;
+    wrf_snk_stall_o <= wrf_snk_out.stall;
+    wrf_snk_err_o   <= wrf_snk_out.err;
+    wrf_snk_rty_o   <= wrf_snk_out.rty;
 
-    aux_diag_in <= (others => (others => '0'));
+    -- unused output ports
+    wrs_tx_dreq_o  <= '0';
+    wrs_rx_first_o <= '0';
+    wrs_rx_last_o  <= '0';
+    wrs_rx_valid_o <= '0';
+    wrs_rx_data_o  <= (others => '0');
+
+    -- unused inputs to WR PTP core
+    aux_diag_in   <= (others => (others => '0'));
+    aux_master_in <= cc_dummy_master_in;
 
   end generate gen_wr_fabric;
 
