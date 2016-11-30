@@ -212,6 +212,11 @@ begin  -- architecture hybrid
 
       end generate gen_arria5_ext_ref_pll;
 
+      gen_arria5_no_ext_ref_pll : if (g_with_external_clock_input = FALSE) generate
+        clk_ext_125m   <= '0';
+        pll_ext_locked <= '1';
+      end generate gen_arria5_no_ext_ref_pll;
+
     end generate gen_arria5_default_plls;
 
   end generate gen_default_plls;
