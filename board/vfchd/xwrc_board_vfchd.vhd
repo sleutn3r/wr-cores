@@ -182,7 +182,10 @@ entity xwrc_board_vfchd is
     -- WRPC timing interface and status
     ---------------------------------------------------------------------------
 
+    pps_p_o         : out std_logic;
     tm_time_valid_o : out std_logic;
+    tm_tai_o        : out std_logic_vector(39 downto 0);
+    tm_cycles_o     : out std_logic_vector(27 downto 0);
     led_link_o      : out std_logic;
     led_act_o       : out std_logic);
 
@@ -540,7 +543,7 @@ begin  -- architecture struct
       tm_time_valid_o      => tm_time_valid,
       tm_tai_o             => tm_tai,
       tm_cycles_o          => tm_cycles,
-      pps_p_o              => open,
+      pps_p_o              => pps_p_o,
       pps_led_o            => open,
       dio_o                => open,
       rst_aux_n_o          => open,
@@ -563,6 +566,8 @@ begin  -- architecture struct
   wb_dat_o   <= wb_slave_out.dat;
 
   tm_time_valid_o <= tm_time_valid;
+  tm_tai_o        <= tm_tai;
+  tm_cycles_o     <= tm_cycles;
 
   gen_wr_streamers : if (g_fabric_iface = "streamers") generate
 

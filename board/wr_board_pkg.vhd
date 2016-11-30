@@ -74,7 +74,10 @@ package wr_board_pkg is
       trans_rx_data_o   : out   std_logic_vector(g_streamer_width-1 downto 0);
       trans_rx_valid_o  : out   std_logic;
       trans_rx_dreq_i   : in    std_logic                                               := '0';
+      pps_p_o           : out   std_logic;
       tm_time_valid_o   : out   std_logic;
+      tm_tai_o          : out   std_logic_vector(39 downto 0);
+      tm_cycles_o       : out   std_logic_vector(27 downto 0);
       led_link_o        : out   std_logic;
       led_act_o         : out   std_logic);
   end component;
