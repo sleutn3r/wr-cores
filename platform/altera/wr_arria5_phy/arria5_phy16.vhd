@@ -127,7 +127,7 @@ begin
 			base_data_rate                => "1250 Mbps",
 			en_cdrref_support             => 0,
 			pll_feedback_path             => "tx_clkout",
-			word_aligner_mode             => "deterministic_latency",
+			word_aligner_mode             => "manual",
 			tx_bitslip_enable             => "true",
 			run_length_violation_checking => 40,
 			pll_refclk_cnt                => 1,
@@ -226,7 +226,7 @@ end architecture rtl; -- of arria5_phy16
 -- Retrieval info: 	<generic name="en_cdrref_support" value="0" />
 -- Retrieval info: 	<generic name="gui_pll_feedback_path" value="true" />
 -- Retrieval info: 	<generic name="use_double_data_mode" value="DEPRECATED" />
--- Retrieval info: 	<generic name="word_aligner_mode" value="deterministic_latency" />
+-- Retrieval info: 	<generic name="word_aligner_mode" value="manual" />
 -- Retrieval info: 	<generic name="gui_tx_bitslip_enable" value="true" />
 -- Retrieval info: 	<generic name="gui_enable_run_length" value="false" />
 -- Retrieval info: 	<generic name="run_length_violation_checking" value="40" />

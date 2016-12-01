@@ -36,7 +36,7 @@ set_global_assignment -entity "altera_xcvr_det_latency" -library "arria5_phy8" -
 set_global_assignment -entity "altera_xcvr_det_latency" -library "arria5_phy8" -name IP_COMPONENT_PARAMETER "Z3VpX3BsbF9mZWVkYmFja19wYXRo::dHJ1ZQ==::RW5hYmxlIHR4X2Nsa291dCBmZWVkYmFjayBwYXRoIGZvciBUWCBQTEw="
 set_global_assignment -entity "altera_xcvr_det_latency" -library "arria5_phy8" -name IP_COMPONENT_PARAMETER "cGxsX2ZlZWRiYWNrX3BhdGg=::dHhfY2xrb3V0::cGxsX2ZlZWRiYWNrX3BhdGg="
 set_global_assignment -entity "altera_xcvr_det_latency" -library "arria5_phy8" -name IP_COMPONENT_PARAMETER "dXNlX2RvdWJsZV9kYXRhX21vZGU=::REVQUkVDQVRFRA==::dXNlX2RvdWJsZV9kYXRhX21vZGU="
-set_global_assignment -entity "altera_xcvr_det_latency" -library "arria5_phy8" -name IP_COMPONENT_PARAMETER "d29yZF9hbGlnbmVyX21vZGU=::ZGV0ZXJtaW5pc3RpY19sYXRlbmN5::V29yZCBhbGlnbm1lbnQgbW9kZQ=="
+set_global_assignment -entity "altera_xcvr_det_latency" -library "arria5_phy8" -name IP_COMPONENT_PARAMETER "d29yZF9hbGlnbmVyX21vZGU=::bWFudWFs::V29yZCBhbGlnbm1lbnQgbW9kZQ=="
 set_global_assignment -entity "altera_xcvr_det_latency" -library "arria5_phy8" -name IP_COMPONENT_PARAMETER "Z3VpX3R4X2JpdHNsaXBfZW5hYmxl::dHJ1ZQ==::VFggYml0c2xpcA=="
 set_global_assignment -entity "altera_xcvr_det_latency" -library "arria5_phy8" -name IP_COMPONENT_PARAMETER "dHhfYml0c2xpcF9lbmFibGU=::dHJ1ZQ==::dHhfYml0c2xpcF9lbmFibGU="
 set_global_assignment -entity "altera_xcvr_det_latency" -library "arria5_phy8" -name IP_COMPONENT_PARAMETER "Z3VpX2VuYWJsZV9ydW5fbGVuZ3Ro::ZmFsc2U=::RW5hYmxlIHJ1biBsZW5ndGggdmlvbGF0aW9uIGNoZWNraW5n"

@@ -125,7 +125,7 @@ begin
 			base_data_rate                => "1250 Mbps",
 			en_cdrref_support             => 0,
 			pll_feedback_path             => "tx_clkout",
-			word_aligner_mode             => "deterministic_latency",
+			word_aligner_mode             => "manual",
 			tx_bitslip_enable             => "true",
 			run_length_violation_checking => 40,
 			pll_refclk_cnt                => 1,
