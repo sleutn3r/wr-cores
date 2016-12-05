@@ -3,8 +3,8 @@
 `include "wb_packet_source.svh"
 `include "wb_packet_sink.svh"
 
-`include "simdrv_minic.svh"
-`include "ep2ep_wrapper.svh"
+`include "drivers/simdrv_minic.svh"
+//`include "ep2ep_wrapper.svh"
 
 
 module main;
@@ -49,32 +49,23 @@ module main;
       );
 
 
-   IWishboneMaster 
-     #(
-       .g_data_width(32),
-       .g_addr_width(16))
-   U_pmem_bus_master
-     (
-      .clk_i(clk_sys),
-      .rst_n_i(rst_n)
-      );
-
-
-
-   wire minic_irq;
    wire [31:0] pmem_wr_data, pmem_rd_data;
    wire [13:0] pmem_addr;
    wire pmem_wr;
    
-   wr_mini_nic DUT 
+   wr_mini_nic
+     #(
+       .g_interface_mode(PIPELINED),
+       .g_address_granularity(BYTE))
+   DUT
      (
       .clk_sys_i (clk_sys),
       .rst_n_i   (rst_n),
 
-      .mem_data_o (pmem_wr_data),
-      .mem_addr_o (pmem_addr),
-      .mem_data_i (pmem_rd_data),
-      .mem_wr_o   (pmem_wr),
+//      .mem_data_o (),
+//      .mem_addr_o (),
+//      .mem_data_i (32'h0),
+//      .mem_wr_o   (p),
 
       .src_dat_o  (U_wrf_sink.dat_i),
       .src_adr_o  (U_wrf_sink.adr),
@@ -99,7 +90,7 @@ module main;
       .txtsu_port_id_i  (5'b0),
       .txtsu_frame_id_i (16'b0),
       .txtsu_tsval_i   (32'b0),
-      .txtsu_valid_i   (1'b0),
+      .txtsu_stb_i   (1'b0),
       .txtsu_ack_o     (),
 
 
@@ -111,32 +102,10 @@ module main;
       .wb_dat_i   (U_sys_bus_master.dat_o),
       .wb_dat_o   (U_sys_bus_master.dat_i),
       .wb_ack_o   (U_sys_bus_master.ack),
-      .wb_stall_o (U_sys_bus_master.stall),
-      .wb_irq_o   (minic_irq)
+      .wb_stall_o (U_sys_bus_master.stall)
       );
 
-   minic_packet_buffer PBUF
-     (
-      .clk_sys_i (clk_sys),
-      .rst_n_i  (rst_n),
-
-      .minic_addr_i (pmem_addr),
-      .minic_data_i (pmem_wr_data),
-      .minic_wr_i   (pmem_wr),
-      .minic_data_o (pmem_rd_data),
-      
-      .wb_cyc_i   (U_pmem_bus_master.cyc),
-      .wb_stb_i   (U_pmem_bus_master.stb),
-      .wb_we_i    (U_pmem_bus_master.we),
-      .wb_addr_i   (U_pmem_bus_master.adr[13:0]),
-      .wb_data_i   (U_pmem_bus_master.dat_o),
-      .wb_data_o   (U_pmem_bus_master.dat_i),
-      .wb_ack_o   (U_pmem_bus_master.ack)
-    );
-
-   
    CSimDrv_Minic minic;
-
 
 
    task test_tx_path(int n_packets, CSimDrv_Minic minic, WBPacketSink sink);
@@ -151,7 +120,8 @@ module main;
       tmpl.has_smac  = 1;
       tmpl.is_q      = 0;
       
-      gen.set_randomization(EthPacketGenerator::SEQ_PAYLOAD | EthPacketGenerator::ETHERTYPE | EthPacketGenerator::TX_OOB | EthPacketGenerator::EVEN_LENGTH) ;
+      //gen.set_randomization(EthPacketGenerator::SEQ_PAYLOAD | EthPacketGenerator::ETHERTYPE | EthPacketGenerator::TX_OOB | EthPacketGenerator::EVEN_LENGTH) ;
+      gen.set_randomization(EthPacketGenerator::SEQ_PAYLOAD | EthPacketGenerator::TX_OOB) ;
       gen.set_template(tmpl);
       gen.set_size(60,1500);
       
@@ -176,12 +146,12 @@ module main;
                  EthPacket rxp, sent;
                  sink.recv(rxp);
                  sent  = txed.pop_front();
-                 if(!sent.equal(rxp, EthPacket::CMP_OOB))
-                   begin
-                      sent.dump();
-                      rxp.dump();
-                      $stop;
-                   end
+                 if(!sent.equal(rxp, EthPacket::CMP_OOB)) begin
+                   $warning("ups...");
+                   sent.dump();
+                   rxp.dump();
+                 //  $stop;
+                 end
               end
               #1;
          end
@@ -192,7 +162,7 @@ module main;
    
    
    initial begin
-      CWishboneAccessor sys_bus, pmem_bus;     
+      CWishboneAccessor sys_bus;     
       WBPacketSource src  = new(U_wrf_source.get_accessor());
       WBPacketSink sink   = new(U_wrf_sink.get_accessor()); 
       EthPacketGenerator gen = new;
@@ -200,91 +170,87 @@ module main;
       EthPacket txed[$];
       int i;
 
-    
-      
-
-   
-      
       
       @(posedge rst_n);
       @(posedge clk_sys);
  
-      sys_bus                                 = U_sys_bus_master.get_accessor();
-      sys_bus.set_mode(CLASSIC);
-      pmem_bus                                 = U_pmem_bus_master.get_accessor();
-      pmem_bus.set_mode(CLASSIC);
+      sys_bus  = U_sys_bus_master.get_accessor();
+      sys_bus.set_mode(PIPELINED);
+      U_sys_bus_master.settings.cyc_on_stall = 1;
+      U_sys_bus_master.settings.addr_gran = WORD;
+      U_wrf_sink.settings.gen_random_stalls = 1;
+      U_wrf_source.settings.cyc_on_stall = 1;
+      U_wrf_source.settings.gen_random_throttling = 1;
 
-      minic  = new('h10000, sys_bus, 0, pmem_bus, 0);
+      minic  = new(sys_bus, 0);
       minic.init();
       
-
-     
-         tmpl           = new;
+      tmpl           = new;
       tmpl.src       = '{1,2,3,4,5,6};
       tmpl.dst       = '{10,11,12,13,14,15};
       tmpl.has_smac  = 1;
       tmpl.is_q      = 0;
       
-      gen.set_randomization(EthPacketGenerator::SEQ_PAYLOAD | EthPacketGenerator::ETHERTYPE /*| EthPacketGenerator::RX_OOB*/) ;
+      gen.set_randomization(EthPacketGenerator::SEQ_PAYLOAD | EthPacketGenerator::RX_OOB) ;
       gen.set_template(tmpl);
       gen.set_size(60,1500);
 
+      #40us;
+      @(posedge clk_sys);
 
+      force DUT.irq_tx_mask = 1;
+      force DUT.irq_tx_ack  = 1;
+      //test_tx_path(1500, minic, sink);
+
+      force DUT.irq_rx_ack = 1;
+
+      // test RX path
       fork
-         forever
-           begin
-              minic.run();
-      
+        forever begin
+         minic.run();
 
-              if(minic.poll())
-              begin
-                 EthPacket rxp, sent;
-                 minic.recv(rxp);
-                 sent  = txed.pop_front();
-                 if(!sent.equal(rxp, EthPacket::CMP_OOB))
-                   begin
-                      sent.dump();
-                      rxp.dump();
-                      $stop;
-                   end
+          if(minic.poll()) begin
+            EthPacket rxp, sent;
+            int sent_id, rxp_id;
+            minic.recv(rxp);
+            sent  = txed.pop_front();
+            sent_id = ((sent.payload[1] << 8) & 'hff00) | sent.payload[0];
+            rxp_id  = ((rxp.payload[1]  << 8) & 'hff00) | rxp.payload[0];
+            while (sent_id < rxp_id) begin
+              //$display("!! Lost frame %x", sent.payload[0]);
+              sent = txed.pop_front();
+              sent_id = (sent.payload[1] << 8) & 'hff00 | sent.payload[0];
+            end
+            //if(!sent.equal(rxp, EthPacket::CMP_OOB)) begin
+            if(!sent.equal(rxp)) begin
+              //sent.dump();
+              //rxp.dump();
+              $warning;
+            end
 
-/* -----\/----- EXCLUDED -----\/-----
-                 else
-                   rxp.dump();
- -----/\----- EXCLUDED -----/\----- */
-                 
-              end
+          end //minic.poll
 
-              #1;
-              end
+          #1;
+        end
 
 //         forever
            begin
-              for(i=0;i<100;i++)
+              #40ns;
+              for(i=0;i<1500;i++)
                 begin
                    pkt  = gen.gen();
+                   pkt.payload[0] = i & 'hff;
+                   pkt.payload[1] = (i & 'hff00) >> 8;
                    src.send(pkt);
                    txed.push_back(pkt);
+                   #45us;
                 end
 
               
            end
          
-    //          #1;
-              
-  //         end // forever begin
-
-         
-         
-         
-              
-
       join      
 
-         
-      
-        
-      
    end // initial begin
 
    
