@@ -7,7 +7,7 @@
 -- Author(s)  : Dimitrios Lampridis  <dimitrios.lampridis@cern.ch>
 -- Company    : CERN (BE-CO-HT)
 -- Created    : 2016-07-26
--- Last update: 2016-11-30
+-- Last update: 2016-12-02
 -- Standard   : VHDL'93
 -------------------------------------------------------------------------------
 -- Description: Top-level wrapper for WR PTP core including all the modules
@@ -106,6 +106,9 @@ entity xwrc_board_vfchd is
     -- 16 byte vendor Part Number (PN)
     -- (ASCII encoded, first character byte in bits 127 downto 120)
     sfp_data_i      : in std_logic_vector (127 downto 0);
+
+    sfp_i2c_scl_b : inout std_logic;
+    sfp_i2c_sda_b : inout std_logic;
 
     ---------------------------------------------------------------------------
     -- I2C EEPROM
@@ -262,9 +265,11 @@ architecture struct of xwrc_board_vfchd is
   signal phy_rx_bitslide  : std_logic_vector(f_pcs_bts_width(c_pcs_16bit)-1 downto 0);
 
   -- SFP I2C adapter
-  signal sfp_i2c_scl_in : std_logic;
-  signal sfp_i2c_sda_in : std_logic;
-  signal sfp_i2c_sda_en : std_logic;
+  signal sfp_i2c_scl_in  : std_logic;
+  signal sfp_i2c_scl_out : std_logic;
+  signal sfp_i2c_sda_in  : std_logic;
+  signal sfp_i2c_sda_out : std_logic;
+  --signal sfp_i2c_sda_en : std_logic;
 
   -- Timecode interface
   signal tm_time_valid : std_logic;
@@ -404,11 +409,17 @@ begin  -- architecture struct
   dac_dmtd_sync_n_o <= dac_sync_n(1);
 
   -----------------------------------------------------------------------------
-  -- Tristates for I2C EEPROM
+  -- Tristates for I2C EEPROM and SFP
   -----------------------------------------------------------------------------
 
   eeprom_sda_b  <= '0' when (eeprom_sda_out = '0') else 'Z';
   eeprom_sda_in <= eeprom_sda_b;
+
+  sfp_i2c_scl_b  <= '0' when (sfp_i2c_scl_out = '0') else 'Z';
+  sfp_i2c_scl_in <= sfp_i2c_scl_b;
+
+  sfp_i2c_sda_b  <= '0' when (sfp_i2c_sda_out = '0') else 'Z';
+  sfp_i2c_sda_in <= sfp_i2c_sda_b;
 
   -----------------------------------------------------------------------------
   -- OneWire
@@ -421,15 +432,15 @@ begin  -- architecture struct
   -----------------------------------------------------------------------------
   -- SFP I2C adapter for VFC-HD
   -----------------------------------------------------------------------------
-  cmp_sfp_i2c_adapter : sfp_i2c_adapter
-    port map (
-      clk_i           => clk_pll_62m5,
-      rst_n_i         => rst_62m5_n,
-      scl_i           => sfp_i2c_scl_in,
-      sda_i           => sfp_i2c_sda_in,
-      sda_en_o        => sfp_i2c_sda_en,
-      sfp_det_valid_i => sfp_det_valid_i,
-      sfp_data_i      => sfp_data_i);
+  --cmp_sfp_i2c_adapter : sfp_i2c_adapter
+  --  port map (
+  --    clk_i           => clk_pll_62m5,
+  --    rst_n_i         => rst_62m5_n,
+  --    scl_i           => sfp_i2c_scl_in,
+  --    sda_i           => sfp_i2c_sda_in,
+  --    sda_en_o        => sfp_i2c_sda_en,
+  --    sfp_det_valid_i => sfp_det_valid_i,
+  --    sfp_data_i      => sfp_data_i);
 
 
   -----------------------------------------------------------------------------
@@ -506,12 +517,12 @@ begin  -- architecture struct
       scl_i                => '1',
       sda_o                => eeprom_sda_out,
       sda_i                => eeprom_sda_in,
-      sfp_scl_o            => sfp_i2c_scl_in,
-      sfp_scl_i            => '1',
-      sfp_sda_o            => sfp_i2c_sda_in,
-      sfp_sda_i            => not sfp_i2c_sda_en,
-      sfp_det_i            => not sfp_det_valid_i,  -- WRPC-SW expects this active low
-      btn1_i               => '1',
+      sfp_scl_o            => sfp_i2c_scl_out,
+      sfp_scl_i            => sfp_i2c_scl_in,
+      sfp_sda_o            => sfp_i2c_sda_out,
+      sfp_sda_i            => sfp_i2c_sda_in,
+      --sfp_det_i            => not sfp_det_valid_i,  -- WRPC-SW expects this active low
+      sfp_det_i            => '1',                -- not used
       btn2_i               => '1',
       spi_sclk_o           => open,
       spi_ncs_o            => open,
