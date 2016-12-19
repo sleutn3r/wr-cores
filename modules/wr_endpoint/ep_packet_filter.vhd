@@ -17,20 +17,20 @@
 --
 -- Copyright (c) 2011 CERN / BE-CO-HT
 --
--- This source file is free software; you can redistribute it   
--- and/or modify it under the terms of the GNU Lesser General   
--- Public License as published by the Free Software Foundation; 
--- either version 2.1 of the License, or (at your option) any   
--- later version.                                               
+-- This source file is free software; you can redistribute it
+-- and/or modify it under the terms of the GNU Lesser General
+-- Public License as published by the Free Software Foundation;
+-- either version 2.1 of the License, or (at your option) any
+-- later version.
 --
--- This source is distributed in the hope that it will be       
--- useful, but WITHOUT ANY WARRANTY; without even the implied   
--- warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR      
--- PURPOSE.  See the GNU Lesser General Public License for more 
--- details.                                                     
+-- This source is distributed in the hope that it will be
+-- useful, but WITHOUT ANY WARRANTY; without even the implied
+-- warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+-- PURPOSE.  See the GNU Lesser General Public License for more
+-- details.
 --
--- You should have received a copy of the GNU Lesser General    
--- Public License along with this source; if not, download it   
+-- You should have received a copy of the GNU Lesser General
+-- Public License along with this source; if not, download it
 -- from http://www.gnu.org/licenses/lgpl-2.1l.html
 --
 -------------------------------------------------------------------------------
@@ -45,7 +45,7 @@ use work.endpoint_private_pkg.all;
 use work.ep_wbgen2_pkg.all;
 
 entity ep_packet_filter is
-  
+
   port (
     clk_rx_i    : in std_logic;
     clk_sys_i   : in std_logic;
@@ -165,7 +165,7 @@ architecture behavioral of ep_packet_filter is
   signal pfcr0_enable_rxclk : std_logic;
 
   signal rst_n_rx_d : std_logic;
-  
+
 begin  -- behavioral
 
   U_sync_pfcr0_enable : gc_sync_ffs
@@ -315,13 +315,14 @@ begin  -- behavioral
         else
           result_cmp <= '0';
         end if;
-        
+
       else
         stage3 <= '0';
       end if;
     end if;
   end process;
 
+  insn <= f_decode_insn(ir);
   insn_d <= f_decode_insn(ir_d);
   ra     <= f_pick_reg(regs, insn_d.ra) when insn_d.mode = c_MODE_LOGIC else result_cmp;
   rb     <= f_pick_reg(regs, insn_d.rb) when insn_d.mode = c_MODE_LOGIC else f_pick_reg(regs, insn_d.rd);
