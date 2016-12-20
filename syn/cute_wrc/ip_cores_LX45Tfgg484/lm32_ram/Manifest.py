@@ -1,0 +1,1 @@
+files = ["wrc.vhd"]

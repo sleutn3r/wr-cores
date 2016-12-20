@@ -3,8 +3,8 @@
 #  http://ohwr.org/projects/hdl-make/  #
 ########################################
 
-PROJECT := cutedp_wrc.xise
-ISE_CRAP := *.b cutedp_wrc_summary.html *.tcl cutedp_wrc.bld cutedp_wrc.cmd_log *.drc cutedp_wrc.lso *.ncd cutedp_wrc.ngc cutedp_wrc.ngd cutedp_wrc.ngr cutedp_wrc.pad cutedp_wrc.par cutedp_wrc.pcf cutedp_wrc.prj cutedp_wrc.ptwx cutedp_wrc.stx cutedp_wrc.syr cutedp_wrc.twr cutedp_wrc.twx cutedp_wrc.gise $(PROJECT).gise cutedp_wrc.bgn cutedp_wrc.unroutes cutedp_wrc.ut cutedp_wrc.xpi cutedp_wrc.xst cutedp_wrc_bitgen.xwbt cutedp_wrc_envsettings.html cutedp_wrc_guide.ncd cutedp_wrc_map.map cutedp_wrc_map.mrp cutedp_wrc_map.ncd cutedp_wrc_map.ngm cutedp_wrc_map.xrpt cutedp_wrc_ngdbuild.xrpt cutedp_wrc_pad.csv cutedp_wrc_pad.txt cutedp_wrc_par.xrpt cutedp_wrc_summary.xml cutedp_wrc_usage.xml cutedp_wrc_xst.xrpt usage_statistics_webtalk.html par_usage_statistics.html webtalk.log webtalk_pn.xml run.tcl
+PROJECT := cute_wrc.xise
+ISE_CRAP := *.b cute_wrc_summary.html *.tcl cute_wrc.bld cute_wrc.cmd_log *.drc cute_wrc.lso *.ncd cute_wrc.ngc cute_wrc.ngd cute_wrc.ngr cute_wrc.pad cute_wrc.par cute_wrc.pcf cute_wrc.prj cute_wrc.ptwx cute_wrc.stx cute_wrc.syr cute_wrc.twr cute_wrc.twx cute_wrc.gise $(PROJECT).gise cute_wrc.bgn cute_wrc.unroutes cute_wrc.ut cute_wrc.xpi cute_wrc.xst cute_wrc_bitgen.xwbt cute_wrc_envsettings.html cute_wrc_guide.ncd cute_wrc_map.map cute_wrc_map.mrp cute_wrc_map.ncd cute_wrc_map.ngm cute_wrc_map.xrpt cute_wrc_ngdbuild.xrpt cute_wrc_pad.csv cute_wrc_pad.txt cute_wrc_par.xrpt cute_wrc_summary.xml cute_wrc_usage.xml cute_wrc_xst.xrpt usage_statistics_webtalk.html par_usage_statistics.html webtalk.log webtalk_pn.xml run.tcl
 
 #target for performing local synthesis
 local: syn_pre_cmd check_tool generate_tcl synthesis syn_post_cmd
@@ -43,7 +43,7 @@ mrproper:
 USER:=$(HDLMAKE_RSYNTH_USER)# take the value from the environment
 SERVER:=$(HDLMAKE_RSYNTH_SERVER)# take the value from the environment
 ISE_PATH:=$(HDLMAKE_RSYNTH_ISE_PATH)
-R_NAME:=hm/cutedp_wrc
+R_NAME:=hm/cute_wrc
 PORT:=22
 
 __test_for_remote_synthesis_variables:
@@ -101,7 +101,7 @@ FILES := ../../../modules/wr_pps_gen/xwr_pps_gen.vhd \
 ../../../ip_cores/etherbone-core/hdl/eb_usb_core/ez_usb_fifos.vhd \
 ../../../modules/wrc_core/wrc_dpram.vhd \
 ../../../modules/wr_lhaaso_ed/lhaaso_ed_wb.vhd \
-lm32_ram/wrc.vhd \
+../../../modules/wr_endpoint/ep_sync_detect.vhd \
 ../../../platform/xilinx/wr_gtp_phy/whiterabbit_gtxe2_channel_wrapper_gt.vhd \
 ../../../ip_cores/general-cores/modules/common/gc_big_adder.vhd \
 ../../../ip_cores/etherbone-core/hdl/eb_usb_core/ez_usb.vhd \
@@ -126,7 +126,6 @@ lm32_ram/wrc.vhd \
 ../../../ip_cores/general-cores/modules/common/gc_prio_encoder.vhd \
 ../../../ip_cores/general-cores/modules/genrams/xilinx/gc_shiftreg.vhd \
 ../../../modules/wr_endpoint/ep_leds_controller.vhd \
-../../../top/cutedp_wrc/ip_cores/cutedp_wrc.vhd \
 ../../../modules/wr_softpll_ng/xwr_softpll_ng.vhd \
 ../../../ip_cores/etherbone-core/hdl/eb_slave_core/eb_stream_narrow.vhd \
 ../../../ip_cores/etherbone-core/hdl/eb_slave_core/eb_commit_fifo.vhd \
@@ -183,7 +182,6 @@ lm32_ram/wrc.vhd \
 ../../../modules/wr_endpoint/endpoint_private_pkg.vhd \
 ../../../ip_cores/general-cores/modules/genrams/xilinx/generic_spram.vhd \
 ../../../ip_cores/general-cores/modules/common/gencores_pkg.vhd \
-run.tcl \
 ../../../ip_cores/general-cores/modules/genrams/xilinx/generic_dpram_dualclock.vhd \
 ../../../modules/wr_tlu/tlu.vhd \
 ../../../ip_cores/general-cores/modules/wishbone/wbgen2/wbgen2_fifo_async.vhd \
@@ -192,9 +190,8 @@ run.tcl \
 ../../../ip_cores/gn4124-core/hdl/gn4124core/rtl/spartan6/gn4124_core_pkg.vhd \
 ../../../ip_cores/general-cores/modules/wishbone/wbgen2/wbgen2_pkg.vhd \
 ../../../ip_cores/general-cores/modules/common/gc_moving_average.vhd \
-../../../ip_cores/general-cores/modules/common/gc_delay_gen.vhd \
+../../../top/cute_wrc/ip_cores/cute_wrc.vhd \
 ../../../modules/wr_endpoint/ep_rx_pcs_16bit.vhd \
-cutedp_wrc.xise \
 ../../../modules/wr_endpoint/ep_rx_bypass_queue.vhd \
 ../../../modules/wr_endpoint/ep_sync_detect_16bit.vhd \
 ../../../ip_cores/general-cores/modules/wishbone/wb_simple_pwm/simple_pwm_wb.vhd \
@@ -231,7 +228,7 @@ cutedp_wrc.xise \
 ../../../modules/wr_eca/eca_channel.vhd \
 ../../../ip_cores/general-cores/modules/wishbone/wb_i2c_master/xwb_i2c_master.vhd \
 ../../../ip_cores/general-cores/modules/common/gc_glitch_filt.vhd \
-../../../ip_cores/general-cores/modules/wishbone/wb_lm32/platform/spartan6/jtag_tap.v \
+../../../ip_cores/general-cores/modules/wishbone/wb_onewire_master/xwb_onewire_master.vhd \
 ../../../ip_cores/gn4124-core/hdl/gn4124core/rtl/spartan6/serdes_1_to_n_clk_pll_s2_diff.vhd \
 ../../../ip_cores/general-cores/modules/genrams/generic/generic_async_fifo.vhd \
 ../../../modules/wrc_core/wrc_syscon_wb.vhd \
@@ -241,7 +238,7 @@ cutedp_wrc.xise \
 ../../../ip_cores/general-cores/modules/wishbone/wb_gpio_port/xwb_gpio_port.vhd \
 ../../../modules/wr_streamers/dropping_buffer.vhd \
 ../../../modules/wr_streamers/xtx_streamer.vhd \
-../../../ip_cores/general-cores/modules/wishbone/wb_lm32/src/lm32_mc_arithmetic.v \
+lm32_ram/wrc.vhd \
 ../../../modules/wr_endpoint/ep_crc32_pkg.vhd \
 ../../../ip_cores/general-cores/modules/wishbone/wb_simple_pwm/wb_simple_pwm.vhd \
 ../../../ip_cores/general-cores/modules/common/gc_sync_ffs.vhd \
@@ -257,6 +254,7 @@ cutedp_wrc.xise \
 ../../../modules/wr_endpoint/ep_rx_crc_size_check.vhd \
 ../../../ip_cores/general-cores/modules/wishbone/wb_irq/wb_irq_master.vhd \
 ../../../modules/fabric/xwrf_reg.vhd \
+run.tcl \
 ../../../platform/xilinx/wr_gtp_phy/whiterabbitgtx_wrapper_gtx.vhd \
 ../../../ip_cores/general-cores/modules/wishbone/wb_spi/spi_top.v \
 ../../../ip_cores/gn4124-core/hdl/gn4124core/rtl/spartan6/serdes_n_to_1_s2_diff.vhd \
@@ -268,7 +266,7 @@ cutedp_wrc.xise \
 ../../../ip_cores/general-cores/modules/wishbone/wb_lm32/generated/lm32_allprofiles.v \
 ../../../ip_cores/general-cores/modules/genrams/xilinx/generic_dpram.vhd \
 ../../../ip_cores/etherbone-core/hdl/eb_slave_core/eb_slave_fsm.vhd \
-../../../ip_cores/general-cores/modules/genrams/xilinx/generic_dpram_sameclock.vhd \
+../../../ip_cores/general-cores/modules/common/gc_delay_gen.vhd \
 ../../../modules/wrc_core/xcute_core.vhd \
 ../../../ip_cores/general-cores/modules/wishbone/wbgen2/wbgen2_dpssram.vhd \
 ../../../ip_cores/general-cores/platform/xilinx/wb_xilinx_fpga_loader/xloader_registers_pkg.vhd \
@@ -288,7 +286,7 @@ cutedp_wrc.xise \
 ../../../ip_cores/etherbone-core/hdl/eb_slave_core/eb_hdr_pkg.vhd \
 ../../../modules/wrc_core/cute_core.vhd \
 ../../../modules/wr_endpoint/ep_tx_header_processor.vhd \
-../../../ip_cores/general-cores/modules/wishbone/wb_onewire_master/xwb_onewire_master.vhd \
+../../../ip_cores/general-cores/modules/genrams/xilinx/generic_dpram_sameclock.vhd \
 ../../../ip_cores/general-cores/platform/xilinx/wb_xil_multiboot/multiboot_regs.vhd \
 ../../../modules/wr_mini_nic/wr_mini_nic.vhd \
 ../../../platform/xilinx/wr_gtp_phy/wr_gtx_phy_virtex6.vhd \
@@ -302,11 +300,12 @@ cutedp_wrc.xise \
 ../../../ip_cores/general-cores/modules/wishbone/wb_i2c_master/i2c_master_bit_ctrl.vhd \
 ../../../ip_cores/etherbone-core/hdl/eb_slave_core/eb_eth_rx.vhd \
 ../../../ip_cores/general-cores/modules/wishbone/wb_crossbar/sdb_rom.vhd \
-../../../modules/wrc_core/xwr_core.vhd \
 ../../../modules/wr_streamers/gc_escape_detector.vhd \
 ../../../ip_cores/gn4124-core/hdl/gn4124core/rtl/spartan6/p2l_des.vhd \
 ../../../ip_cores/general-cores/modules/wishbone/wb_crossbar/xwb_register_link.vhd \
 ../../../ip_cores/general-cores/modules/common/gc_bicolor_led_ctrl.vhd \
+cute_wrc.xise \
+../../../ip_cores/general-cores/modules/wishbone/wb_lm32/platform/spartan6/jtag_tap.v \
 ../../../ip_cores/general-cores/modules/wishbone/wb_vic/vic_prio_enc.vhd \
 ../../../ip_cores/gn4124-core/hdl/gn4124core/rtl/spartan6/serdes_1_to_n_data_s2_se.vhd \
 ../../../modules/wr_endpoint/ep_rx_status_reg_insert.vhd \
@@ -345,7 +344,7 @@ cutedp_wrc.xise \
 ../../../modules/wr_endpoint/ep_autonegotiation.vhd \
 ../../../ip_cores/general-cores/modules/wishbone/wb_vic/xwb_vic.vhd \
 ../../../ip_cores/general-cores/modules/wishbone/wb_i2c_master/i2c_master_byte_ctrl.vhd \
-../../../modules/wr_endpoint/ep_sync_detect.vhd \
+../../../modules/wrc_core/xwr_core.vhd \
 ../../../ip_cores/general-cores/modules/wishbone/wb_lm32/src/lm32_ram.vhd \
 ../../../ip_cores/etherbone-core/hdl/eb_slave_core/eb_internals_pkg.vhd \
 ../../../modules/wr_tbi_phy/wr_tbi_phy.vhd \
@@ -355,6 +354,7 @@ cutedp_wrc.xise \
 ../../../ip_cores/general-cores/modules/wishbone/wb_spi/wb_spi.vhd \
 ../../../modules/wr_eca/eca_ac_wbm_auto_pkg.vhd \
 ../../../ip_cores/etherbone-core/hdl/eb_slave_core/eb_tx_mux.vhd \
+../../../ip_cores/general-cores/modules/wishbone/wb_lm32/src/lm32_mc_arithmetic.v \
 ../../../modules/wr_si57x_interface/xwr_si57x_interface.vhd \
 ../../../ip_cores/general-cores/modules/genrams/xilinx/lm32_dpram_sameclock.vhd \
 ../../../modules/wr_endpoint/ep_registers_pkg.vhd \

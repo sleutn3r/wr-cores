@@ -17,8 +17,8 @@ use unisim.vcomponents.all;
 entity cute_wrc is
   generic
     (
-      g_etherbone_enable: boolean:= true;
-      g_multiboot_enable: boolean:= true
+      g_etherbone_enable: boolean:= false;
+      g_multiboot_enable: boolean:= false
      );
   port
     (

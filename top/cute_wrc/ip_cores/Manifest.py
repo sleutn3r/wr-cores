@@ -1,3 +1,3 @@
-files = ["cute_wrc.vhd","wrc.vhd"]
+files = ["cute_wrc.vhd"]
 
 modules = { "local" : ["../../../"] }
