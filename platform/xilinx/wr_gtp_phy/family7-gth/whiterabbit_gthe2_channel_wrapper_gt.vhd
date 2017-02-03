@@ -366,8 +366,8 @@ begin
     RX_BIAS_CFG                             =>     ("000011000000000000010000"),
     DMONITOR_CFG                            =>     (x"000A00"),
     RX_CM_SEL                               =>     ("11"), -- RX_CM_SEL was generated "01" as default by ISE for GND. 
-                             -- Bitslider wont work with GND, it has to be "11" to select
-                             -- programmable voltage (800mV).
+                                                           -- Bitslider wont work with GND, it has to be "11" to select
+                                                           -- programmable voltage (800mV).
     RX_CM_TRIM                              =>     ("1010"),
     RX_DEBUG_CFG                            =>     ("00000000000000"),
     RX_OS_CFG                               =>     ("0000010000000"),

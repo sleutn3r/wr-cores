@@ -2,7 +2,7 @@
 -- Title      : Deterministic Xilinx GTX wrapper - kintex-7 top module
 -- Project    : White Rabbit Switch
 -------------------------------------------------------------------------------
--- File       : wr_gth_phy_virtex7.vhd
+-- File       : wr_gth_phy_family7.vhd
 -- Author     : Peter Jansweijer, Muriel van der Spek, Tomasz Wlostowski
 -- Company    : CERN BE-CO-HT
 -- Created    : 2017-02-02
@@ -51,7 +51,7 @@ use unisim.vcomponents.all;
 library work;
 use work.disparity_gen_pkg.all;
 
-entity wr_gth_phy_virtex7 is
+entity wr_gth_phy_family7 is
   generic(
     -- set to non-zero value to speed up the simulation by reducing some delays
     g_simulation    : integer := 0);
@@ -113,9 +113,9 @@ entity wr_gth_phy_virtex7 is
 
     -- PHY ready 
     rdy_o           : out    std_logic);
-end entity wr_gth_phy_virtex7;
+end entity wr_gth_phy_family7;
 
-architecture rtl of wr_gth_phy_virtex7 is
+architecture rtl of wr_gth_phy_family7 is
 
   component whiterabbit_gthe2_channel_wrapper_gt is
     generic (
@@ -431,5 +431,5 @@ begin
   end process;
 
   tx_disparity_o     <= to_std_logic(cur_disp);
-end architecture rtl ; -- of wr_gth_phy_virtex7
+end architecture rtl ; -- of wr_gth_phy_family7
 

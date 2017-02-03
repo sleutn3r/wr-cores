@@ -2,7 +2,7 @@
 -- Title      : Deterministic Xilinx GTP wrapper - artix-7 top module
 -- Project    : White Rabbit Switch
 -------------------------------------------------------------------------------
--- File       : wr_gtp_phy_artix7.vhd
+-- File       : wr_gtp_phy_family7.vhd
 -- Author     : Peter Jansweijer, Rick Lohlefink, Tomasz Wlostowski
 -- Company    : Nikhef, CERN BE-CO-HT
 -- Created    : 2016-05-19
@@ -52,7 +52,7 @@ library work;
 
 use work.disparity_gen_pkg.all;
 
-entity wr_gtp_phy_artix7 is
+entity wr_gtp_phy_family7 is
   generic (
     -- set to non-zero value to speed up the simulation by reducing some delays
     g_simulation     : integer := 0
@@ -112,14 +112,14 @@ entity wr_gtp_phy_artix7 is
 
     rdy_o            : out  std_logic
   );
-end entity wr_gtp_phy_artix7;
+end entity wr_gtp_phy_family7;
 
 --------------------------------------------------------------------------------
--- Object        : Architecture work.wr_gtp_phy_artix7.structure
+-- Object        : Architecture work.wr_gtp_phy_family7.structure
 -- Last modified : Mon Nov 23 12:54:18 2015.
 --------------------------------------------------------------------------------
 
-architecture structure of wr_gtp_phy_artix7 is
+architecture structure of wr_gtp_phy_family7 is
   constant REQ_DELAY           : integer := 500;                      -- unit = ns
   constant CLK_PER             : integer := 8;                        -- unit = ns
   constant INITIAL_WAIT_CYCLES : integer := REQ_DELAY / CLK_PER;      -- Required 500 ns divided by RefClk period
@@ -517,5 +517,5 @@ begin
   end process;
 
   tx_disparity_o <= to_std_logic(cur_disp);
-end architecture structure ; -- of wr_gtp_phy_artix7
+end architecture structure ; -- of wr_gtp_phy_family7
 
