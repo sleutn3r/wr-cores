@@ -141,75 +141,75 @@ begin
       reconfig_from_xcvr        => xcvr_to_reconfig);
 
   -- Altera PHY with 8bit PCS
-  gen_arria5_phy8 : if (g_pcs_16bit = FALSE) generate
-    U_The_PHY : arria5_phy8
-      port map (
-        phy_mgmt_clk                => clk_reconf_i,
-        phy_mgmt_clk_reset          => rst_reconf_ext,
-        phy_mgmt_address            => "010000101",  -- 0x085
-        phy_mgmt_read               => '0',
-        phy_mgmt_readdata           => open,
-        phy_mgmt_waitrequest        => open,
-        phy_mgmt_write              => '1',
-        phy_mgmt_writedata          => (0 => '1', others => '0'),
-        tx_ready                    => tx_ready,
-        rx_ready                    => rx_ready,
-        pll_ref_clk(0)              => clk_phy_i,
-        tx_serial_data(0)           => pad_txp_o,
-        tx_bitslipboundaryselect    => (others => '0'),
-        pll_locked(0)               => pll_locked,
-        rx_serial_data(0)           => pad_rxp_i,
-        rx_runningdisp              => open,
-        rx_disperr                  => rx_disperr,
-        rx_errdetect                => rx_errdetect,
-        rx_bitslipboundaryselectout => rx_bitslide,
-        tx_clkout(0)                => tx_clk_o,
-        rx_clkout(0)                => rx_rbclk,
-        tx_parallel_data            => tx_data_i,
-        tx_datak                    => tx_k_i,
-        rx_parallel_data            => rx_data_o,
-        rx_datak                    => rx_k_o,
-        reconfig_from_xcvr          => xcvr_to_reconfig,
-        reconfig_to_xcvr            => reconfig_to_xcvr);
+ --gen_arria5_phy8 : if (g_pcs_16bit = FALSE) generate
+   U_The_PHY : arria5_phy8
+     port map (
+       phy_mgmt_clk                => clk_reconf_i,
+       phy_mgmt_clk_reset          => rst_reconf_ext,
+       phy_mgmt_address            => "010000101",  -- 0x085
+       phy_mgmt_read               => '0',
+       phy_mgmt_readdata           => open,
+       phy_mgmt_waitrequest        => open,
+       phy_mgmt_write              => '1',
+       phy_mgmt_writedata          => (0 => '1', others => '0'),
+       tx_ready                    => tx_ready,
+       rx_ready                    => rx_ready,
+       pll_ref_clk(0)              => clk_phy_i,
+       tx_serial_data(0)           => pad_txp_o,
+       tx_bitslipboundaryselect    => (others => '0'),
+       pll_locked(0)               => pll_locked,
+       rx_serial_data(0)           => pad_rxp_i,
+       rx_runningdisp              => open,
+       rx_disperr                  => rx_disperr,
+       rx_errdetect                => rx_errdetect,
+       rx_bitslipboundaryselectout => rx_bitslide,
+       tx_clkout(0)                => tx_clk_o,
+       rx_clkout(0)                => rx_rbclk,
+       tx_parallel_data            => tx_data_i,
+       tx_datak                    => tx_k_i,
+       rx_parallel_data            => rx_data_o,
+       rx_datak                    => rx_k_o,
+       reconfig_from_xcvr          => xcvr_to_reconfig,
+       reconfig_to_xcvr            => reconfig_to_xcvr);
 
-    rx_enc_err_o <= rx_disperr(0) or rx_errdetect(0);
-  end generate gen_arria5_phy8;
+   rx_enc_err_o <= rx_disperr(0) or rx_errdetect(0);
+ --end generate gen_arria5_phy8;
 
   -- Altera PHY with 16bit PCS
-  gen_arria5_phy16 : if (g_pcs_16bit = TRUE) generate
-    U_The_PHY : arria5_phy16
-      port map (
-        phy_mgmt_clk                => clk_reconf_i,
-        phy_mgmt_clk_reset          => rst_reconf_ext,
-        phy_mgmt_address            => "010000101",  -- 0x085
-        phy_mgmt_read               => '0',
-        phy_mgmt_readdata           => open,
-        phy_mgmt_waitrequest        => open,
-        phy_mgmt_write              => '1',
-        phy_mgmt_writedata          => (0 => '1', others => '0'),
-        tx_ready                    => tx_ready,
-        rx_ready                    => rx_ready,
-        pll_ref_clk(0)              => clk_phy_i,
-        tx_serial_data(0)           => pad_txp_o,
-        tx_bitslipboundaryselect    => (others => '0'),
-        pll_locked(0)               => pll_locked,
-        rx_serial_data(0)           => pad_rxp_i,
-        rx_runningdisp              => open,
-        rx_disperr                  => rx_disperr,
-        rx_errdetect                => rx_errdetect,
-        rx_bitslipboundaryselectout => rx_bitslide,
-        tx_clkout(0)                => tx_clk_o,
-        rx_clkout(0)                => rx_rbclk,
-        tx_parallel_data            => tx_data_i,
-        tx_datak                    => tx_k_i,
-        rx_parallel_data            => rx_data_o,
-        rx_datak                    => rx_k_o,
-        reconfig_from_xcvr          => xcvr_to_reconfig,
-        reconfig_to_xcvr            => reconfig_to_xcvr);
-
-    rx_enc_err_o <= rx_disperr(0) or rx_errdetect(0) or
-                    rx_disperr(1) or rx_errdetect(1);
-  end generate gen_arria5_phy16;
+--  gen_arria5_phy16 : if (g_pcs_16bit = TRUE) generate
+--    U_The_PHY : arria5_phy16
+--      port map (
+--        phy_mgmt_clk                => clk_reconf_i,
+--        phy_mgmt_clk_reset          => rst_reconf_ext,
+--        phy_mgmt_address            => "010000101",  -- 0x085
+--        phy_mgmt_read               => '0',
+--        phy_mgmt_readdata           => open,
+--        phy_mgmt_waitrequest        => open,
+--        phy_mgmt_write              => '1',
+--        phy_mgmt_writedata          => (0 => '1', others => '0'),
+--        tx_ready                    => tx_ready,
+--        rx_ready                    => rx_ready,
+--        pll_ref_clk(0)              => clk_phy_i,
+--        tx_serial_data(0)           => pad_txp_o,
+--        tx_bitslipboundaryselect    => (others => '0'),
+--        pll_locked(0)               => pll_locked,
+--        rx_serial_data(0)           => pad_rxp_i,
+--        rx_runningdisp              => open,
+--        rx_disperr                  => rx_disperr,
+--        rx_errdetect                => rx_errdetect,
+--        rx_bitslipboundaryselectout => rx_bitslide,
+--        tx_clkout(0)                => tx_clk_o,
+--        rx_clkout(0)                => rx_rbclk,
+--        tx_parallel_data            => tx_data_i,
+--        tx_datak                    => tx_k_i,
+--        rx_parallel_data            => rx_data_o,
+--        rx_datak                    => rx_k_o,
+--        reconfig_from_xcvr          => xcvr_to_reconfig,
+--        reconfig_to_xcvr            => reconfig_to_xcvr);
+--
+--    rx_enc_err_o <= rx_disperr(0) or rx_errdetect(0) or
+--                    rx_disperr(1) or rx_errdetect(1);
+--  end generate gen_arria5_phy16;
 
   rx_rbclk_o <= rx_rbclk;
 
