@@ -125,7 +125,6 @@ entity ep_tx_header_processor is
 -------------------------------------------------------------------------------
 -- Control registers
 -------------------------------------------------------------------------------
-    ep_ctrl_i           : in std_logic;
     regs_i : in t_ep_out_registers
 
     );
@@ -168,7 +167,6 @@ architecture behavioral of ep_tx_header_processor is
   signal abort_now : std_logic;
   signal stall_int : std_logic;
   signal tx_en        : std_logic;
-  signal ep_ctrl     : std_logic;
   signal bitsel_d    : std_logic;
   signal needs_padding  : std_logic;
   signal to_be_untagged : std_logic;
@@ -649,7 +647,7 @@ begin  -- behavioral
     end if;
   end process;
 
-  tx_en <= regs_i.ecr_tx_en_o and ep_ctrl and ep_ctrl_i; 
+  tx_en <= regs_i.ecr_tx_en_o; 
 
   --p_gen_stall : process(src_dreq_i, state, regs_i, wb_snk_i, snk_cyc_d0, tx_en)
   p_gen_stall : process(src_dreq_i, state, tx_en, wb_snk_i, eof_p1)
@@ -697,24 +695,6 @@ begin  -- behavioral
     if rising_edge(clk_sys_i) then
       wb_out.ack <= snk_valid;
     end if;
-  end process;
-
-  -- in theory, this should not happen: we don't send frames to ports which are DOWN, but..
-  -- we make sure that we don't start sending frames on the PHY in the middle of the frame...
-  -- the TX is enabled only when we don't receive any frames from SWcore
-  p_ctrl: process(clk_sys_i)
-  begin
-    if rising_edge(clk_sys_i) then
-      if(rst_n_i = '0') then
-        ep_ctrl  <= '1';
-      else
-        if(ep_ctrl_i = '0') then
-          ep_ctrl <= '0';
-        elsif(ep_ctrl_i = '1' and wb_snk_i.cyc = '0') then
-          ep_ctrl <= '1';
-        end if; --ep_ctr
-      end if;-- rst
-    end if;  -- clk   
   end process;
 
   wb_snk_o <= wb_out;

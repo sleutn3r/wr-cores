@@ -116,7 +116,6 @@ entity ep_1000basex_pcs is
     txpcs_timestamp_trigger_p_a_o : out std_logic;
 
     link_ok_o : out std_logic;
-    link_ctr_i : in std_logic;
     -----------------------------------------------------------------------------
     -- GTP/GTX/TBI Serdes interface
     ---------------------------------------------------------------------------
@@ -419,8 +418,7 @@ begin  -- rtl
 
   txpcs_busy_o <= txpcs_busy_int;
 
-  -- to enable killing of link (by ML)
-  mdio_mcr_pdown <= mdio_mcr_pdown_cpu or (not link_ctr_i);
+  mdio_mcr_pdown <= mdio_mcr_pdown_cpu;
 
   -- keep PHY reset also when SFP reports LOS (DL)
   serdes_rst_o <= (not pcs_reset_n) or mdio_mcr_pdown or serdes_sfp_los_i;

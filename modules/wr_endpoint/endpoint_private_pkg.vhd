@@ -135,7 +135,6 @@ package endpoint_private_pkg is
       txpcs_dreq_o                  : out std_logic;
       txpcs_timestamp_trigger_p_a_o : out std_logic;
       link_ok_o                     : out std_logic;
-      link_ctr_i                    : in  std_logic := '1';
       serdes_rst_o                  : out std_logic;
       serdes_loopen_o               : out std_logic;
       serdes_loopen_vec_o           : out std_logic_vector(2 downto 0);
@@ -382,7 +381,6 @@ package endpoint_private_pkg is
       txtsu_ack_i            : in  std_logic;
       txts_timestamp_i       : in  std_logic_vector(31 downto 0);
       txts_timestamp_valid_i : in  std_logic;
-      ep_ctrl_i              : in std_logic;
       regs_i                 : in  t_ep_out_registers);
   end component;
 
@@ -728,7 +726,6 @@ package endpoint_private_pkg is
       inject_ready_o         : out std_logic;
       inject_packet_sel_i    : in  std_logic_vector(2 downto 0)  := "000";
       inject_user_value_i    : in  std_logic_vector(15 downto 0) := x"0000";
-      ep_ctrl_i              : in  std_logic                     := '1';
       regs_i                 : in  t_ep_out_registers;
       regs_o                 : out t_ep_in_registers;
       dbg_o                  : out std_logic_vector(33 downto 0));

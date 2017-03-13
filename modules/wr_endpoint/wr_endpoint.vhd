@@ -289,9 +289,6 @@ entity wr_endpoint is
     led_link_o : out std_logic;
     led_act_o  : out std_logic;
 
--- HI physically kills the link (turn of laser)
-    link_kill_i : in std_logic := '0';
-
 -- HI indicates that link is up (so cable connected), LOW indicates that link is faulty 
 -- (e.g.: cable disconnected)
     link_up_o : out std_logic;
@@ -421,7 +418,6 @@ architecture syn of wr_endpoint is
 -------------------------------------------------------------------------------
 -- TRU stuff
 -------------------------------------------------------------------------------
-  signal ep_ctrl        : std_logic;
   signal pfilter_pclass : std_logic_vector(7 downto 0);
   signal pfilter_drop   : std_logic;
   signal pfilter_done   : std_logic;
@@ -492,7 +488,6 @@ begin
       txpcs_timestamp_trigger_p_a_o => txpcs_timestamp_trigger_p_a,
 
       link_ok_o  => link_ok,
-      link_ctr_i => ep_ctrl,
 
       serdes_rst_o             => phy_rst_o,
       serdes_loopen_o          => phy_loopen_o,
@@ -556,7 +551,6 @@ begin
       fc_pause_ready_o => txfra_pause_ready,
       fc_pause_delay_i => txfra_pause_delay,
       fc_flow_enable_i => txfra_flow_enable,
-      ep_ctrl_i        => ep_ctrl,
       regs_i           => regs_fromwb,
       regs_o           => regs_towb_tpath,
 
@@ -899,18 +893,6 @@ begin
   txfra_pause_req     <= fc_tx_pause_req_i;
   fc_tx_pause_ready_o <= txfra_pause_ready;
   txfra_pause_delay   <= fc_tx_pause_delay_i;
-
-  -- TRU needs to be able to share the control of ouput path, i.e. turn off the laser
-  p_ep_ctrl : process(clk_sys_i)
-  begin
-    if rising_edge(clk_sys_i) then
-      if rst_sys_n_i = '0' then
-        ep_ctrl <= '1';
-      else
-        ep_ctrl <= not link_kill_i;
-      end if;
-    end if;
-  end process;
 
   GEN_STOP: if(g_with_stop_traffic) generate
     rxpath_fab.sof    <= rxpcs_fab.sof    when(stop_traffic_i='0') else '0';

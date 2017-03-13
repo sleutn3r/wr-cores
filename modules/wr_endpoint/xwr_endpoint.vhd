@@ -263,7 +263,6 @@ entity xwr_endpoint is
     led_link_o : out std_logic;
     led_act_o  : out std_logic;
 
-    link_kill_i : in  std_logic := '0';
     link_up_o   : out std_logic;
     stop_traffic_i : in std_logic := '0';
     dbg_tx_pcs_wr_count_o     : out std_logic_vector(5+4 downto 0);
@@ -406,7 +405,6 @@ begin
       led_link_o           => led_link_o,
       led_act_o            => led_act_o,
       link_up_o            => link_up_o,
-      link_kill_i          => link_kill_i,
       pfilter_pclass_o     => pfilter_pclass_o,
       pfilter_drop_o       => pfilter_drop_o,
       pfilter_done_o       => pfilter_done_o,

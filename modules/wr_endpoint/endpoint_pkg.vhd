@@ -267,7 +267,6 @@ package endpoint_pkg is
       rmon_events_o        : out std_logic_vector(c_epevents_sz-1 downto 0);
       led_link_o           : out std_logic;
       led_act_o            : out std_logic;
-      link_kill_i          : in  std_logic                     := '0';
       link_up_o            : out std_logic;
       stop_traffic_i       : in std_logic := '0';
       dbg_tx_pcs_wr_count_o     : out std_logic_vector(5+4 downto 0);
@@ -394,7 +393,6 @@ package endpoint_pkg is
       rmon_events_o        : out std_logic_vector(c_epevents_sz-1 downto 0);
       led_link_o           : out std_logic;
       led_act_o            : out std_logic;
-      link_kill_i          : in  std_logic                     := '0';
       link_up_o            : out std_logic;
       stop_traffic_i       : in std_logic := '0';
       dbg_tx_pcs_wr_count_o     : out std_logic_vector(5+4 downto 0);

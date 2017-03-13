@@ -112,8 +112,6 @@ entity ep_tx_framer is
 -------------------------------------------------------------------------------
 -- Control registers
 -------------------------------------------------------------------------------
-
-    ep_ctrl_i : in std_logic;
     regs_i : in t_ep_out_registers
 
     );
@@ -741,7 +739,7 @@ begin  -- behavioral
     end if;
   end process;
 
-  tx_en <= regs_i.ecr_tx_en_o and ep_ctrl_i;
+  tx_en <= regs_i.ecr_tx_en_o;
  
   stall_int <= (not (pcs_dreq_i and tx_ready) and tx_en) or (snk_i.cyc xor snk_cyc_d0);  -- /dev/null if disabled
 
