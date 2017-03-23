@@ -2,7 +2,7 @@
 -- Title      : Deterministic Xilinx GTX wrapper - kintex-7 top module
 -- Project    : White Rabbit Switch
 -------------------------------------------------------------------------------
--- File       : wr_gtx_phy_kintex7.vhd
+-- File       : wr_gtx_phy_family7.vhd
 -- Author     : Peter Jansweijer, Tomasz Wlostowski
 -- Company    : CERN BE-CO-HT
 -- Created    : 2013-04-08
@@ -54,7 +54,7 @@ library work;
 --use work.gencores_pkg.all;
 use work.disparity_gen_pkg.all;
 
-entity wr_gtx_phy_kintex7 is
+entity wr_gtx_phy_family7 is
 
   generic (
     -- set to non-zero value to speed up the simulation by reducing some delays
@@ -114,9 +114,9 @@ entity wr_gtx_phy_kintex7 is
     pad_rxp_i : in std_logic := '0';
 
     rdy_o     : out std_logic);
-end wr_gtx_phy_kintex7;
+end wr_gtx_phy_family7;
 
-architecture rtl of wr_gtx_phy_kintex7 is
+architecture rtl of wr_gtx_phy_family7 is
 
   component WHITERABBIT_GTXE2_CHANNEL_WRAPPER_GT is
     generic
