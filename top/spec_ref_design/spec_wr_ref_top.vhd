@@ -296,7 +296,8 @@ begin  -- architecture top
   ------------------------------------------------------------------------------
 
   -- logic AND of all async reset sources (active low)
-  areset_n <= button1_i and gn_rst_n;
+  --areset_n <= button1_i and gn_rst_n;
+  areset_n <= button1_i;
 
   -----------------------------------------------------------------------------
   -- Primary wishbone Crossbar
