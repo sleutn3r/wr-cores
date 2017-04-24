@@ -5,7 +5,7 @@
 -- Author     : Grzegorz Daniluk
 -- Company    : Elproma
 -- Created    : 2011-02-02
--- Last update: 2017-03-10
+-- Last update: 2017-04-25
 -- Platform   : FPGA-generics
 -- Standard   : VHDL
 -------------------------------------------------------------------------------
@@ -95,6 +95,7 @@ entity wr_core is
     g_interface_mode            : t_wishbone_interface_mode      := PIPELINED;
     g_address_granularity       : t_wishbone_address_granularity := BYTE;
     g_aux_sdb                   : t_sdb_device                   := c_wrc_periph3_sdb;
+    g_softpll_channels_config   : t_softpll_channel_config_array := c_softpll_default_channel_config;
     g_softpll_enable_debugger   : boolean                        := false;
     g_vuart_fifo_size           : integer                        := 1024;
     g_pcs_16bit                 : boolean                        := false;
@@ -153,6 +154,7 @@ entity wr_core is
     phy_rx_data_i     : in std_logic_vector(f_pcs_data_width(g_pcs_16bit)-1 downto 0);
     phy_rx_rbclk_i    : in std_logic;
     phy_rx_k_i        : in std_logic_vector(f_pcs_k_width(g_pcs_16bit)-1 downto 0);
+    phy_rx_k16_i      : in std_logic := '0';
     phy_rx_enc_err_i  : in std_logic;
     phy_rx_bitslide_i : in std_logic_vector(f_pcs_bts_width(g_pcs_16bit)-1 downto 0);
 
@@ -396,15 +398,15 @@ architecture struct of wr_core is
   -----------------------------------------------------------------------------
   --WB Peripherials
   -----------------------------------------------------------------------------
-  signal periph_slave_i : t_wishbone_slave_in_array(0 to 2);
-  signal periph_slave_o : t_wishbone_slave_out_array(0 to 2);
+  signal periph_slave_i : t_wishbone_slave_in_array(0 to 3);
+  signal periph_slave_o : t_wishbone_slave_out_array(0 to 3);
   signal sysc_in_regs   : t_sysc_in_registers;
   signal sysc_out_regs  : t_sysc_out_registers;
 
   -----------------------------------------------------------------------------
   --WB Secondary Crossbar
   -----------------------------------------------------------------------------
-  constant c_secbar_layout : t_sdb_record_array(7 downto 0) :=
+  constant c_secbar_layout : t_sdb_record_array(8 downto 0) :=
     (0 => f_sdb_embed_device(c_xwr_mini_nic_sdb, x"00000000"),
      1 => f_sdb_embed_device(c_xwr_endpoint_sdb, x"00000100"),
      2 => f_sdb_embed_device(c_xwr_softpll_ng_sdb, x"00000200"),
@@ -412,15 +414,16 @@ architecture struct of wr_core is
      4 => f_sdb_embed_device(c_wrc_periph0_sdb, x"00000400"),  -- Syscon
      5 => f_sdb_embed_device(c_wrc_periph1_sdb, x"00000500"),  -- UART
      6 => f_sdb_embed_device(c_wrc_periph2_sdb, x"00000600"),  -- 1-Wire
-     7 => f_sdb_embed_device(g_aux_sdb, x"00000700")           -- aux WB bus
+     7 => f_sdb_embed_device(g_aux_sdb,         x"00000700"),  -- aux WB bus
+     8 => f_sdb_embed_device(c_wrc_periph4_sdb, x"00000800")   -- WRPC diag registers
      );
 
-  constant c_secbar_sdb_address : t_wishbone_address := x"00000800";
+  constant c_secbar_sdb_address : t_wishbone_address := x"00000C00";
   constant c_secbar_bridge_sdb  : t_sdb_bridge       :=
     f_xwb_bridge_layout_sdb(true, c_secbar_layout, c_secbar_sdb_address);
 
-  signal secbar_master_i : t_wishbone_master_in_array(7 downto 0);
-  signal secbar_master_o : t_wishbone_master_out_array(7 downto 0);
+  signal secbar_master_i : t_wishbone_master_in_array(8 downto 0);
+  signal secbar_master_o : t_wishbone_master_out_array(8 downto 0);
 
   -----------------------------------------------------------------------------
   --WB intercon
@@ -1017,7 +1020,7 @@ begin
   WB_SECONDARY_CON : xwb_sdb_crossbar
     generic map(
       g_num_masters => 1,
-      g_num_slaves  => 8,
+      g_num_slaves  => 9,
       g_registered  => true,
       g_wraparound  => true,
       g_layout      => c_secbar_layout,
@@ -1046,9 +1049,11 @@ begin
   secbar_master_i(4) <= periph_slave_o(0);
   secbar_master_i(5) <= periph_slave_o(1);
   secbar_master_i(6) <= periph_slave_o(2);
+  secbar_master_i(8) <= periph_slave_o(3);
   periph_slave_i(0)  <= secbar_master_o(4);
   periph_slave_i(1)  <= secbar_master_o(5);
   periph_slave_i(2)  <= secbar_master_o(6);
+  periph_slave_i(3)  <= secbar_master_o(8);
 
 
   aux_adr_o <= secbar_master_o(7).adr;
@@ -1091,7 +1096,7 @@ begin
       g_muxed_ports => 2)
     port map (
       clk_sys_i   => clk_sys_i,
-      rst_n_i     => rst_net_n,
+      rst_n_i     => rst_n_i,
       ep_src_o    => ep_snk_in,
       ep_src_i    => ep_snk_out,
       ep_snk_o    => ep_src_in,
