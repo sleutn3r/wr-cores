@@ -81,7 +81,7 @@ architecture wrapper of xwr_si57x_interface is
       wb_stb_i          : in  std_logic                                               := '0';
       wb_ack_o          : out std_logic;
       wb_err_o          : out std_logic;
-      wb_rty_o          : out std_logic;
+      --wb_rty_o          : out std_logic;
       wb_stall_o        : out std_logic);
   end component;
   
