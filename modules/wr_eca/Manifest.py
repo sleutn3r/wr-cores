@@ -1,4 +1,9 @@
-files = [
+
+if vcom_opt.count("mixedsvvh") > 0:
+  files= [];
+  print("Warning: ECA is incompatible with mixed VHDL-SystemVerilog designs, disabling!")
+else:
+  files = [
   "eca_internals_pkg.vhd",
   "eca_auto_pkg.vhd",
   "eca_queue_auto_pkg.vhd",
@@ -32,3 +37,4 @@ files = [
   "eca_queue.vhd",
   "eca_tlu_fsm.vhd",
   "eca_tlu.vhd"]
+
